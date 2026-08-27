@@ -1,0 +1,14 @@
+**/bin
+**/obj
+**/.vs
+**/.idea
+**/node_modules
+**/dist
+**/.angular
+**/TestResults
+**/Logs
+**/.git
+**/.env
+**/*.log
+**/npm-debug.log*
+**/coverage

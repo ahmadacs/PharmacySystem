@@ -1,0 +1,79 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+dist/
+build/
+out/
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+dist/
+out/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+*.pfx
+
+# Logs
+*.log
+logs/
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Angular
+dist/
+
+# Database
+*.mdf
+*.ldf
+
+# Azure / Azure Functions
+.azure/
+
+# Local development
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
