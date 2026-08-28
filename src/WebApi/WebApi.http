@@ -1,0 +1,137 @@
+@WebApi_HostAddress = http://localhost:5066
+@ContentType = application/json
+
+# ---------------------------------------------------------------------------
+# Authentication examples.
+#
+# The refresh token is returned in the body AND as an httpOnly cookie scoped
+# to /api/v1/auth (sent back automatically on /refresh and /logout).
+# To call authenticated endpoints, copy the accessToken from a login response
+# into the @accessToken variable below.
+# ---------------------------------------------------------------------------
+
+@accessToken = PASTE_ACCESS_TOKEN_HERE
+
+### Login (Admin)
+# @name loginAdmin
+POST {{WebApi_HostAddress}}/api/v1/auth/login
+Content-Type: {{ContentType}}
+
+{
+  "email": "admin@pharmacy.com",
+  "password": "Admin@1234"
+}
+
+### Login (Pharmacist)
+POST {{WebApi_HostAddress}}/api/v1/auth/login
+Content-Type: {{ContentType}}
+
+{
+  "email": "pharmacist@pharmacy.com",
+  "password": "Pharma@1234"
+}
+
+### Login (Doctor)
+POST {{WebApi_HostAddress}}/api/v1/auth/login
+Content-Type: {{ContentType}}
+
+{
+  "email": "doctor@pharmacy.com",
+  "password": "Doctor@1234"
+}
+
+### Register (Doctor or Pharmacist; role + license are required)
+POST {{WebApi_HostAddress}}/api/v1/auth/register
+Content-Type: {{ContentType}}
+
+{
+  "firstName": "New",
+  "lastName": "Doctor",
+  "email": "new.doctor@example.com",
+  "password": "Password@1234",
+  "confirmPassword": "Password@1234",
+  "role": "Doctor",
+  "licenseNumber": "D-2026-0001",
+  "specialization": "Cardiology",
+  "phoneNumber": "0551234567"
+}
+
+### Refresh (rotates the refresh token cookie)
+POST {{WebApi_HostAddress}}/api/v1/auth/refresh
+
+### Current user
+GET {{WebApi_HostAddress}}/api/v1/auth/me
+Authorization: Bearer {{accessToken}}
+
+### Change password
+POST {{WebApi_HostAddress}}/api/v1/auth/change-password
+Authorization: Bearer {{accessToken}}
+Content-Type: {{ContentType}}
+
+{
+  "currentPassword": "Admin@1234",
+  "newPassword": "NewAdmin@1234",
+  "confirmPassword": "NewAdmin@1234"
+}
+
+### Forgot password (mocked to the Serilog output/file)
+POST {{WebApi_HostAddress}}/api/v1/auth/forgot-password
+Content-Type: {{ContentType}}
+
+{
+  "email": "admin@pharmacy.com"
+}
+
+### Reset password
+POST {{WebApi_HostAddress}}/api/v1/auth/reset-password
+Content-Type: {{ContentType}}
+
+{
+  "email": "admin@pharmacy.com",
+  "token": "TOKEN_FROM_EMAIL",
+  "newPassword": "Reset@1234",
+  "confirmPassword": "Reset@1234"
+}
+
+### Logout (revokes the refresh token and clears the cookie)
+POST {{WebApi_HostAddress}}/api/v1/auth/logout
+
+# ---------------------------------------------------------------------------
+# Domain examples (require a valid @accessToken).
+# ---------------------------------------------------------------------------
+
+### List medicines (paged + search + filter)
+GET {{WebApi_HostAddress}}/api/v1/medicines?page=1&pageSize=10&search=paracetamol&sortBy=name&sortDir=asc&form=Tablet
+Authorization: Bearer {{accessToken}}
+
+### Medicine categories
+GET {{WebApi_HostAddress}}/api/v1/medicines/categories
+Authorization: Bearer {{accessToken}}
+
+### Low-stock inventory
+GET {{WebApi_HostAddress}}/api/v1/inventory/low-stock
+Authorization: Bearer {{accessToken}}
+
+### Inventory batches (expiry status filter)
+GET {{WebApi_HostAddress}}/api/v1/inventory/batches?page=1&pageSize=10&expiryStatus=NearExpiry&withinDays=30
+Authorization: Bearer {{accessToken}}
+
+### List prescriptions
+GET {{WebApi_HostAddress}}/api/v1/prescriptions?page=1&pageSize=10&sortBy=issuedDate&sortDir=desc
+Authorization: Bearer {{accessToken}}
+
+### List dispensing records
+GET {{WebApi_HostAddress}}/api/v1/dispensing?page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+### Dispense a prescription (body mirrors DispensePrescriptionCommand)
+# POST {{WebApi_HostAddress}}/api/v1/dispensing
+# Authorization: Bearer {{accessToken}}
+# Content-Type: {{ContentType}}
+#
+# {
+#   "prescriptionId": "00000000-0000-0000-0000-000000000000"
+# }
+
+### Health check
+GET {{WebApi_HostAddress}}/health
