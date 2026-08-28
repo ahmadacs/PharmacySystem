@@ -1,0 +1,42 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  &__icon {
+    font-size: 1.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--mat-sys-primary);
+  }
+
+  &--warn .stat__icon {
+    color: var(--status-critical);
+  }
+
+  &--accent .stat__icon {
+    color: var(--mat-sys-tertiary);
+  }
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 1rem;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.stock-low {
+  color: var(--status-critical);
+  font-weight: 600;
+}
+
+table {
+  width: 100%;
+}

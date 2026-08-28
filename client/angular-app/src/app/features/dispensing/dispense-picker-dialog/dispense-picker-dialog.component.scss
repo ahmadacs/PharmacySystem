@@ -1,0 +1,32 @@
+
+    .picker {
+      min-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .candidate {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 8px;
+      white-space: normal;
+    }
+    .candidate__patient {
+      font-weight: 500;
+    }
+    .candidate__meta {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.8rem;
+    }
+    .empty {
+      color: var(--mat-sys-on-surface-variant);
+      margin: 0;
+      padding: 1rem 0;
+      text-align: center;
+    }
+  

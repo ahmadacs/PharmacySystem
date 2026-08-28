@@ -1,0 +1,62 @@
+
+    .details {
+      min-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .details__meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .variants {
+      display: block;
+    }
+    .variants mat-panel-title {
+      font-weight: 500;
+    }
+    .variants mat-panel-description {
+      justify-content: flex-end;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .badge {
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+    .badge-danger {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+    .badge-muted {
+      background: var(--mat-sys-surface-variant);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .cell-strong {
+      display: block;
+      font-weight: 500;
+    }
+    .cell-sub {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.6;
+    }
+    .expired {
+      color: var(--mat-sys-error);
+      font-weight: 600;
+    }
+    .expiring {
+      color: var(--mat-sys-error);
+    }
+    .hint {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin: 0;
+    }
+  

@@ -1,0 +1,29 @@
+
+    <h2 mat-dialog-title>{{ 'dialogs.dispensePicker.title' | translate }}</h2>
+
+    <mat-dialog-content class="picker">
+      @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+
+      @if (candidates().length > 0) {
+        @for (candidate of candidates(); track candidate.id) {
+          <button class="candidate" mat-button (click)="select(candidate)">
+            <span class="candidate__patient">{{ candidate.patientName }}</span>
+            <span class="candidate__meta">
+              {{ candidate.doctorName }} · {{ candidate.issuedDate | date: 'mediumDate' }} ·
+              {{ candidate.status }} · {{ candidate.itemCount }} item(s)
+            </span>
+          </button>
+        }
+      }
+
+      @if (!loading() && candidates().length === 0) {
+        <p class="empty">{{ 'dialogs.dispensePicker.empty' | translate }}</p>
+      }
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-button [mat-dialog-close]="null">{{ 'dialogs.dispensePicker.cancel' | translate }}</button>
+    </mat-dialog-actions>
+  

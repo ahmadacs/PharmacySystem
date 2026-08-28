@@ -1,0 +1,74 @@
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.table-card {
+  border-radius: 8px;
+  overflow-x: auto;
+  background: var(--mat-sys-surface-container-low);
+}
+
+table {
+  width: 100%;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-highest);
+  }
+}
+
+.cell-strong {
+  display: block;
+  font-weight: 500;
+}
+
+.cell-sub {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.variants-more {
+  display: inline-block;
+  margin-top: 0.15rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  background: var(--mat-sys-surface-variant);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.stock-low {
+  color: var(--status-critical);
+  font-weight: 600;
+}
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+
+  &-danger {
+    background: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &-muted {
+    background: var(--mat-sys-surface-variant);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.col-actions {
+  text-align: right;
+  width: 150px;
+}

@@ -1,0 +1,94 @@
+<app-page-header title="Users" subtitle="Manage pharmacy staff accounts and roles">
+  <button actions mat-flat-button color="primary" *appHasPermission="permissions.UsersManage" (click)="openCreate()">
+    <mat-icon>person_add</mat-icon>
+    New user
+  </button>
+</app-page-header>
+
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>Search</mat-label>
+    <input matInput [formControl]="searchControl" placeholder="Email or name" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Role</mat-label>
+    <mat-select [value]="role()" (selectionChange)="role.set($event.value ?? null); page.set(1)">
+      <mat-option [value]="null">All</mat-option>
+      @for (role of roles; track role) {
+        <mat-option [value]="role">{{ role }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select [value]="isActive()" (selectionChange)="isActive.set($event.value ?? null); page.set(1)">
+      <mat-option [value]="null">All</mat-option>
+      <mat-option [value]="true">Active</mat-option>
+      <mat-option [value]="false">Inactive</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+@if (users.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="table-card mat-elevation-z2">
+  <table mat-table matSort (matSortChange)="onSort($event)" [dataSource]="users.value()!.items">
+    <ng-container matColumnDef="email">
+      <th mat-header-cell mat-sort-header *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="fullName">
+      <th mat-header-cell mat-sort-header *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let row">{{ row.fullName || '-' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="role">
+      <th mat-header-cell mat-sort-header disabled *matHeaderCellDef>Role</th>
+      <td mat-cell *matCellDef="let row">{{ row.roles.join(', ') }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="isActive">
+      <th mat-header-cell mat-sort-header disabled *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="badge" [class.badge-inactive]="!row.isActive">
+          {{ row.isActive ? 'Active' : 'Inactive' }}
+        </span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+      <td mat-cell *matCellDef="let row" class="col-actions">
+        <button
+          mat-icon-button
+          *appHasPermission="permissions.UsersManage"
+          [matTooltip]="row.isActive ? 'Deactivate' : 'Activate'"
+          [color]="row.isActive ? 'warn' : 'primary'"
+          (click)="toggleActive(row)"
+        >
+          <mat-icon>{{ row.isActive ? 'block' : 'check_circle' }}</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  @if (!users.isLoading() && users.value()!.items.length === 0) {
+    <app-empty-state icon="group" message="No users found" hint="Adjust your search or filters." />
+  }
+
+  <mat-paginator
+    [length]="totalCount()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 25, 50]"
+    [pageIndex]="page() - 1"
+    (page)="onPage($event)"
+  />
+</div>

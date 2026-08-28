@@ -1,0 +1,49 @@
+.shell {
+  height: 100vh;
+
+  &__sidenav {
+    width: 240px;
+    border-right: 1px solid var(--mat-sys-outline-variant);
+
+    .mat-mdc-list-item {
+      align-items: center;
+    }
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+  }
+
+  &__toolbar {
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  &__spacer {
+    flex: 1 1 auto;
+  }
+
+  &__role {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  &__content {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+.active-link {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}

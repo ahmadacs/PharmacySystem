@@ -1,0 +1,21 @@
+
+    .dialog-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 440px;
+    }
+    .row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .grow {
+      flex: 1 1 200px;
+    }
+    .doctor-fields {
+      border: 1px dashed var(--mat-sys-outline-variant);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+  

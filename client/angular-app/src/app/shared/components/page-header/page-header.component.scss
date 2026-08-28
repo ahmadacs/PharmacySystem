@@ -1,0 +1,28 @@
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+
+      &__title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 500;
+      }
+
+      &__subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 0.875rem;
+      }
+
+      &__actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+    }
+  

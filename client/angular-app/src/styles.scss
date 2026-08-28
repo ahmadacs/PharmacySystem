@@ -1,0 +1,191 @@
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+        theme-type: light
+      ),
+      typography: Roboto,
+      density: 0
+    )
+  );
+}
+
+html.dark {
+  color-scheme: dark;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+        theme-type: dark
+      ),
+      typography: Roboto,
+      density: 0
+    )
+  );
+}
+
+:root {
+  --status-critical: var(--mat-sys-error);
+  --status-warning: #f57c00;
+  --status-safe: #2e7d32;
+}
+
+html.dark {
+  --status-warning: #ffb74d;
+  --status-safe: #81c784;
+}
+
+body {
+  color-scheme: light;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  margin: 0;
+  height: 100%;
+}
+
+.mat-elevation-z2 {
+  box-shadow:
+    0 2px 4px -1px rgb(0 0 0 / 20%),
+    0 4px 5px 0 rgb(0 0 0 / 14%),
+    0 1px 10px 0 rgb(0 0 0 / 12%);
+}
+
+.mat-mdc-snack-bar-container.toast-success {
+  --mdc-snackbar-container-color: var(--mat-sys-primary);
+  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-primary);
+}
+
+.mat-mdc-snack-bar-container.toast-error {
+  --mdc-snackbar-container-color: var(--mat-sys-error);
+  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-error);
+}
+
+.mat-mdc-snack-bar-container.toast-info {
+  --mdc-snackbar-container-color: var(--mat-sys-surface-container-high);
+  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-surface);
+}
+
+.mat-drawer-side ~ .mat-sidenav-content {
+  margin-left: 0 !important ;
+  margin-right: 0 !important ;
+}
+.mat-drawer-opened ~ .mat-sidenav-content {
+   margin-left: 240px !important ;
+   margin-right: 0 !important ;
+}
+html[dir="rtl"] {
+  direction: rtl;
+
+  .mat-drawer { direction: rtl; }
+
+  // CDK overlay (dialogs, menus, selects) must match document direction
+  .cdk-overlay-pane,
+  .mat-mdc-dialog-panel,
+  .mat-mdc-menu-panel,
+  .mat-mdc-select-panel {
+    direction: rtl;
+  }
+
+  // Tables: right-align text but keep column order
+  .mat-mdc-table {
+    th.mat-mdc-header-cell,
+    td.mat-mdc-cell {
+      text-align: right;
+    }
+    .mat-sort-header-container {
+      justify-content: flex-start;
+    }
+  }
+
+.mat-drawer-side ~ .mat-sidenav-content {
+  margin-left: 0 !important ;
+  margin-right: 0 !important ;
+}
+.mat-drawer-opened ~ .mat-sidenav-content {
+  margin-right: 240px !important;
+  margin-left: 0 !important;
+}
+
+  // Paginator: prevent bidi reversal
+  .mat-mdc-paginator {
+    .mat-mdc-paginator-range-label,
+    .mat-mdc-paginator-page-size-label {
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+    .mat-mdc-paginator-container {
+      justify-content: space-between;
+    }
+  }
+
+  // Forms: fix flex overlap - ensure every flex child can shrink
+  .row,
+  .filters,
+  .item-row {
+    direction: rtl;
+  }
+
+  .grow,
+  .item-medicine,
+  .item-variant,
+  .item-qty,
+  .item-dose,
+  .mat-mdc-form-field {
+    min-width: 0;
+    direction: rtl;
+    text-align: right;
+  }
+
+  // Keep numeric/phone inputs LTR inside RTL form
+  input[type="number"],
+  input[type="tel"],
+  input[type="date"] {
+    direction: ltr;
+    text-align: left;
+  }
+
+  // Dialog content and table card
+  .table-card,
+  .dialog-body,
+  .mat-mdc-dialog-content {
+    direction: rtl;
+  }
+
+  // Actions column should stay on logical end (left in RTL)
+  .col-actions {
+    text-align: left;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .mat-mdc-dialog-panel {
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    width: 100vw !important;
+  }
+
+  .mat-mdc-dialog-surface {
+    border-radius: 0;
+  }
+
+  .dialog-body {
+    min-width: 0 !important;
+  }
+
+  .table-card table {
+    min-width: 640px;
+  }
+
+  .nested-table {
+    min-width: 560px;
+  }
+}

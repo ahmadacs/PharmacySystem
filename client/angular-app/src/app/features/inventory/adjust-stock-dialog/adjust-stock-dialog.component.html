@@ -1,0 +1,127 @@
+@if (isInbound()) {
+      <h2 mat-dialog-title>{{ 'dialogs.adjustStock.titleInbound' | translate }}</h2>
+      <p class="subtitle">{{ 'dialogs.adjustStock.subtitleInbound' | translate }}</p>
+    } @else {
+      <h2 mat-dialog-title>{{ 'dialogs.adjustStock.titleAdjust' | translate }}</h2>
+      <p class="subtitle">{{ 'dialogs.adjustStock.subtitleAdjust' | translate }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-dialog-content class="dialog-body">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'dialogs.adjustStock.type' | translate }}</mat-label>
+          <mat-select formControlName="type">
+            @for (type of types; track type) {
+              <mat-option [value]="type">{{ type | enumTranslate:'InventoryAdjustmentType' }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>{{ 'dialogs.adjustStock.typeRequired' | translate }}</mat-error>
+        </mat-form-field>
+
+        @if (isInbound()) {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'dialogs.adjustStock.medicine' | translate }}</mat-label>
+            <input matInput [formControl]="medicineSearchControl" [matAutocomplete]="medicineAuto" />
+            <mat-icon matSuffix>search</mat-icon>
+            <mat-autocomplete #medicineAuto="matAutocomplete" [displayWith]="displayMedicineName" (optionSelected)="onMedicineSelected($event)">
+              @for (medicine of filteredMedicines(); track medicine.id) {
+                <mat-option [value]="medicine">
+                  {{ isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name }}
+                  ({{ isArabic() && medicine.genericNameAr ? medicine.genericNameAr : medicine.genericName }})
+                </mat-option>
+              }
+            </mat-autocomplete>
+            <mat-error>{{ 'dialogs.adjustStock.medicineRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'dialogs.adjustStock.variant' | translate }}</mat-label>
+            <mat-select formControlName="medicineVariantId">
+              @for (variant of selectedMedicine()?.variants ?? []; track variant.id) {
+                <mat-option [value]="variant.id">
+                  {{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength }} {{ variant.unit | enumTranslate:'MedicineUnit' }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error>{{ 'dialogs.adjustStock.variantRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <div class="row">
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.adjustStock.manufactureDate' | translate }}</mat-label>
+              <input matInput [matDatepicker]="manufacturePicker" [max]="today" formControlName="manufactureDate" />
+              <mat-datepicker-toggle matIconSuffix [for]="manufacturePicker"></mat-datepicker-toggle>
+              <mat-datepicker #manufacturePicker></mat-datepicker>
+              <mat-error>{{ 'dialogs.adjustStock.manufactureDateRequired' | translate }}</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.adjustStock.expiryDate' | translate }}</mat-label>
+              <input matInput [matDatepicker]="expiryPicker" [min]="today" formControlName="expiryDate" />
+              <mat-datepicker-toggle matIconSuffix [for]="expiryPicker"></mat-datepicker-toggle>
+              <mat-datepicker #expiryPicker></mat-datepicker>
+              <mat-hint>{{ 'dialogs.adjustStock.expiryDateHint' | translate }}</mat-hint>
+              <mat-error>{{ 'dialogs.adjustStock.expiryDateRequired' | translate }}</mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="row">
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.adjustStock.packagesReceived' | translate }}</mat-label>
+              <input matInput formControlName="packagesReceived" type="number" min="1" />
+              @if (packageHint(); as hint) {
+                <mat-hint>{{ hint }}</mat-hint>
+              }
+              <mat-error>{{ 'dialogs.adjustStock.packagesReceivedError' | translate }}</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.adjustStock.unitCost' | translate }}</mat-label>
+              <input matInput formControlName="unitCost" type="number" min="0" step="0.01" />
+              <mat-error>{{ 'dialogs.adjustStock.unitCostError' | translate }}</mat-error>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'dialogs.adjustStock.supplier' | translate }}</mat-label>
+            <input matInput formControlName="supplierName" [placeholder]="'dialogs.adjustStock.supplierPlaceholder' | translate" />
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'dialogs.adjustStock.batch' | translate }}</mat-label>
+            <mat-select formControlName="medicineBatchId">
+              @for (batch of batches(); track batch.id) {
+                <mat-option [value]="batch.id">
+                  {{ batch.batchNumber }} — {{ batch.quantityAvailable }} {{ 'dialogs.medicineDetails.available' | translate }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error>{{ 'dialogs.adjustStock.batchRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <div class="row">
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.adjustStock.quantity' | translate }}</mat-label>
+              <input matInput formControlName="quantity" type="number" min="1" />
+              <mat-hint>{{ 'dialogs.adjustStock.quantityHint' | translate }}</mat-hint>
+              <mat-error>{{ 'dialogs.adjustStock.quantityError' | translate }}</mat-error>
+            </mat-form-field>
+          </div>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'dialogs.adjustStock.reason' | translate }}</mat-label>
+          <input matInput formControlName="reason" [placeholder]="'dialogs.adjustStock.reasonPlaceholder' | translate" />
+          <mat-error>{{ 'dialogs.adjustStock.reasonRequired' | translate }}</mat-error>
+        </mat-form-field>
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-button type="button" [mat-dialog-close]="false">{{ 'dialogs.adjustStock.cancel' | translate }}</button>
+        @if (isInbound()) {
+          <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">{{ 'dialogs.adjustStock.receiveStock' | translate }}</button>
+        } @else {
+          <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">{{ 'dialogs.adjustStock.adjust' | translate }}</button>
+        }
+      </mat-dialog-actions>
+    </form>

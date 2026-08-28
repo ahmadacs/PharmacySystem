@@ -1,0 +1,9 @@
+
+    <div class="empty-state">
+      <mat-icon class="empty-state__icon" [fontIcon]="icon()"></mat-icon>
+      <p class="empty-state__message">{{ message() }}</p>
+      @if (hint()) {
+        <p class="empty-state__hint">{{ hint() }}</p>
+      }
+    </div>
+  

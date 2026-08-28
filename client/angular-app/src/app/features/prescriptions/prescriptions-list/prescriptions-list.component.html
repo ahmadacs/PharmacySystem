@@ -1,0 +1,93 @@
+<app-page-header [title]="'prescriptions.title' | translate" [subtitle]="'prescriptions.subtitle' | translate">
+  @if (auth.role() === roles.Doctor) {
+    <button actions mat-flat-button color="primary" *appHasPermission="permissions.PrescriptionsCreate" (click)="openCreate()">
+      <mat-icon>add</mat-icon>
+      {{ 'prescriptions.newPrescription' | translate }}
+    </button>
+  }
+</app-page-header>
+
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'prescriptions.filters.search' | translate }}</mat-label>
+    <input matInput [formControl]="searchControl" [placeholder]="'prescriptions.filters.searchPlaceholder' | translate" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'prescriptions.filters.status' | translate }}</mat-label>
+    <mat-select [value]="status()" (selectionChange)="status.set($event.value ?? null); page.set(1)">
+      <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ status | enumTranslate:'PrescriptionStatus' }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+@if (prescriptions.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="table-card mat-elevation-z2">
+  <table mat-table [dataSource]="prescriptions.value()!.items" matSort (matSortChange)="onSortChange($event)">
+    <ng-container matColumnDef="patientName">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'prescriptions.tables.patient' | translate }}</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="cell-strong">{{ row.patientName }}</span>
+        <span class="cell-sub">{{ row.patientAge }} y/o · DOB {{ row.patientDateOfBirth }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="doctorName">
+      <th mat-header-cell *matHeaderCellDef>{{ 'prescriptions.tables.doctor' | translate }}</th>
+      <td mat-cell *matCellDef="let row">{{ row.doctorName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="issuedDate">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'prescriptions.tables.issued' | translate }}</th>
+      <td mat-cell *matCellDef="let row">{{ row.issuedDate }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'prescriptions.tables.status' | translate }}</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="badge" [ngClass]="statusClass(row.status)">{{ row.status | enumTranslate:'PrescriptionStatus' }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="itemCount">
+      <th mat-header-cell *matHeaderCellDef>{{ 'prescriptions.tables.items' | translate }}</th>
+      <td mat-cell *matCellDef="let row">{{ row.itemCount }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="col-actions">{{ 'prescriptions.tables.actions' | translate }}</th>
+      <td mat-cell *matCellDef="let row" class="col-actions">
+        <button
+          mat-icon-button
+          [matTooltip]="'prescriptions.tooltips.dispense' | translate"
+          *appHasPermission="permissions.DispensingCreate"
+          [disabled]="row.status !== 'Pending' && row.status !== 'PartiallyDispensed'"
+          (click)="$event.stopPropagation(); openDispense(row)"
+        >
+          <mat-icon>local_pharmacy</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns()" class="clickable-row" (click)="openDetails(row)"></tr>
+  </table>
+
+  @if (!prescriptions.isLoading() && prescriptions.value()!.items.length === 0) {
+    <app-empty-state icon="description" [message]="'prescriptions.empty.message' | translate" [hint]="'prescriptions.empty.hint' | translate" />
+  }
+
+  <mat-paginator
+    [length]="totalCount()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 25, 50]"
+    [pageIndex]="page() - 1"
+    (page)="onPage($event)"
+  />
+</div>

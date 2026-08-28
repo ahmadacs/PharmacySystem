@@ -1,0 +1,73 @@
+<h2 mat-dialog-title>{{ medicine() ? displayName(medicine()!) : data.name }}</h2>
+
+<mat-dialog-content class="details">
+  @if (medicine() === null) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (medicine(); as details) {
+    <div class="meta">
+      <span><strong>{{ 'dialogs.medicineDetailInventory.generic' | translate }}:</strong> {{ genericDisplay(details) }}</span>
+      <span><strong>{{ 'dialogs.medicineDetailInventory.category' | translate }}:</strong> {{ details.category | enumTranslate:'CategoryEnum' }}</span>
+      <span><strong>{{ 'dialogs.medicineDetailInventory.reorderLevel' | translate }}:</strong> {{ details.reorderLevel }}</span>
+      <span><strong>{{ 'dialogs.medicineDetailInventory.totalStock' | translate }}:</strong> {{ details.availableQuantity }}</span>
+    </div>
+
+    @for (variant of details.variants; track variant.id) {
+      <div class="variant-block">
+        <div class="variant-header">
+          <span class="cell-strong">{{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength ?? '' }} {{ variant.unit | enumTranslate:'MedicineUnit' }}</span>
+          <span class="variant-meta">
+            {{ 'dialogs.medicineDetailInventory.unit' | translate }}: {{ variant.unit | enumTranslate:'MedicineUnit' }} ·
+            {{ 'dialogs.medicineDetailInventory.pkg' | translate }}: {{ variant.packageUnitName }} of {{ variant.unitsPerPackage }} {{ variant.baseUnitName }}s ·
+            {{ 'dialogs.medicineDetailInventory.total' | translate }}: {{ variant.availableQuantity }} {{ variant.baseUnitName }}s
+          </span>
+        </div>
+
+        @if (variant.batches.length > 0) {
+          <table class="nested-table">
+            <thead>
+              <tr>
+                <th>{{ 'dialogs.medicineDetailInventory.batch' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.available' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.expiry' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.received' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.unitCost' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.supplier' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.status' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (batch of variant.batches; track batch.id) {
+                <tr>
+                  <td><span class="cell-strong">{{ batch.batchNumber }}</span></td>
+                  <td>{{ batch.quantityAvailable }}</td>
+                  <td>
+                    <span [class.expired]="batch.isExpired">{{ batch.expiryDate }}</span>
+                  </td>
+                  <td>{{ batch.receivedDate | riyadhDate: 'mediumDate' }}</td>
+                  <td>{{ batch.unitCost | currency }}</td>
+                  <td>{{ batch.supplierName || '-' }}</td>
+                  <td>
+                    <span class="chip"
+                      [class.chip-active]="batch.batchStatus === 'Active'"
+                      [class.chip-expired]="batch.batchStatus === 'Expired'"
+                      [class.chip-depleted]="batch.batchStatus === 'Depleted'">
+                      {{ batch.batchStatus | enumTranslate:'BatchStatus' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="hint">{{ 'dialogs.medicineDetailInventory.noBatches' | translate }}</p>
+        }
+      </div>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="true">{{ 'dialogs.medicineDetailInventory.close' | translate }}</button>
+</mat-dialog-actions>

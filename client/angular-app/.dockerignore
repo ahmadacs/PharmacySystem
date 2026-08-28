@@ -1,0 +1,16 @@
+**/client/angular-app/.dockerignore
+**/client/angular-app/bin
+**/client/angular-app/dist
+**/client/angular-app/node_modules
+**/client/angular-app/.git
+**/client/angular-app/.github
+**/client/angular-app/*.log
+**/client/angular-app/.htaccess
+**/client/angular-app/package-lock.json
+**/client/angular-app/yarn.lock
+**/client/angular-app/coverage
+**/client/angular-app/.angular
+**/client/angular-app/ng*
+**/client/angular-app/Dockerfile
+**/client/angular-app/.dockerignore
+**/client/angular-app/README.md

@@ -1,0 +1,58 @@
+
+    <h2 mat-dialog-title>{{ 'dialogs.dispense.title' | translate }}</h2>
+
+    @if (error()) {
+      <mat-dialog-content class="error-state">
+        <p class="error-title">{{ 'dialogs.dispense.errorTitle' | translate }}</p>
+        <p class="error-hint">{{ 'dialogs.dispense.errorHint' | translate }}</p>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button [mat-dialog-close]="false">{{ 'dialogs.dispense.close' | translate }}</button>
+        <button mat-flat-button color="primary" (click)="load()">{{ 'dialogs.dispense.retry' | translate }}</button>
+      </mat-dialog-actions>
+    }
+
+    @if (prescription() === null && !error()) {
+      <mat-dialog-content><mat-progress-bar mode="indeterminate" /></mat-dialog-content>
+    }
+
+    @if (prescription(); as p) {
+      <mat-dialog-content class="dispense">
+        <p class="patient">{{ p.patientName }} · {{ p.patientAge }} {{ 'dialogs.dispense.patientAge' | translate }}</p>
+        <p class="meta">{{ p.status }} · ref #{{ p.id.slice(0, 8) }}</p>
+
+        @if (p.items.length > 0) {
+          <ul class="items">
+            @for (item of p.items; track item.id) {
+              <li>
+                <span class="item-main">
+                  <span class="item-name">{{ item.medicineName }}</span>
+                  <span class="item-variant">{{ item.variantName }}</span>
+                </span>
+                <span class="item-qty">
+                  {{ 'dialogs.dispense.remaining' | translate }} <strong>{{ item.remainingQuantity }}</strong>
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty">{{ 'dialogs.dispense.emptyItems' | translate }}</p>
+        }
+
+        <mat-form-field appearance="outline" class="notes">
+          <mat-label>{{ 'dialogs.dispense.notes' | translate }}</mat-label>
+          <textarea matInput [formControl]="notes" rows="2" [placeholder]="'dialogs.dispense.notesPlaceholder' | translate"></textarea>
+        </mat-form-field>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button [mat-dialog-close]="false">{{ 'dialogs.dispense.cancel' | translate }}</button>
+        <button mat-flat-button color="primary" [disabled]="submitting()" (click)="dispense(p.id)">
+          @if (submitting()) {
+            {{ 'dialogs.dispense.dispensing' | translate }}
+          } @else {
+            {{ 'dialogs.dispense.dispense' | translate }}
+          }
+        </button>
+      </mat-dialog-actions>
+    }
+  

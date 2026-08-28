@@ -1,0 +1,10 @@
+.auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; box-sizing: border-box; position: relative; }
+.auth-page__progress { position: absolute; top: 0; left: 0; right: 0; }
+.auth-page__card { width: 100%; max-width: 480px; padding: .5rem; }
+.auth-page__header { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1rem 0 .5rem; }
+.auth-page__logo { font-size: 3rem; width: 3rem; height: 3rem; margin-bottom: .5rem; color: var(--mat-sys-primary); }
+.auth-page__row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.auth-page__field, .auth-page__row mat-form-field { width: 100%; margin-top: .5rem; }
+.auth-page__submit { width: 100%; margin-top: 1rem; }
+.auth-page__footer { display: flex; justify-content: center; padding: 1rem 0 .5rem; }
+@media (max-width: 520px) { .auth-page__row { grid-template-columns: 1fr; gap: 0; } }

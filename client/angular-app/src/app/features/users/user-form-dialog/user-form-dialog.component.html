@@ -1,0 +1,76 @@
+
+    <h2 mat-dialog-title>{{ isEdit ? ('dialogs.userForm.titleEdit' | translate) : ('dialogs.userForm.titleNew' | translate) }}</h2>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-dialog-content class="dialog-body">
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.userForm.firstName' | translate }}</mat-label>
+            <input matInput formControlName="firstName" />
+            <mat-error>{{ 'dialogs.userForm.firstNameRequired' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.userForm.lastName' | translate }}</mat-label>
+            <input matInput formControlName="lastName" />
+            <mat-error>{{ 'dialogs.userForm.lastNameRequired' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'dialogs.userForm.email' | translate }}</mat-label>
+          <input matInput formControlName="email" type="email" />
+          <mat-error>{{ 'dialogs.userForm.emailInvalid' | translate }}</mat-error>
+        </mat-form-field>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.userForm.password' | translate }}</mat-label>
+            <input matInput formControlName="password" type="password" />
+            <mat-hint>{{ 'dialogs.userForm.passwordHint' | translate }}</mat-hint>
+            @if (form.controls.password.hasError('weak')) {
+              <mat-error>{{ 'dialogs.userForm.passwordWeak' | translate }}</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.userForm.confirmPassword' | translate }}</mat-label>
+            <input matInput formControlName="confirmPassword" type="password" />
+            @if (form.controls.confirmPassword.hasError('mismatch')) {
+              <mat-error>{{ 'dialogs.userForm.passwordsMismatch' | translate }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'dialogs.userForm.role' | translate }}</mat-label>
+          <mat-select formControlName="role">
+            @for (role of roles; track role) {
+              <mat-option [value]="role">{{ role | enumTranslate:'UserRole' }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>{{ 'dialogs.userForm.roleRequired' | translate }}</mat-error>
+        </mat-form-field>
+
+        @if (form.controls.role.value === 'Doctor') {
+          <div class="row doctor-fields">
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.userForm.licenseNumber' | translate }}</mat-label>
+              <input matInput formControlName="licenseNumber" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.userForm.specialization' | translate }}</mat-label>
+              <input matInput formControlName="specialization" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="grow">
+              <mat-label>{{ 'dialogs.userForm.phoneNumber' | translate }}</mat-label>
+              <input matInput formControlName="phoneNumber" />
+            </mat-form-field>
+          </div>
+        }
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-button type="button" [mat-dialog-close]="false">{{ 'dialogs.userForm.cancel' | translate }}</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">{{ isEdit ? ('dialogs.userForm.save' | translate) : ('dialogs.userForm.create' | translate) }}</button>
+      </mat-dialog-actions>
+    </form>
+  

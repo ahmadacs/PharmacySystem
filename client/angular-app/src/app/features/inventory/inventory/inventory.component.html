@@ -1,0 +1,408 @@
+<app-page-header [title]="'inventory.title' | translate" [subtitle]="'inventory.subtitle' | translate">
+  <button actions mat-flat-button color="primary" *appHasPermission="permissions.InventoryAdjust" (click)="openAdjust()">
+    <mat-icon>tune</mat-icon>
+    {{ 'common.edit' | translate }}
+  </button>
+</app-page-header>
+
+<mat-tab-group animationDuration="0ms">
+  <mat-tab [label]="'inventory.tabs.medicines' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.summarySearch' | translate }}</mat-label>
+        <input matInput [formControl]="summarySearchControl" [placeholder]="'inventory.filters.summarySearch' | translate" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.stockStatus' | translate }}</mat-label>
+        <mat-select [value]="stockStatus()" (selectionChange)="stockStatus.set($event.value); summaryPage.set(1)">
+          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+          @for (status of stockFilters; track status) {
+            <mat-option [value]="status">{{ status | enumTranslate:'StockStatus' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (summary.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-card mat-elevation-z2">
+      <table mat-table [dataSource]="summary.value().items" matSort (matSortChange)="onSummarySort($event)">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.medicine' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="cell-strong">{{ displayMedicineName(row) }}</span>
+            <span class="cell-sub">{{ displayGenericName(row) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="stockStatus">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.stockStatus' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="chip" [class.chip-instock]="row.stockStatus === 'InStock'"
+              [class.chip-low]="row.stockStatus === 'LowStock'"
+              [class.chip-out]="row.stockStatus === 'OutOfStock'">
+              {{ row.stockStatus | enumTranslate:'StockStatus' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="totalQuantity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="totalQuantity">{{ 'inventory.tables.totalQuantity' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class.stock-low]="row.stockStatus === 'LowStock' || row.stockStatus === 'OutOfStock'">{{ row.totalQuantity }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="reorderLevel">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="reorderLevel">{{ 'inventory.tables.reorderLevel' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.reorderLevel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="variantCount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="variantCount">{{ 'inventory.tables.variantCount' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.variantCount }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="activeBatchCount">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.activeBatchCount' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.activeBatchCount }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="nearestExpiryDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="nearestExpiry">{{ 'inventory.tables.nearestExpiry' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.nearestExpiryDate || '-' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="summaryColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: summaryColumns;"
+          class="clickable-row"
+          (click)="openDetail(row)"></tr>
+      </table>
+
+      @if (!summary.isLoading() && summary.value().items.length === 0) {
+        <app-empty-state icon="inventory_2" [message]="'inventory.empty.medicines' | translate" [hint]="'inventory.empty.hint' | translate" />
+      }
+
+      <mat-paginator
+        [length]="summaryCount()"
+        [pageSize]="summaryPageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        [pageIndex]="summaryPage() - 1"
+        (page)="onSummaryPage($event)"
+      />
+    </div>
+  </mat-tab>
+
+  <mat-tab [label]="'inventory.tabs.batches' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.batchSearch' | translate }}</mat-label>
+        <input matInput [formControl]="batchSearchControl" [placeholder]="'inventory.filters.batchSearch' | translate" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.expiryStatus' | translate }}</mat-label>
+        <mat-select [value]="expiryStatus()" (selectionChange)="expiryStatus.set($event.value); batchPage.set(1)">
+          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+          @for (status of expiryStatuses; track status) {
+            <mat-option [value]="status">{{ status | enumTranslate:'BatchExpiryStatus' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (batches.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-card mat-elevation-z2">
+      <table mat-table [dataSource]="batches.value().items" matSort (matSortChange)="onBatchSort($event)">
+        <ng-container matColumnDef="medicineName">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicineName' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="cell-strong">{{ displayMedicineBatchName(row) }}</span>
+            <span class="cell-sub">{{ row.variantName }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="batchNumber">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="batch">{{ 'inventory.tables.batch' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="cell-strong">{{ row.batchNumber }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="expiryDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.expiry' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="expiry" [class.expired]="row.isExpired" [class.expiring]="!row.isExpired && (row.daysToExpiry ?? 999) <= 30">
+              {{ row.expiryDate }}
+            </span>
+            <span class="cell-sub">{{ row.isExpired ? ('inventory.chips.expired' | translate) : (row.daysToExpiry ?? '-') + ' ' + ('inventory.days' | translate) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="quantityAvailable">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="quantity">{{ 'inventory.tables.quantityAvailable' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.quantityAvailable }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="dispensed">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.dispensedQuantity' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.dispensedQuantity }}
+            <span class="cell-sub">{{ 'inventory.dispensed' | translate }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="supplierName">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.supplierName' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.supplierName || '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.status' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="chip"
+              [class.chip-active]="row.batchStatus === 'Active'"
+              [class.chip-expired]="row.batchStatus === 'Expired'"
+              [class.chip-depleted]="row.batchStatus === 'Depleted'">
+              {{ row.batchStatus | enumTranslate:'BatchStatus' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="batchColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: batchColumns"></tr>
+      </table>
+
+      @if (!batches.isLoading() && batches.value().items.length === 0) {
+        <app-empty-state icon="inventory_2" [message]="'inventory.empty.batches' | translate" [hint]="'inventory.empty.hint' | translate" />
+      }
+
+      <mat-paginator
+        [length]="batchCount()"
+        [pageSize]="batchPageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        [pageIndex]="batchPage() - 1"
+        (page)="onBatchPage($event)"
+      />
+    </div>
+  </mat-tab>
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      {{ 'inventory.tabs.expiryAlerts' | translate }}
+      @if (alertBadgeCount() > 0) {
+        <span class="tab-badge">{{ alertBadgeCount() }}</span>
+      }
+    </ng-template>
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.alertSearch' | translate }}</mat-label>
+        <input matInput [formControl]="alertSearchControl" [placeholder]="'inventory.filters.alertSearch' | translate" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.alertStatus' | translate }}</mat-label>
+        <mat-select [value]="status()" (selectionChange)="status.set($event.value); alertPage.set(1)">
+          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+          @for (level of statusFilters; track level) {
+            <mat-option [value]="level">{{ level | enumTranslate:'ExpiryStatus' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (alerts.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-card mat-elevation-z2">
+      <table mat-table [dataSource]="alerts.value().items" matSort (matSortChange)="onAlertSort($event)">
+        <ng-container matColumnDef="medicine">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicineName' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="cell-strong">{{ displayMedicineBatchName(row) }}</span>
+            <span class="cell-sub">{{ row.variantName }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="batch">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="batchNumber">{{ 'inventory.tables.batch' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.batchNumber }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="expiryDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.expiry' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.expiryDate }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="daysToExpiry">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="daysToExpiry">{{ 'inventory.tables.daysToExpiry' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class.expired]="row.daysRemaining < 0">{{ row.daysRemaining }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="remainingQuantity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="remaining">{{ 'inventory.tables.remainingQuantity' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.remainingQuantity }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.status' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="chip"
+              [class.chip-critical]="row.status === 'Critical'"
+              [class.chip-warning]="row.status === 'Warning'"
+              [class.chip-safe]="row.status === 'Safe'"
+              [class.chip-expired]="row.status === 'Expired'">
+              {{ row.status | enumTranslate:'ExpiryStatus' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="alertColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: alertColumns"></tr>
+      </table>
+
+      @if (!alerts.isLoading() && alerts.value().items.length === 0) {
+        <app-empty-state icon="event" [message]="'inventory.empty.expiryAlerts' | translate" [hint]="'inventory.empty.allSafe' | translate" />
+      }
+
+      <mat-paginator
+        [length]="alertCount()"
+        [pageSize]="alertPageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        [pageIndex]="alertPage() - 1"
+        (page)="onAlertPage($event)"
+      />
+    </div>
+  </mat-tab>
+
+  <mat-tab [label]="'inventory.tabs.adjustments' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.adjSearch' | translate }}</mat-label>
+        <input matInput [formControl]="adjSearchControl" [placeholder]="'inventory.filters.adjSearch' | translate" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.adjType' | translate }}</mat-label>
+        <mat-select [value]="adjType()" (selectionChange)="adjType.set($event.value ?? null); adjPage.set(1)">
+          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+          @for (type of adjustmentTypes; track type) {
+            <mat-option [value]="type">{{ type | enumTranslate:'InventoryAdjustmentType' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (adjustments.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-card mat-elevation-z2">
+      <table mat-table [dataSource]="adjustments.value().items" matSort (matSortChange)="onAdjSort($event)">
+        <ng-container matColumnDef="adjustedAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.adjustedAt' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.adjustedAt | riyadhDate: 'medium' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="item">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.item' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="cell-strong">{{ displayMedicineBatchName(row) }}</span>
+            <span class="cell-sub">{{ row.variantName }} · {{ row.batchNumber }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.type' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.type | enumTranslate:'InventoryAdjustmentType' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="quantityChanged">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.quantityChanged' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class.delta-neg]="row.quantityChanged < 0" [class.delta-pos]="row.quantityChanged > 0">
+              {{ row.quantityChanged > 0 ? '+' : '' }}{{ row.quantityChanged }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="beforeAfter">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.beforeAfter' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.quantityBefore }} → {{ row.quantityAfter }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.reason' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.reason }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="adjustedBy">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.adjustedBy' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.adjustedByName || 'System' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="adjColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: adjColumns"></tr>
+      </table>
+
+      @if (!adjustments.isLoading() && adjustments.value().items.length === 0) {
+        <app-empty-state icon="tune" [message]="'inventory.empty.adjustments' | translate" />
+      }
+
+      <mat-paginator
+        [length]="adjCount()"
+        [pageSize]="adjPageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        [pageIndex]="adjPage() - 1"
+        (page)="onAdjPage($event)"
+      />
+    </div>
+  </mat-tab>
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      {{ 'inventory.tabs.lowStock' | translate }}
+      @if (lowStockBadgeCount() > 0) {
+        <span class="tab-badge">{{ lowStockBadgeCount() }}</span>
+      }
+    </ng-template>
+    @if (lowStock.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-card mat-elevation-z2">
+      <table mat-table [dataSource]="lowStock.value()">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.name' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ displayMedicineName(row) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="availableQuantity">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.availableQuantity' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="stock-low">{{ row.availableQuantity }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="reorderLevel">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.reorder' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.reorderLevel }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="lowStockColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: lowStockColumns"></tr>
+      </table>
+
+      @if (!lowStock.isLoading() && lowStock.value().length === 0) {
+        <app-empty-state icon="check_circle" [message]="'inventory.empty.lowStock' | translate" [hint]="'inventory.empty.aboveReorder' | translate" />
+      }
+    </div>
+  </mat-tab>
+</mat-tab-group>

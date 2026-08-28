@@ -1,0 +1,26 @@
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.table-card {
+  border-radius: 8px;
+  overflow-x: auto;
+  background: var(--mat-sys-surface-container-low);
+}
+
+table {
+  width: 100%;
+}
+
+.cell-strong {
+  display: block;
+  font-weight: 500;
+}
+
+.cell-multiline {
+  max-width: 320px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

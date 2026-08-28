@@ -1,0 +1,61 @@
+<div class="login">
+  @if (submitting()) {
+  <mat-progress-bar class="login__progress" mode="indeterminate" />
+}
+  <mat-card class="login__card">
+    <mat-card-header class="login__header">
+      <mat-icon class="login__logo" fontIcon="local_pharmacy" />
+      <mat-card-title>Pharmacy System</mat-card-title>
+      <mat-card-subtitle>Log in to continue</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <mat-form-field appearance="outline" class="login__field">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email" autocomplete="username" />
+          @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+            <mat-error>Email is required.</mat-error>
+          }
+          @if (form.controls.email.touched && form.controls.email.hasError('email')) {
+            <mat-error>Enter a valid email address.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="login__field">
+          <mat-label>Password</mat-label>
+          <input matInput formControlName="password" type="password" autocomplete="current-password" />
+          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+            <mat-error>Password is required.</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          class="login__submit"
+          type="submit"
+          [disabled]="submitting()"
+        >
+          @if (submitting()) {
+            <mat-icon fontIcon="progress_activity" class="login__spinner" />
+          }
+Log in
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-footer class="login__footer">
+      <div class="login__links">
+        <a routerLink="/forgot-password">Forgot password?</a>
+        <a routerLink="/register">Create an account</a>
+      </div>
+      <p class="login__hint">Seeded demo accounts — tap to autofill</p>
+      <div class="login__accounts">
+        <button mat-button (click)="fill('admin@pharmacy.com', 'Admin@1234')">Admin</button>
+        <button mat-button (click)="fill('pharmacist@pharmacy.com', 'Pharma@1234')">Pharmacist</button>
+        <button mat-button (click)="fill('doctor@pharmacy.com', 'Doctor@1234')">Doctor</button>
+      </div>
+    </mat-card-footer>
+  </mat-card>
+</div>

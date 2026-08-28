@@ -1,0 +1,107 @@
+<app-page-header [title]="'dashboard.title' | translate" [subtitle]="'dashboard.subtitle' | translate"></app-page-header>
+
+<div class="stats">
+  <mat-card class="stat">
+    <mat-card-header>
+      <mat-icon class="stat__icon" fontIcon="medication" />
+      <mat-card-title>{{ medicineCount() }}</mat-card-title>
+      <mat-card-subtitle>{{ 'dashboard.stats.medicines' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+
+  @if (canViewInventory()) {
+    <mat-card class="stat stat--warn">
+      <mat-card-header>
+        <mat-icon class="stat__icon" fontIcon="warning" />
+        <mat-card-title>{{ lowStockCount() }}</mat-card-title>
+        <mat-card-subtitle>{{ 'dashboard.stats.lowStock' | translate }}</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
+
+    <mat-card class="stat stat--accent">
+      <mat-card-header>
+        <mat-icon class="stat__icon" fontIcon="schedule" />
+        <mat-card-title>{{ expiringCount() }}</mat-card-title>
+        <mat-card-subtitle>{{ 'dashboard.stats.expiringSoon' | translate }}</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
+  }
+
+  <mat-card class="stat stat--primary">
+    <mat-card-header>
+      <mat-icon class="stat__icon" fontIcon="description" />
+      <mat-card-title>{{ pendingCount() }}</mat-card-title>
+      <mat-card-subtitle>{{ 'dashboard.stats.pendingPrescriptions' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+</div>
+
+<div class="panels">
+  @if (canViewInventory()) {
+    <mat-card class="panel">
+      <mat-card-header>
+        <mat-card-title>{{ 'dashboard.panels.lowStockItems' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (lowStock.isLoading()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+        @if (lowStock.value()!.length > 0) {
+          <table mat-table [dataSource]="lowStock.value()!">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.patient' | translate }}</th>
+              <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+            </ng-container>
+            <ng-container matColumnDef="availableQuantity">
+              <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.availableQuantity' | translate }}</th>
+              <td mat-cell *matCellDef="let row" class="stock-low">{{ row.availableQuantity }}</td>
+            </ng-container>
+            <ng-container matColumnDef="reorderLevel">
+              <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.reorder' | translate }}</th>
+              <td mat-cell *matCellDef="let row">{{ row.reorderLevel }}</td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="lowStockColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: lowStockColumns"></tr>
+          </table>
+        } @else if (!lowStock.isLoading()) {
+          <app-empty-state icon="check_circle" [message]="'dashboard.panels.nothingLow' | translate" [hint]="'dashboard.panels.allAboveReorder' | translate" />
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <mat-card class="panel">
+    <mat-card-header>
+      <mat-card-title>{{ 'dashboard.panels.latestPending' | translate }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (pendingPrescriptions.isLoading()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+      @if (pendingPrescriptions.value()!.items.length > 0) {
+        <table mat-table [dataSource]="pendingPrescriptions.value()!.items">
+          <ng-container matColumnDef="patientName">
+            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.patient' | translate }}</th>
+            <td mat-cell *matCellDef="let row">{{ row.patientName }}</td>
+          </ng-container>
+          <ng-container matColumnDef="issuedDate">
+            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.issued' | translate }}</th>
+            <td mat-cell *matCellDef="let row">{{ row.issuedDate }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.status' | translate }}</th>
+            <td mat-cell *matCellDef="let row">{{ row.status | enumTranslate:'PrescriptionStatus' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="itemCount">
+            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.items' | translate }}</th>
+            <td mat-cell *matCellDef="let row">{{ row.itemCount }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="pendingColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: pendingColumns"></tr>
+        </table>
+      } @else if (!pendingPrescriptions.isLoading()) {
+        <app-empty-state icon="description" [message]="'dashboard.empty.noPending' | translate" />
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

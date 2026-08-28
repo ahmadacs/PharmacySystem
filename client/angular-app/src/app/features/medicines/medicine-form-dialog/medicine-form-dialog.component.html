@@ -1,0 +1,120 @@
+
+    <h2 mat-dialog-title>{{ isEdit ? ('dialogs.medicineForm.titleEdit' | translate) : ('dialogs.medicineForm.titleNew' | translate) }}</h2>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-dialog-content class="dialog-body">
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.medicineForm.brandName' | translate }}</mat-label>
+            <input matInput formControlName="name" [placeholder]="'dialogs.medicineForm.brandNamePlaceholder' | translate" />
+            <mat-error>{{ 'dialogs.medicineForm.brandNameRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.medicineForm.genericName' | translate }}</mat-label>
+            <input matInput formControlName="genericName" [placeholder]="'dialogs.medicineForm.genericNamePlaceholder' | translate" />
+            <mat-error>{{ 'dialogs.medicineForm.genericNameRequired' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.medicineForm.category' | translate }}</mat-label>
+            <mat-select formControlName="category" [compareWith]="compareCategory">
+              @for (category of categories; track category) {
+                <mat-option [value]="category">{{ category | enumTranslate:'CategoryEnum' }}</mat-option>
+              }
+            </mat-select>
+            <mat-error>{{ 'dialogs.medicineForm.categoryRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.medicineForm.reorderLevel' | translate }}</mat-label>
+            <input matInput formControlName="reorderLevel" type="number" min="0" />
+            <mat-error>{{ 'dialogs.medicineForm.reorderLevelError' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="row controls">
+          <mat-checkbox formControlName="isControlled">{{ 'dialogs.medicineForm.controlledSubstance' | translate }}</mat-checkbox>
+          @if (isEdit) {
+            <mat-checkbox formControlName="isActive">{{ 'dialogs.medicineForm.active' | translate }}</mat-checkbox>
+          }
+        </div>
+
+        @if (!isEdit) {
+          <div formArrayName="variants" class="variants">
+            <h3>{{ 'dialogs.medicineForm.variants' | translate }}</h3>
+            @for (variant of variants.controls; track variant; let i = $index) {
+              <div class="variant-block" [formGroupName]="i">
+                <div class="variant-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.variantForm' | translate }}</mat-label>
+                    <mat-select formControlName="form">
+                      @for (form of medicineForms; track form) {
+                        <mat-option [value]="form">{{ form | enumTranslate:'MedicineForm' }}</mat-option>
+                      }
+                    </mat-select>
+                    <mat-error>{{ 'dialogs.medicineForm.variantFormRequired' | translate }}</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.variantUnit' | translate }}</mat-label>
+                    <mat-select formControlName="unit" [compareWith]="compareUnit">
+                      @for (unit of medicineUnits; track unit) {
+                        <mat-option [value]="unit">{{ unit | enumTranslate:'MedicineUnit' }}</mat-option>
+                      }
+                    </mat-select>
+                    <mat-error>{{ 'dialogs.medicineForm.variantUnitRequired' | translate }}</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.variantStrength' | translate }}</mat-label>
+                    <input matInput formControlName="strength" type="number" min="0" step="0.01" [placeholder]="'dialogs.medicineForm.variantStrengthPlaceholder' | translate" />
+                  </mat-form-field>
+                  @if (variants.length > 1) {
+                    <button mat-icon-button type="button" (click)="removeVariant(i)" [aria-label]="'dialogs.medicineForm.removeVariant' | translate">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
+                </div>
+                <div class="variant-row uom-row">
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.baseUnit' | translate }}</mat-label>
+                    <input matInput formControlName="baseUnitName" [placeholder]="'dialogs.medicineForm.baseUnitPlaceholder' | translate" />
+                    <mat-hint>{{ 'dialogs.medicineForm.baseUnitHint' | translate }}</mat-hint>
+                    <mat-error>{{ 'dialogs.medicineForm.baseUnitRequired' | translate }}</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.packageUnit' | translate }}</mat-label>
+                    <input matInput formControlName="packageUnitName" [placeholder]="'dialogs.medicineForm.packageUnitPlaceholder' | translate" />
+                    <mat-hint>{{ 'dialogs.medicineForm.packageUnitHint' | translate }}</mat-hint>
+                    <mat-error>{{ 'dialogs.medicineForm.packageUnitRequired' | translate }}</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.unitsPerPackage' | translate }}</mat-label>
+                    <input matInput formControlName="unitsPerPackage" type="number" min="1" [placeholder]="'dialogs.medicineForm.unitsPerPackagePlaceholder' | translate" />
+                    <mat-hint>{{ 'dialogs.medicineForm.unitsPerPackageHint' | translate }}</mat-hint>
+                    <mat-error>{{ 'dialogs.medicineForm.unitsPerPackageError' | translate }}</mat-error>
+                  </mat-form-field>
+                  <mat-checkbox formControlName="isDivisible">{{ 'dialogs.medicineForm.divisible' | translate }}</mat-checkbox>
+                </div>
+              </div>
+            }
+            <button mat-button type="button" (click)="addVariant()">
+              <mat-icon>add</mat-icon>
+              {{ 'dialogs.medicineForm.addVariant' | translate }}
+            </button>
+            @if (variants.invalid && variants.touched) {
+              <p class="form-error">{{ 'dialogs.medicineForm.variantRequired' | translate }}</p>
+            }
+          </div>
+        }
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-button type="button" [mat-dialog-close]="false">{{ 'dialogs.medicineForm.cancel' | translate }}</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+          {{ isEdit ? ('dialogs.medicineForm.save' | translate) : ('dialogs.medicineForm.create' | translate) }}
+        </button>
+      </mat-dialog-actions>
+    </form>
+  

@@ -1,0 +1,83 @@
+
+    @if (medicine() === null) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    @if (medicine(); as details) {
+      <h2 mat-dialog-title>{{ displayName(details) }}</h2>
+      <mat-dialog-content class="details">
+        <div class="details__meta">
+          <span><strong>{{ 'dialogs.medicineDetails.generic' | translate }}:</strong> {{ genericDisplay(details) }}</span>
+          <span><strong>{{ 'dialogs.medicineDetails.category' | translate }}:</strong> {{ details.category | enumTranslate:'CategoryEnum' }}</span>
+          <span><strong>{{ 'dialogs.medicineDetails.reorderLevel' | translate }}:</strong> {{ details.reorderLevel }}</span>
+          <span><strong>{{ 'dialogs.medicineDetails.totalStock' | translate }}:</strong> {{ details.availableQuantity }}</span>
+          <span class="badge" [class.badge-danger]="details.isControlled">
+            {{ details.isControlled ? ('dialogs.medicineDetails.controlled' | translate) : ('dialogs.medicineDetails.notControlled' | translate) }}
+          </span>
+          <span class="badge" [class.badge-muted]="!details.isActive">
+            {{ details.isActive ? ('dialogs.medicineDetails.active' | translate) : ('dialogs.medicineDetails.inactive' | translate) }}
+          </span>
+        </div>
+
+        <mat-accordion class="variants" [multi]="true">
+          @for (variant of details.variants; track variant.id; let first = $first) {
+            <mat-expansion-panel [expanded]="first">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  {{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength ?? '' }} {{ variant.unit | enumTranslate:'MedicineUnit' }}
+                </mat-panel-title>
+                <mat-panel-description>
+                  {{ variant.form | enumTranslate:'MedicineForm' }} · {{ variant.unit | enumTranslate:'MedicineUnit' }}
+                  <span class="badge">Pkg: {{ variant.packageUnitName }} of {{ variant.unitsPerPackage }} {{ variant.baseUnitName }}s</span>
+                  <span class="badge">{{ 'dialogs.medicineDetails.available' | translate }}: {{ variant.availableQuantity }} {{ variant.baseUnitName }}s</span>
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+
+              @if (variant.batches.length > 0) {
+                <table mat-table [dataSource]="variant.batches">
+                  <ng-container matColumnDef="batchNumber">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'dialogs.medicineDetails.batch' | translate }}</th>
+                    <td mat-cell *matCellDef="let b">
+                      <span class="cell-strong">{{ b.batchNumber }}</span>
+                      <span class="cell-sub">{{ b.quantityAvailable }} {{ 'dialogs.medicineDetails.available' | translate }}</span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="expiry">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'dialogs.medicineDetails.expiry' | translate }}</th>
+                    <td mat-cell *matCellDef="let b">
+                      <span [class.expired]="b.isExpired" [class.expiring]="!b.isExpired && (b.daysToExpiry ?? 999) <= 30">
+                        {{ b.expiryDate }}
+                      </span>
+                      <span class="cell-sub">
+                        {{ b.isExpired ? ('dialogs.medicineDetails.expired' | translate) : ((b.daysToExpiry ?? '-') + ' ' + ('dialogs.medicineDetails.days' | translate)) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="supplier">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'dialogs.medicineDetails.supplier' | translate }}</th>
+                    <td mat-cell *matCellDef="let b">{{ b.supplierName || '-' }}</td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="batchColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: batchColumns"></tr>
+                </table>
+              } @else {
+                <p class="hint">{{ 'dialogs.medicineDetails.noBatches' | translate }}</p>
+              }
+            </mat-expansion-panel>
+          }
+        </mat-accordion>
+
+        <div class="files-section">
+          <h3>{{ 'dialogs.medicineDetails.attachments' | translate }}</h3>
+          <app-file-upload (fileSelected)="onFileSelected($event)"></app-file-upload>
+          @for (f of files(); track f.id) {
+            <div class="file-item"><a [href]="fileService.downloadUrl(f.id)" target="_blank">{{ f.fileName }}</a> ({{ f.contentType }})</div>
+          }
+        </div>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button [mat-dialog-close]="true">{{ 'dialogs.medicineDetails.close' | translate }}</button>
+      </mat-dialog-actions>
+    }
+  

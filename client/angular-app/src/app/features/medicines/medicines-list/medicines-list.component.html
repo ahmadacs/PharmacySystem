@@ -1,0 +1,144 @@
+<app-page-header [title]="'medicines.title' | translate" [subtitle]="'medicines.subtitle' | translate">
+  <button actions mat-stroked-button (click)="export('excel')"><mat-icon>table_view</mat-icon> {{ 'medicines.exportExcel' | translate }}</button>
+  <button actions mat-stroked-button (click)="export('pdf')"><mat-icon>picture_as_pdf</mat-icon> {{ 'medicines.exportPdf' | translate }}</button>
+  <button actions mat-flat-button color="primary" *appHasPermission="permissions.MedicinesCreate" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    {{ 'medicines.newMedicine' | translate }}
+  </button>
+</app-page-header>
+
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'medicines.filters.search' | translate }}</mat-label>
+    <input matInput [formControl]="searchControl" [placeholder]="'medicines.filters.search' | translate" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'medicines.filters.category' | translate }}</mat-label>
+    <mat-select [value]="categoryId()" (selectionChange)="categoryId.set($event.value ?? null); onFilterChange()">
+      <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+      @for (category of categories; track category) {
+        <mat-option [value]="category">{{ category | enumTranslate:'CategoryEnum' }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'medicines.filters.form' | translate }}</mat-label>
+    <mat-select [value]="form()" (selectionChange)="form.set($event.value ?? null); onFilterChange()">
+      <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+      @for (form of forms; track form) {
+        <mat-option [value]="form">{{ form | enumTranslate:'MedicineForm' }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>{{ 'medicines.filters.status' | translate }}</mat-label>
+    <mat-select [value]="isActive()" (selectionChange)="isActive.set($event.value ?? null); onFilterChange()">
+      <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+      <mat-option [value]="true">{{ 'dictionary.status.active' | translate }}</mat-option>
+      <mat-option [value]="false">{{ 'dictionary.status.inactive' | translate }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+@if (medicines.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="table-card mat-elevation-z2">
+  <table mat-table [dataSource]="medicines.value().items" matSort (matSortChange)="onSortChange($event)">
+<ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'medicines.tables.medicine' | translate }}</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="cell-strong">{{ (translate.currentLang() === 'ar' && row.nameAr) ? row.nameAr : row.name }}</span>
+        <span class="cell-sub">{{ (translate.currentLang() === 'ar' && row.genericNameAr) ? row.genericNameAr : row.genericName }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'medicines.tables.category' | translate }}</th>
+      <td mat-cell *matCellDef="let row">{{ row.category | enumTranslate:'CategoryEnum' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="variants">
+      <th mat-header-cell *matHeaderCellDef>{{ 'medicines.tables.variants' | translate }}</th>
+      <td mat-cell *matCellDef="let row">
+        @if (row.variants[0]) {
+          <span class="cell-strong">{{ row.variants[0].form | enumTranslate:'MedicineForm' }} {{ row.variants[0].strength }} {{ row.variants[0].unit | enumTranslate:'MedicineUnit' }}</span>
+        }
+        @if (row.variants.length > 1) {
+          <span class="variants-more">{{ 'common.more' | translate:{count: row.variants.length - 1} }}</span>
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="stock">
+      <th mat-header-cell *matHeaderCellDef>{{ 'medicines.tables.stock' | translate }}</th>
+      <td mat-cell *matCellDef="let row">
+        <span [class.stock-low]="row.isLowStock">{{ row.availableQuantity }}</span>
+        <span class="cell-sub">{{ 'medicines.tables.reorderAt' | translate:{level: row.reorderLevel} }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>{{ 'medicines.tables.status' | translate }}</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="badge" [class.badge-danger]="row.isControlled" [class.badge-muted]="!row.isActive">
+          {{ getStatusTranslation(row.isActive, row.isControlled) }}
+        </span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="col-actions">{{ 'medicines.tables.actions' | translate }}</th>
+      <td mat-cell *matCellDef="let row" class="col-actions">
+        <button
+          mat-icon-button
+          [matTooltip]="'medicines.tooltip.addBatch' | translate"
+          *appHasPermission="permissions.MedicinesUpdate"
+          (click)="$event.stopPropagation(); openAddBatch(row)"
+        >
+          <mat-icon>inventory</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          [matTooltip]="'common.edit' | translate"
+          *appHasPermission="permissions.MedicinesUpdate"
+          (click)="$event.stopPropagation(); openEdit(row)"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          [matTooltip]="'common.delete' | translate"
+          color="warn"
+          *appHasPermission="permissions.MedicinesDelete"
+          (click)="$event.stopPropagation(); deleteMedicine(row)"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns()" class="clickable-row" (click)="openDetails(row)"></tr>
+  </table>
+
+  @if (!medicines.isLoading() && medicines.value().items.length === 0) {
+    <app-empty-state
+      icon="medication"
+      [message]="'common.noData' | translate"
+      [hint]="'medicines.empty.hint' | translate"
+    />
+  }
+
+  <mat-paginator
+    [length]="totalCount()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 25, 50]"
+    [pageIndex]="page() - 1"
+    (page)="onPage($event)"
+  />
+</div>

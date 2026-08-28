@@ -1,0 +1,54 @@
+
+    .dialog-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 0;
+      overflow-x: auto;
+    }
+    .row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .grow {
+      flex: 1 1 240px;
+    }
+    .controls {
+      align-items: center;
+    }
+    .items {
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .items h3 {
+      margin: 0.75rem 0 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .item-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+      flex-wrap: nowrap;
+      min-width: 700px;
+    }
+    .item-medicine {
+      flex: 2 1 200px;
+    }
+    .item-variant {
+      flex: 1 1 160px;
+    }
+    .item-qty {
+      flex: 0 1 90px;
+    }
+    .item-dose {
+      flex: 1 1 180px;
+    }
+    .form-error {
+      color: var(--mat-sys-error);
+      font-size: 0.8rem;
+      margin: 0.5rem 0 0;
+    }
+  

@@ -1,0 +1,68 @@
+
+    <h2 mat-dialog-title>{{ 'dialogs.batchForm.title' | translate }}</h2>
+    @if (medicine(); as med) {
+      <p class="subtitle">{{ 'dialogs.batchForm.subtitlePrefix' | translate }} {{ med.name }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-dialog-content class="dialog-body">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'dialogs.batchForm.variant' | translate }}</mat-label>
+          <mat-select formControlName="medicineVariantId">
+            @for (variant of medicine()?.variants ?? []; track variant.id) {
+              <mat-option [value]="variant.id">{{ variant.displayName }}</mat-option>
+            }
+          </mat-select>
+          <mat-error>{{ 'dialogs.batchForm.variantRequired' | translate }}</mat-error>
+        </mat-form-field>
+
+        
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.batchForm.manufactureDate' | translate }}</mat-label>
+            <input matInput [matDatepicker]="manufacturePicker" [max]="today" formControlName="manufactureDate" />
+            <mat-datepicker-toggle matIconSuffix [for]="manufacturePicker"></mat-datepicker-toggle>
+            <mat-datepicker #manufacturePicker></mat-datepicker>
+            <mat-error>{{ 'dialogs.batchForm.manufactureDateRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.batchForm.expiryDate' | translate }}</mat-label>
+            <input matInput [matDatepicker]="expiryPicker" [min]="today" formControlName="expiryDate" />
+            <mat-datepicker-toggle matIconSuffix [for]="expiryPicker"></mat-datepicker-toggle>
+            <mat-datepicker #expiryPicker></mat-datepicker>
+            <mat-hint>{{ 'dialogs.batchForm.expiryDateHint' | translate }}</mat-hint>
+            <mat-error>{{ 'dialogs.batchForm.expiryDateRequired' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.batchForm.packagesReceived' | translate }}</mat-label>
+            <input matInput formControlName="packagesReceived" type="number" min="1" />
+            @if (packageHint(); as hint) {
+              <mat-hint>{{ hint }}</mat-hint>
+            }
+            <mat-error>{{ 'dialogs.batchForm.packagesReceivedError' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.batchForm.unitCost' | translate }}</mat-label>
+            <input matInput formControlName="unitCost" type="number" min="0" step="0.01" />
+            <mat-error>{{ 'dialogs.batchForm.unitCostError' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'dialogs.batchForm.supplier' | translate }}</mat-label>
+          <input matInput formControlName="supplierName" [placeholder]="'dialogs.batchForm.supplierPlaceholder' | translate" />
+        </mat-form-field>
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button mat-button type="button" [mat-dialog-close]="false">{{ 'dialogs.batchForm.cancel' | translate }}</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">{{ 'dialogs.batchForm.addBatch' | translate }}</button>
+      </mat-dialog-actions>
+    </form>
+  
