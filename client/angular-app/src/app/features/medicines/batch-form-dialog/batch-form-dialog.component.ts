@@ -8,7 +8,8 @@ import { MatError, MatFormField, MatLabel, MatHint, MatSuffix } from '@angular/m
 import { MatInput } from '@angular/material/input';
 import { MatIcon } from '@angular/material/icon';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { FileService } from '../../../core/services/file.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -53,7 +54,8 @@ function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
     MatOption,
     MatDatepickerModule,
     MatButton,
-    MatProgressBarModule,
+    MatProgressBar,
+    MatTooltip,
     MatDialogTitle,
     MatDialogContent,
     MatDialogActions,

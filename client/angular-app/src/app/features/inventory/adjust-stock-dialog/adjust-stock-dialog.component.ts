@@ -11,7 +11,8 @@ import { MatInput } from '@angular/material/input';
 import { MatIcon } from '@angular/material/icon';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
@@ -72,6 +73,8 @@ const INBOUND_TYPES: InventoryAdjustmentType[] = ['Increase', 'TransferIn'];
     MatAutocompleteModule,
     MatDatepickerModule,
     MatButton,
+    MatProgressBar,
+    MatTooltip,
     MatDialogTitle,
     MatDialogContent,
     MatDialogActions,
