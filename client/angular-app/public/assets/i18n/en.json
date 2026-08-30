@@ -723,6 +723,7 @@
       "dosage": "Dosage",
       "refill": "Refill",
       "print": "Print",
+      "exported": "Prescription exported.",
       "cancelPrescription": "Cancel prescription",
       "close": "Close"
     }

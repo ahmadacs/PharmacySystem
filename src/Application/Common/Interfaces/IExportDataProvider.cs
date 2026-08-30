@@ -10,5 +10,5 @@ public interface IExportDataProvider
 
 public sealed record MedicineExportRow(string Name, string GenericName, string Category, string Form, string Strength, int Stock, bool IsActive);
 public sealed record InventoryExportRow(string Medicine, string Variant, string BatchNumber, int Available, int Reserved, DateOnly Expiry, string Status);
-public sealed record PrescriptionExportRow(string PrescriptionNumber, string Patient, string Doctor, string Status, DateTime IssueDate, int ItemsCount);
+public sealed record PrescriptionExportRow(string PrescriptionNumber, string Patient, string Doctor, string Status, DateTime IssueDate, int ItemsCount, string ItemsDescription);
 public sealed record DispensingExportRow(string PrescriptionNumber, string Medicine, int Quantity, DateTime DispensedAt, string DispensedBy);

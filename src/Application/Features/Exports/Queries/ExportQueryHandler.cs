@@ -69,7 +69,7 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, ExportFile
     private async Task<ExportFileResult> ExportPrescriptions(bool isExcel, string? id, CancellationToken ct)
     {
         var data = await _provider.GetPrescriptionsAsync(ct, id);
-        var title = "Prescriptions Report";
+        var title = !string.IsNullOrEmpty(id) ? "Prescription Report" : "Prescriptions Report";
         var bytes = isExcel ? _export.ExportToExcel(data, "Prescriptions") : _export.ExportToPdf(data, title);
         return new ExportFileResult(bytes, isExcel ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf", isExcel ? "prescriptions.xlsx" : "prescriptions.pdf");
     }

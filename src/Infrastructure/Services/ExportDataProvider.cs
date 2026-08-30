@@ -58,20 +58,40 @@ public class ExportDataProvider : IExportDataProvider
     {
         IQueryable<Domain.Entities.Prescriptions.Prescription> query = _db.Prescriptions.AsNoTracking()
             .Include(p => p.Patient)
-            .Include(p => p.Items);
+            .Include(p => p.Doctor)
+            .Include(p => p.Items).ThenInclude(i => i.MedicineVariant).ThenInclude(v => v!.Medicine);
         if (!string.IsNullOrEmpty(id) && Guid.TryParse(id, out var guidId))
         {
             query = query.Where(p => p.Id == guidId);
         }
         var list = await query.ToListAsync(ct);
-        return list.Select(p => new PrescriptionExportRow(
-            p.Id.ToString()[..8],
-            p.Patient != null ? $"{p.Patient.FirstName} {p.Patient.LastName}" : p.PatientId.ToString()[..8],
-            p.DoctorId.ToString()[..8],
-            p.Status.ToString(),
-            p.IssuedDate.ToDateTime(TimeOnly.MinValue),
-            p.Items.Count
-        )).ToList();
+        // Get doctor names from identity users for display
+        var userIds = list.Select(p => p.Doctor?.UserId ?? Guid.Empty).Where(id => id != Guid.Empty).Distinct().ToList();
+        var usersDict = new Dictionary<Guid, string>();
+        if (userIds.Any())
+        {
+            var users = await _db.Users.AsNoTracking()
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new { u.Id, FullName = (u.FirstName ?? "") + " " + (u.LastName ?? "") })
+                .ToListAsync(ct);
+            usersDict = users.ToDictionary(u => u.Id, u => (u.FullName ?? "").Trim());
+        }
+        return list.Select(p => {
+            var doctorName = p.Doctor != null ? (usersDict.TryGetValue(p.Doctor.UserId, out var name) && !string.IsNullOrWhiteSpace(name) ? name : (p.Doctor.LicenseNumber?.Value ?? p.Doctor.UserId.ToString()[..8])) : "-";
+            var itemsDesc = string.Join("; ", p.Items.Select(i => {
+                var medName = i.MedicineVariant?.Medicine?.Name ?? i.MedicineVariant?.Medicine?.GenericName?.Name ?? "-";
+                return $"{medName} x{i.PrescribedQuantity.Value}" + (string.IsNullOrEmpty(i.DosageInstructions) ? "" : $" ({i.DosageInstructions})");
+            }));
+            return new PrescriptionExportRow(
+                p.Id.ToString()[..8],
+                p.Patient != null ? $"{p.Patient.FirstName} {p.Patient.LastName}" : p.PatientId.ToString()[..8],
+                doctorName,
+                p.Status.ToString(),
+                p.IssuedDate.ToDateTime(TimeOnly.MinValue),
+                p.Items.Count,
+                itemsDesc
+            );
+        }).ToList();
     }
 
     public async Task<IReadOnlyList<DispensingExportRow>> GetDispensingAsync(CancellationToken ct = default)

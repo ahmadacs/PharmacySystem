@@ -723,6 +723,7 @@
       "dosage": "الجرعة",
       "refill": "إعادة صرف",
       "print": "طباعة",
+      "exported": "تم تصدير الوصفة.",
       "cancelPrescription": "إلغاء الوصفة",
       "close": "إغلاق"
     }
