@@ -14,6 +14,15 @@
         @if (foundPatient()) {
           <div class="found-banner">{{ 'dialogs.prescriptionForm.existingPatient' | translate:{firstName: foundPatient()!.firstName, lastName: foundPatient()!.lastName, dateOfBirth: foundPatient()!.dateOfBirth} }}</div>
         }
+        @if (isNewPatient()) {
+          <div class="new-patient-banner">
+            <mat-icon class="banner-icon">person_add</mat-icon>
+            <div class="banner-text">
+              <strong>{{ 'dialogs.prescriptionForm.newPatientTitle' | translate }}</strong>
+              <span>{{ 'dialogs.prescriptionForm.newPatientHint' | translate }}</span>
+            </div>
+          </div>
+        }
         @if (previousPrescriptions().length > 0) {
           <div class="prev-list"><strong>{{ 'dialogs.prescriptionForm.previousPrescriptions' | translate:{count: previousPrescriptions().length} }}:</strong>
             @for (p of previousPrescriptions(); track p.id) { <span class="chip">{{p.issuedDate}} - {{p.status}} ({{p.itemCount}} items)</span> }

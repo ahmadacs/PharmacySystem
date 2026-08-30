@@ -673,6 +673,8 @@
       "phonePlaceholder": "+9665XXXXXXXX",
       "phoneRequired": "Required Saudi number (+9665 / 05...).",
       "existingPatient": "Existing patient: {{firstName}} {{lastName}} - {{dateOfBirth}} (read only)",
+      "newPatientTitle": "New patient",
+      "newPatientHint": "Please enter the patient's full name and date of birth to continue.",
       "previousPrescriptions": "Previous prescriptions ({{count}}):",
       "firstName": "Patient first name",
       "firstNameRequired": "Required.",

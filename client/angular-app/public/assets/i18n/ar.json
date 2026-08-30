@@ -673,6 +673,8 @@
       "phonePlaceholder": "+9665XXXXXXXX",
       "phoneRequired": "مطلوب رقم سعودي (+9665 / 05...).",
       "existingPatient": "مريض موجود: {{firstName}} {{lastName}} - {{dateOfBirth}} (للقراءة فقط)",
+      "newPatientTitle": "مريض جديد",
+      "newPatientHint": "يرجى إدخال اسم المريض الكامل وتاريخ ميلاده للمتابعة.",
       "previousPrescriptions": "وصفات سابقة ({{count}}):",
       "firstName": "الاسم الأول للمريض",
       "firstNameRequired": "مطلوب.",

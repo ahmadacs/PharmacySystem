@@ -95,6 +95,7 @@ export class PrescriptionFormDialogComponent {
 
   // Phone-first search
   protected readonly foundPatient = signal<{ id: string; firstName: string; lastName: string; dateOfBirth: string; phoneNumber: string } | null>(null);
+  protected readonly isNewPatient = signal(false);
   protected readonly phoneSearching = signal(false);
   protected readonly previousPrescriptions = signal<{ id: string; issuedDate: string; status: string; itemCount: number }[]>([]);
   protected readonly isReadOnlyPatient = computed(() => this.foundPatient() !== null);
@@ -146,6 +147,7 @@ export class PrescriptionFormDialogComponent {
       const saudiPattern = /^(?:\+9665\d{8}|05\d{8}|5\d{8})$/;
       if (!saudiPattern.test(phone)) {
         this.foundPatient.set(null);
+        this.isNewPatient.set(false);
         this.previousPrescriptions.set([]);
         this.setPatientReadonly(false);
         return;
@@ -167,6 +169,7 @@ export class PrescriptionFormDialogComponent {
     try {
       const patient = await firstValueFrom(this.http.get<{ id: string; firstName: string; lastName: string; dateOfBirth: string; phoneNumber: string }>(`${environment.apiUrl}/patients/by-phone/${encodeURIComponent(phone)}`));
       this.foundPatient.set(patient);
+      this.isNewPatient.set(false);
       this.form.controls.patientFirstName.setValue(patient.firstName);
       this.form.controls.patientLastName.setValue(patient.lastName);
       this.form.controls.patientDateOfBirth.setValue(patient.dateOfBirth ? new Date(patient.dateOfBirth) : null);
@@ -177,7 +180,9 @@ export class PrescriptionFormDialogComponent {
         this.previousPrescriptions.set(list.items ?? []);
       } catch { this.previousPrescriptions.set([]); }
     } catch {
+      // Not an error — new patient needs name + DOB entry
       this.foundPatient.set(null);
+      this.isNewPatient.set(true);
       this.previousPrescriptions.set([]);
       this.setPatientReadonly(false);
     } finally { this.phoneSearching.set(false); }
