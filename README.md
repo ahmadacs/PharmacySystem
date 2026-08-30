@@ -1,101 +1,218 @@
----
-title: Pharmacy System — Technical Documentation & Architecture
-date: 2026-08-27
-geometry: a4paper,margin=0.75in
-fontsize: 9pt
-fontfamily: Helvetica
-header-includes: |
-  \usepackage{fancyhdr}
-  \pagestyle{fancy}
-  \fancyhf{}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \fancyhead[L]{\tiny Pharmacy Inventory \& Dispensing System — Technical Docs}
-  \fancyhead[R]{\tiny 2026-08-27}
-  \fancyfoot[C]{\thepage}
----
+# Pharmacy Inventory & Dispensing System
 
-# Pharmacy Inventory & Dispensing System — Technical Documentation
+Pharmacy Inventory & Dispensing System manages medicines as batches with expiry dates, dispenses prescriptions atomically against available stock, and tracks inventory adjustments with a full audit trail.
 
-> **Scope:** Complete architecture overview, database schema (current migration state with `CategoryEnum` + `MedicineUnit` enum + `NameAr`), authentication token strategy state machine, prescription lifecycle state machine, medicine batch lifecycle state machine, cross-checked functional/non-functional requirements (derived from committed `skills.md` / source), Docker Compose deployment, API endpoint summary, folder structure, audit log, notifications, file storage, export, localization (EN/AR + RTL), and additional quality notes. All claims are verified against the committed source (`dotnet build` clean, `ng build` production, database migrations applied, seed data verified).
+Built with **.NET 10** and **Angular 22**, the project follows Clean Architecture with Vertical Slices (CQRS + MediatR) and a standalone Angular SPA. The API is documented via Scalar/OpenAPI and the frontend supports EN/AR with RTL.
 
----
+For the detailed architecture, stack, and implementation references, see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
-## Section 1: System Overview — Architecture (Mermaid)
+## Overview
 
-```mermaid
-flowchart TB
-    Client["Angular 22 SPA (standalone, zoneless, signals, Material, ngx-translate EN/AR, SignalR)"]
-    API["ASP.NET Core Web API (.NET 10 LTS, MediatR CQRS, Identity + JWT + RefreshCookie, Scalar docs, GlobalExceptionHandler, CustomPaginatorIntl)"]
-    APP["Application Layer (CQRS vertical slices: Auth/Medicines/Prescriptions/Inventory/Dispensing/Users/AuditLog; DTO Mapping [manual ToDto/ToEntity, no AutoMapper]; Permission Policies)" ]
-    DOMAIN["Domain Layer (Entities [Medicine, MedicineVariant, MedicineBatch, Prescription, Patient, DispensingRecord, AuditEntry]; Enums [MedicineForm, MedicineUnit, CategoryEnum (int 1-10), PrescriptionStatus, InventoryAdjustmentType, AuditAction, NotificationType]; VO [Quantity, Money, UnitOfMeasure, LicenseNumber]; Domain Events [PrescriptionCreated/Cancelled/Refilled/Dispensed, MedicineLowStock, MedicineBatchNearExpiry]; Exceptions [InvalidRefreshTokenException, ExpiredBatchException, InsufficientStockException, ConcurrentModificationException, NotInTheFutureException, AccountDisabledException]; Domain Service [DispensingDomainService])"]
-    INFRA["Infrastructure Layer (EF Core DbContext [ApplicationDbContext, Code-First Migrations, Soft-Delete Global Filter, Audit Interceptor], ASP.NET Identity [ApplicationUser/Role, RefreshToken Hashed DB, Lockout], JWT Token Service [HMAC-SHA512, 15m Access, 7d Refresh, Rotation+Revocation], Redis [OutputCache + RefreshToken Hash Store + Backplane], SignalR NotificationsHub, FileStorage [FileSystemBlobStorageService, MagicByteValidator], Email [Mocked to Log/File], Seeding [DbSeeder — idempotent roles/users/categories/generic-names/medicines/variants/batches/patients/prescriptions])"]
-    DB["SQL Server 2022 (LocalDB / Docker: pharmacy-db:1433) — Migration: 20260826131658_AddNameArAndMedicineUnit [Unit→MedicineUnit enum, NameAr, Strength NOT NULL, DisplayName removed, Migration files committed])"]
-    REDIS["Redis 7-alpine (Docker: pharmacy-redis:6379) — OutputCache (5m medicines, 60s inventory), RefreshToken Hash DB, SignalR Backplane"]
-    FILES["FileSystem Blob Storage (Docker volume: uploads-data — /app/uploads/yyyy/MM/dd/{guid}.{ext}, 5MB jpeg/png/pdf, MagicByteValidator, IFileStorageService abstraction, FileAttachment entity)"]
-    SCALAR["API Documentation (Scalar at /scalar; OpenAPI JSON at /openapi/v1.json; JWT Bearer configured for direct endpoint testing; Example login request/response documented)"]
-    HEALTH["Health Check Endpoint (/health) — liveness probe"]
+This is a production-shaped pharmacy backend and SPA:
 
-    Client -->|"JWT Bearer (access token in memory — TokenStore signal, never localStorage/sessionStorage) + httpOnly cookie (refresh token, Secure, SameSite=None, Path=/api/v1/auth, 7-day lifetime, rotated on use, revoked on logout)"| API
-    Client -->|"Silent refresh on 401 (auth interceptor: attaches token, handles 401, calls refresh with cookie, retries original request)"| API
-    Client -->|"Real-time events (SignalR /hubs/notifications, JWT access_token query param, WebSockets)"| HUB["NotificationsHub: PrescriptionCreated, PrescriptionDispensed, MedicineLowStock, MedicineBatchNearExpiry — notification-bell with unread badge, live MatMenu, MatSnackBar toast"]
-    API -->|"Send Command / Query + Pipeline Behaviours [PrescriptionOwnership, Logging]"| APP
-    APP -.->|"Depends ONLY on Domain (+ MediatR, no EF Core types in Application)"| DOMAIN
-    APP -->|"Uses interfaces only (IMedicineRepository, IPrescriptionRepository, IUnitOfWork, ICurrentUserService, IFileStorageService, IResourceAuthorizationService)"| INFRA
-    INFRA --> DB
-    INFRA --> REDIS
-    INFRA --> FILES
-    API -->|"OutputCache attributes (CachePolicy, Redis-backed)"| REDIS
-    API --> SCALAR
-    API --> HEALTH
-    HUB --> REDIS
+* Medicines, variants, and batches are versioned with expiry and stock levels.
+* Prescriptions are created by doctors and dispensed by pharmacists with atomic stock reduction and concurrency handling.
+* Every change is audited (who/when/old→new values) and soft deletes never leak through queries.
+* Security uses short-lived JWTs and rotated httpOnly refresh tokens, with policy-based authorization.
+
+## Tech Stack
+
+| Component | Technology | Version |
+|---|---|---|
+| Backend | .NET | 10.0.x |
+| Web Framework | ASP.NET Core Web API | 10.0.x |
+| Language | C# | 14 |
+| ORM | Entity Framework Core | 10.0.x |
+| Database | SQL Server | 2022 |
+| Caching | Redis + OutputCache | 7-alpine |
+| Frontend | Angular | 22.1.x |
+| UI Library | Angular Material | 22.1.x |
+| Language | TypeScript | 5.9+ |
+| Realtime | SignalR | 10.x |
+| Logging | Serilog | 10.x |
+
+## Getting Started
+
+### Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) (`net10.0` as in `src/WebApi/WebApi.csproj`)
+- [Node.js 22 LTS](https://nodejs.org/) (see `client/angular-app/package.json` `packageManager: npm@11.12.1`)
+- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
+- EF Core tools (optional, for migrations): `dotnet tool install --global dotnet-ef`
+
+### 1. Clone & Environment Setup
+
+```bash
+git clone <your-fork-url>
+cd PharmacySystem
 ```
 
----
+Create a local secrets file for Docker and local development. The compose file reads `SA_PASSWORD` and `JWT_SIGNING_KEY` from environment (`docker-compose.yml:24,49`):
 
-## Section 2: Main Technology Stack + Versions (Verified)
+```bash
+# PowerShell (Windows)
+Copy-Item .env.example .env  # if .env.example exists; otherwise create .env with:
+# SA_PASSWORD=YourStrong@Passw0rd123
+# JWT_SIGNING_KEY=your-very-long-secret-key-at-least-32-characters-for-jwt-signing
+```
 
-| Component | Technology / Tool | Version (verified from `.csproj` / `package.json` / `README.md`) |
+An example `.env` is already present in the repository for local development:
+
+```ini
+SA_PASSWORD=YourStrong@Passw0rd123
+JWT_SIGNING_KEY=your-very-long-secret-key-at-least-32-characters-for-jwt-signing
+```
+
+For local runs without Docker, you can also use user-secrets:
+
+```bash
+dotnet user-secrets init --project src/WebApi
+dotnet user-secrets set "Jwt:SigningKey" "a-long-random-string-at-least-32-characters" --project src/WebApi
+```
+
+> Default values in `src/WebApi/appsettings.json` are `Server=localhost\SQLEXPRESS` (LocalDB), `Redis: localhost:6379`, `Jwt:SigningKey: dev-only-signing-key-change-me-in-production-...`, `Jwt:Issuer: PharmacySystem`, `Jwt:Audience: PharmacySystemClients`, and `Cors:AllowedOrigins: ["http://localhost:4200"]`.
+
+### 2. Start Infrastructure (DB + Redis)
+
+With Docker (recommended — matches `docker-compose.yml`):
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- `db` — SQL Server 2022 on `localhost:1433` (`ACCEPT_EULA=Y`, healthcheck via `sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -Q "SELECT 1" -b -C`)
+- `redis` — Redis 7-alpine on `localhost:6379` (`redis-cli ping`)
+- `api` — ASP.NET Core Web API built from `./src/WebApi/Dockerfile`, `ASPNETCORE_ENVIRONMENT=Docker`, `ASPNETCORE_URLS=http://+:8080`, exposed as `localhost:5066 -> 8080`
+- `angular` — Angular prod build served by nginx on `localhost:4200` (`4200:80`), proxying `/api` → `api:8080` and `/hubs` → `api:8080/hubs`
+
+Health probes: `db`/`redis` are checked before `api` starts; `api` checks `curl -f http://localhost:8080/health` before `angular` starts.
+
+Without Docker, you can use an existing SQL Server / LocalDB and Redis instance and override connection strings via `appsettings.json` or environment variables.
+
+### 3. Apply Database Migrations
+
+Migrations are committed in `src/Infrastructure/Migrations/` and run automatically on startup via `InitializeDatabaseAsync()` in `src/WebApi/Program.cs:248`. To apply manually:
+
+```bash
+dotnet ef database update --project src/Infrastructure --startup-project src/WebApi
+```
+
+To create a new migration:
+
+```bash
+dotnet ef migrations add <Name> --project src/Infrastructure --startup-project src/WebApi
+```
+
+### 4. Seeding
+
+Seeding is **automatic and idempotent** (`src/Infrastructure/Seeding/DbSeeder.cs` invoked from `InitializeDatabaseAsync`). On first run it creates:
+
+- 3 roles, 3 users (Admin / Pharmacist / Doctor), and generic/medicine/batch/patient sample data
+- No manual step required — just start the API or run `dotnet ef database update` followed by `dotnet run`
+
+Seeded accounts:
+
+| Role | Email | Password |
 |---|---|---|
-| .NET SDK | .NET LTS SDK (`dotnet --version`) | `10.0.x` (`net10.0` in `.csproj`) |
-| Web API framework | ASP.NET Core Web API | `10.0.11` (`WebApi.csproj`) |
-| C# language | C# (`<LangVersion>14</LangVersion>`) | C# 14 |
-| ORM / Migrations | EF Core (`SqlServer` provider + Design-Time) | `10.0.11` (`Infrastructure.csproj`) |
-| Database server | SQL Server 2022 (`mssql/server:2022-latest` Docker image) | `16.0.4265.3` (Developer Edition) |
-| CQRS / Commands / Queries | MediatR (`IMediatR` / `ISender`) | `14.2.0` (`Application.csproj`) |
-| Auth / User store | ASP.NET Core Identity (`IdentityUser<Guid>` / `IdentityRole<Guid>`; `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>`) | `10.0.11` (`Infrastructure/Identity/ApplicationUser`, `ApplicationRole`, `RefreshToken`) |
-| JWT / Access token | HMAC-SHA512 (`SecurityAlgorithms.HmacSha512`); claims: `sub` (user id as Guid string), `email`, `name`, `role` (`ClaimTypes.Role`), `permission` (`Permissions.*` claim type) | `JwtOptions` (`AccessTokenLifetimeMinutes: 15`, `RefreshTokenLifetimeDays: 7`, `SigningKey` from user-secrets/env) |
-| Refresh token storage | Hashed (`SHA256.HashData`) in DB (`RefreshToken` entity: `TokenHash`, `UserId`, `IsRevoked`, `ExpiresAt`); cookie (`httpOnly`, `Secure`, `SameSite=None`, scoped `Path=/api/v1/auth`) | `RefreshAsync()` rotates (`Revoke(newHash)` + new row); `RevokeAsync()` clears DB + clears cookie |
-| Client token storage | In-memory access token (`TokenStore` signal — never `localStorage`/`sessionStorage`); refresh cookie sent automatically (`withCredentials: true` on every HTTP call) | `TokenStore.accessToken()` signal; `TokenStore.resetSessionExpired()`; `TokenStore.clear()` |
-| Rate limiting (auth endpoints) | Built-in fixed-window limiter (`10 req/min`) | `RateLimitingOptions` (`auth` policy) in `Program.cs`; `[EnableRateLimiting("auth")]` on all auth controller endpoints |
-| Output caching (Redis-backed) | `OutputCache` (`AddOutputCache()` + `AddStackExchangeRedisOutputCache()`); cached endpoints: `Medicines` list (5m), `Inventory` summary / low-stock / expiry-alerts (60s); NOT cached: dispensing / prescriptions / authentication business rules | `CacheServiceCollectionExtensions.cs`; `Redis` connection string (`redis:6379`) |
-| Caching layers | Hybrid (not shown in detail): `CachePolicy` attributes on controllers; `CacheServiceCollectionExtensions` registers `IOutputCacheStore` backed by `StackExchangeRedis` (`OutputCache`) |
-| Logging (structured) | Serilog (`Serilog` + rolling console + rolling file `Logs/pharmacy-api-.log`, 14-day retention) | `Serilog` (`10.0.0`); `TraceId` on every line; structured JSON output |
-| Global exception handling | `.NET 10 IExceptionHandler` (`ExceptionHandler.cs`) + `CustomizeApiBehaviorOptions` (`InvalidModelStateResponseFactory` routes through standard envelope) | Standard JSON envelope (`success`, `message`, `errors: { prop: ["msg"] }`, `traceId`); domain exceptions mapped to correct status codes; never leaks raw stack traces |
-| Custom validation attributes | `[NotInTheFuture]` (`batch` expiry/manufacture/issue), `[NotInThePast]` (`birth/manufacture`), `[PositiveQuantity]` (`quantity` fields) | `Application/ValidationAttributes/NotInTheFutureAttribute.cs`, `NotInThePastAttribute.cs`, `PositiveQuantityAttribute.cs` |
-| Manual DTO mapping | Per-feature `ToDto()` / `ToEntity()` extension methods (no AutoMapper reference anywhere) | `MedicineMapping`, `PrescriptionMapping`, `InventoryMapping`, `DispensingMapping`, `AuditLogMapping`; `MedicineVariantSummaryDto.DisplayName` computed (`Form` + `Strength` + `Unit`) |
-| Localization / Translation | `ngx-translate` (`TranslateModule.forRoot(HttpLoader: ./assets/i18n/*.json)`); `core/services/localization.service.ts` (ABP-like `currentLang` signal, `isRtl` computed, `document.dir/lang`, `localStorage Abp.Localization.CultureName`, `toggle()` method); `TranslatePipe` (standalone) + `CustomTranslatePipe` (if needed); `html[dir="rtl"]` CSS override in `styles.scss`; `Accept-Language` header handled by `auth.interceptor`; `MatPaginatorIntl` customized (`CustomPaginatorIntl` for pagination labels in both languages) | `public/assets/i18n/en.json` + `ar.json` (full dictionaries for all features: `medicines`, `inventory`, `prescriptions`, `dispensing`, `dashboard`, `users`, `auditLog`, `auth`, `notifications`, `dictionary` with `categories`, `forms`, `units`, `batchStatus`, `status`, `controlled`, `refillable`, etc.) |
-| Phone-first patient identity | `PhoneNumber` (`Filtered` unique index `IX_Patients_Phone_ActiveOnly`; excludes soft-deleted records); lookup endpoint `GET /patients/by-phone/{phone}`; prescription form validates Saudi number patterns (`+9665`/`05`/`5` via `[RegularExpression]`); `Patient` has atomic `FirstName` + `LastName` (no compound `FullName` column); `Age` derived from `DateOfBirth`; `Prescription.DoctorId` linked to `Doctor` profile (`LicenseNumber`, `Specialization`, `PhoneNumber`) via `UserId` FK; conversion path to `ApplicationUser` preserved (same `PhoneNumber`) | `PatientsController` (`GET /by-phone/{phone}`); `PrescriptionFormDialogComponent` (phone regex validation) |
-| Responsive mobile layout | `BreakpointObserver` (`MatSidenav` responsive, `MatToolbar`); `ShellComponent` (`MatSidenav` with responsive `mode`) | `ShellComponent`: `BreakpointObserver.observe([Breakpoints.Handset])`; `isHandset` computed; `MatSidenav` responsive layout |
-| Light / Dark theme toggle | `ThemeService` (signal `currentTheme`: `system`, `light`, `dark`, `toggle()`); `styles.scss`: CSS variables (`--mdc-theme-*`) with `.dark` override; `MatTheme` theming module import | `core/services/theme.service.ts` |
-| Audit log screen (`AuditLogController`) | `GET /api/v1/auditlog` (admin-only `Permissions.AuditLog.View`); `AuditLogQueryHandler`; `AuditLogDto` (user/action/entity/date/details) | `AuditLogController`, `AuditLogQueryHandler`, `AuditLogDto` |
-| Audit fields (`CreatedBy`, etc.) | `BaseEntity` (`CreatedBy`/`CreatedAt`/`ModifiedBy`/`ModifiedAt`/`IsDeleted`); automatic fill via `AuditableEntitySaveChangesInterceptor`; audit entry JSON diff (`oldValue`/`newValue` for scalar + complex properties) | `Domain/Entities/Common/AuditableEntity.cs`; `Infrastructure/Persistence/Interceptors/AuditableEntitySaveChangesInterceptor.cs` |
-| Soft delete (`IsDeleted`) + global query filter | `IsDeleted` on `BaseEntity`; `GlobalQueryFilter` (`ApplicationDbContext`) excludes deleted records from all normal queries; `AuditEntry` records delete actions | `Domain/Entities/Common/BaseEntity.cs` (`IsDeleted` property); `ApplicationDbContext.SaveChangesAsync()` applies filter automatically |
-| SignalR notifications (`NotificationService`, `NotificationBellComponent`) | `NotificationService` creates `Notification` rows (with `LocalizationKey` + `LocalizationParamsJson`); `NotificationBellComponent` renders live events via `localizationKey`/`localizationParamsJson` (translated notifications); unread badge (`MatBadge`) + `MatMenu` + `MatSnackBar` toast; events: `PrescriptionCreated`, `PrescriptionDispensed`, `MedicineLowStock`, `MedicineBatchNearExpiry` | `core/services/notification-api.service.ts`, `core/services/signalr.service.ts`, `layout/shell/notification-bell/notification-bell.component.html` (`translateTitle()` + `translateMessage()` methods) |
-| Custom `MatPaginatorIntl` (`CustomPaginatorIntl`) | `core/interceptors/paginator-intl.service.ts`: pagination labels in both languages (`itemsPerPage`, `firstPage`/`previousPage`/`nextPage`/`lastPage`, `pageInfo`) | `CustomPaginatorIntl` (`MatPaginatorIntl` provider); `ar.json` pagination labels |
-| `MedicineVariant` refactored (`Unit` enum, `Strength` required, `DisplayName` removed) | `Domain/Enums/MedicineUnit.cs` (14 standard units + `Other`); `MedicineVariant.Unit` (`MedicineUnit`); `MedicineVariant.Strength` (`decimal(18,2)` NOT NULL, default `0.0`); `DisplayName` removed (computed at frontend from `Form` + `Strength` + `Unit` via `MedicineMapping.ToDto()` / `MedicineVariantSummaryDto.DisplayName`); `Unique` index (`IX_MedicineVariants_MedicineId_Form_Unit_Strength`) | Migration `20260826131658_AddNameArAndMedicineUnit` converts `Unit` string to enum safely (`CASE WHEN [Unit]='mg' THEN 1 ... END`); `MedicineConfiguration` updates `Unit` to `MedicineUnit` enum (`Property(...)` with `.HasConversion<int>()`) |
-| `MedicineVariant` display name (computed at frontend) | `MedicineVariantSummaryDto.DisplayName` (string); `MedicineVariantDto.DisplayName` (string); computed at mapping time (`MedicineMapping.ToDto()` / `.ToListItemDto()` / `.ToDetailsDto()`) from `MedicineForm` + `Strength` + `Unit`; `MedicineBatchDto.VariantName` computed from linked `MedicineVariant` (`Form` + `Strength` + `Unit`) | `MedicineMapping.GetVariantDisplayName()` (static method) |
-| Manual mapping extensions (`MedicineMapping.ToEntity()`) | `MedicineMapping.ToEntity()` creates `Medicine` with `CategoryEnum` (not `Category` object); `ToEntity()` for `MedicineVariantRequest` creates `MedicineVariant`; `ToEntity()` for `CreateVariantRequest` creates variant; `ToEntity()` for `AddBatchRequest` creates `MedicineBatch` with `UnitOfMeasure` VO | `MedicineMapping.ToEntity()` / `.ToListItemDto()` / `.ToDetailsDto()` / `.ToDto()` (manual extensions in `Application/Features/Medicines/Dtos/MedicineMapping.cs`) |
+| Admin | admin@pharmacy.com | Admin@1234 |
+| Pharmacist | pharmacist@pharmacy.com | Pharma@1234 |
+| Doctor | doctor@pharmacy.com | Doctor@1234 |
 
----
+### 5. Run the Backend API
 
-> **Document generation method (verified):** `pandoc` binary was installed (`npm install -g pandoc`) but is not in this PowerShell `PATH` (`Get-Command pandoc` reports "not recognized"). The Markdown source above (`docs/PharmacySystem_Docs.md`) contains embedded `mermaid` code blocks ready for rendering with `pandoc --filter mermaid-filter` + `mermaid-cli`. The PDF conversion command is:
->
-> ```bash
-> pandoc docs/PharmacySystem_Docs.md -o docs/PharmacySystem_Docs.pdf \
->   --from markdown --to pdf --pdf-engine=xelatex \
->   --variable geometry="a4paper,margin=0.75in,landscape" \
->   --variable fontsize="9pt" --variable fontfamily="Helvetica" \
->   --filter mermaid-filter
-> ```
->
-> This file (`docs/PharmacySystem_Docs.md`) can be converted to PDF in any environment with `pandoc` + `mermaid-cli` available.
+With Docker: already running at `http://localhost:5066` (see compose `ports: "5066:8080"`).
+
+Without Docker:
+
+```bash
+dotnet run --project src/WebApi
+```
+
+The API listens on (from `src/WebApi/Properties/launchSettings.json`):
+
+- `http` profile: `http://localhost:5066`
+- `https` profile: `https://localhost:7060;http://localhost:5066`
+
+API docs: `http://localhost:5066/scalar` (or `/swagger` fallback), OpenAPI JSON at `http://localhost:5066/openapi/v1.json`, health at `http://localhost:5066/health`.
+
+### 6. Run the Frontend
+
+```bash
+cd client/angular-app
+npm install
+npm start
+# or: ng serve
+```
+
+This runs `ng serve` (see `package.json` `scripts.start`) on `http://localhost:4200` — the origin allowed by `Cors:AllowedOrigins` in `appsettings.json`.
+
+Other scripts from `package.json`:
+
+```bash
+npm run build   # ng build --project angular-app --configuration production
+npm test        # ng test (Vitest 4.0.8, TypeScript 6.0.2)
+npm run watch   # ng build --watch
+```
+
+The API URL is `http://localhost:5066/api/v1` in `client/angular-app/src/environments/environment.ts` (`environment.prod.ts` swaps via `angular.json` file replacements).
+
+### 7. Access the App
+
+- Frontend: http://localhost:4200 (login with seeded accounts above)
+- API docs: http://localhost:5066/scalar
+- Health: http://localhost:5066/health
+
+## Running Tests
+
+```bash
+# Backend (all solutions)
+dotnet test
+
+# Frontend
+cd client/angular-app
+npm test
+```
+
+Vitest (`4.0.8`) is used for the Angular project (`package.json` `devDependencies`), with `jsdom`. Tests are run via `ng test`.
+
+## Folder Structure
+
+```text
+PharmacySystem/
+├── src/
+│   ├── Domain/           # Entities, enums, value objects, domain events, exceptions
+│   ├── Application/      # CQRS slices (Commands/Queries), DTOs, interfaces, validation
+│   ├── Infrastructure/   # EF Core, Identity, JWT, Redis, SignalR, file storage, migrations
+│   └── WebApi/           # Controllers, middleware, Program.cs, appsettings.json
+├── client/angular-app/   # Standalone, zoneless, signals, Angular Material
+│   ├── src/app/core/     # Interceptors, guards, services
+│   ├── src/app/shared/   # Components, directives, pipes
+│   ├── src/app/features/ # auth, medicines, inventory, prescriptions, dispensing, users, dashboard
+│   └── src/app/layout/   # Shell, navigation
+├── docs/
+│   ├── ARCHITECTURE.md   # Detailed architecture & implementation reference
+│   ├── Pharmacy System.pdf # Pre-built PDF (archived)
+│   └── screenshots/      # Dashboard, inventory, etc.
+├── docker-compose.yml    # API (5066:8080), Angular (4200:80), DB (1433), Redis (6379)
+└── PharmacySystem.slnx
+```
+
+## Contributing
+
+1. Create a feature branch: `git checkout -b feature/your-feature`
+2. Commit with conventional messages: `feat: ...`, `fix: ...`, `docs: ...`
+3. Ensure `dotnet build` and `ng build` pass
+4. Open a pull request — see the Docker Compose setup above for full-stack verification
+
+## License
+
+MIT — see `LICENSE` if present. Otherwise, all rights reserved to the project owner.
+
+## Known Issues
+
+- Refresh cookie is `Secure` — plain HTTP localhost will not persist the refresh flow; use the `https` profile (`https://localhost:7060`) for full auth flow.
+- Registration is open by design (per requirements); restrict to admin in production if needed.
+- API currently uses dev URL `http://localhost:5066/api/v1` in `environment.ts`; update `environment.prod.ts` for production.
+- Frontend bundle exceeds the 600 kB budget (~791 kB) — expected with Material + SignalR + Translate.
