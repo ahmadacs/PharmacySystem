@@ -5,7 +5,9 @@ namespace Domain.Entities.Files;
 public enum FileEntityType
 {
     Medicine = 1,
-    Prescription = 2
+    Prescription = 2,
+    Batch = 3,
+    InventoryAdjustment = 4
 }
 
 public class FileAttachment : BaseEntity

@@ -11,9 +11,11 @@ import { MatInput } from '@angular/material/input';
 import { MatIcon } from '@angular/material/icon';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
+  FileUploadDto,
   InventoryAdjustmentType,
   InventoryAdjustmentTypeEnum,
   MedicineBatchDto,
@@ -105,6 +107,9 @@ export class AdjustStockDialogComponent {
       medicine.genericNameAr?.toLowerCase().includes(search)
     );
   });
+
+  protected readonly file = signal<File | null>(null);
+  protected readonly fileUploading = signal(false);
 
   protected readonly form = new FormGroup(
     {
@@ -233,6 +238,41 @@ export class AdjustStockDialogComponent {
     set('packagesReceived', inbound ? [Validators.required, Validators.min(1)] : []);
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        this.toast.show('Only PDF, JPG, and PNG files are allowed.', 'error');
+        return;
+      }
+      if (file.size > maxSize) {
+        this.toast.show('File size must be less than 5MB.', 'error');
+        return;
+      }
+      this.file.set(file);
+    }
+  }
+
+  removeFile(): void {
+    this.file.set(null);
+  }
+
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+    });
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
@@ -242,6 +282,21 @@ export class AdjustStockDialogComponent {
     this.submitting.set(true);
     try {
       const value = this.form.getRawValue();
+      let fileDto: FileUploadDto | undefined;
+
+      if (this.file()) {
+        this.fileUploading.set(true);
+        const file = this.file()!;
+        const base64Content = await this.fileToBase64(file);
+        fileDto = {
+          fileName: file.name,
+          contentType: file.type,
+          sizeBytes: file.size,
+          base64Content
+        };
+        this.fileUploading.set(false);
+      }
+
       if (this.isInbound()) {
         await this.inventoryService.receive({
           medicineVariantId: value.medicineVariantId as string,
@@ -251,7 +306,8 @@ export class AdjustStockDialogComponent {
           unitCost: value.unitCost,
           supplierName: value.supplierName || null,
           reason: value.reason,
-          adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum]
+          adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum],
+          file: fileDto
         });
         this.toast.show('Batch received.', 'success');
       } else {
@@ -259,7 +315,8 @@ export class AdjustStockDialogComponent {
           medicineBatchId: value.medicineBatchId as string,
           type: value.type as InventoryAdjustmentType,
           quantity: value.quantity,
-          reason: value.reason
+          reason: value.reason,
+          file: fileDto
         });
         this.toast.show('Stock adjusted.', 'success');
       }

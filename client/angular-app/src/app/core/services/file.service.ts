@@ -15,18 +15,20 @@ export interface FileAttachmentDto {
   url: string | null;
 }
 
+export type FileEntityType = 'Medicine' | 'Prescription' | 'Batch' | 'InventoryAdjustment';
+
 @Injectable({ providedIn: 'root' })
 export class FileService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/files`;
 
-  upload(entityType: 'Medicine' | 'Prescription', entityId: string, file: File): Promise<FileAttachmentDto> {
+  upload(entityType: FileEntityType, entityId: string, file: File): Promise<FileAttachmentDto> {
     const form = new FormData();
     form.append('file', file, file.name);
     return firstValueFrom(this.http.post<FileAttachmentDto>(`${this.baseUrl}/${entityType}/${entityId}`, form));
   }
 
-  list(entityType: string, entityId: string): Promise<FileAttachmentDto[]> {
+  list(entityType: FileEntityType, entityId: string): Promise<FileAttachmentDto[]> {
     return firstValueFrom(this.http.get<FileAttachmentDto[]>(`${this.baseUrl}/${entityType}/${entityId}/list`));
   }
 

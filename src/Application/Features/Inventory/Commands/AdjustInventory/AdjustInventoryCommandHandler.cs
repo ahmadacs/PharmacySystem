@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Options;
+using Application.Features.Files.Commands.UploadFile;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Medicines;
 using Domain.Enums;
@@ -14,14 +15,16 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
     private readonly IUnitOfWork _uow;
     private readonly ICurrentUserService _currentUser;
     private readonly NotificationOptions _notificationOptions;
+    private readonly ISender _sender;
 
     public AdjustInventoryCommandHandler(IMedicineRepository repo, IUnitOfWork uow,
-        ICurrentUserService currentUser, NotificationOptions notificationOptions)
+        ICurrentUserService currentUser, NotificationOptions notificationOptions, ISender sender)
     {
         _repo = repo;
         _uow = uow;
         _currentUser = currentUser;
         _notificationOptions = notificationOptions;
+        _sender = sender;
     }
 
     public async Task<Guid> Handle(AdjustInventoryCommand request, CancellationToken cancellationToken)
@@ -48,6 +51,20 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
 
         _repo.AddAdjustment(adjustment);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        // Upload file if provided
+        if (req.File is not null && !string.IsNullOrWhiteSpace(req.File.Base64Content))
+        {
+            var fileBytes = Convert.FromBase64String(req.File.Base64Content);
+            using var stream = new MemoryStream(fileBytes);
+            await _sender.Send(new UploadFileCommand(
+                "InventoryAdjustment",
+                adjustment.Id,
+                req.File.FileName,
+                req.File.ContentType,
+                req.File.SizeBytes,
+                stream), cancellationToken);
+        }
 
         return adjustment.Id;
     }

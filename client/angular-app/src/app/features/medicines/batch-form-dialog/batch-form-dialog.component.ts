@@ -6,8 +6,11 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatError, MatFormField, MatLabel, MatHint, MatSuffix } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
+import { MatIcon } from '@angular/material/icon';
 import { MatOption, MatSelect } from '@angular/material/select';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MedicineDetailsDto } from '../../../core/models/api.models';
+import { FileService } from '../../../core/services/file.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { MedicinesService } from '../medicines.service';
 
@@ -41,6 +44,7 @@ function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
     TranslatePipe,
     MatFormField,
     MatInput,
+    MatIcon,
     MatLabel,
     MatError,
     MatHint,
@@ -49,6 +53,7 @@ function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
     MatOption,
     MatDatepickerModule,
     MatButton,
+    MatProgressBarModule,
     MatDialogTitle,
     MatDialogContent,
     MatDialogActions,
@@ -59,6 +64,7 @@ function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
 })
 export class BatchFormDialogComponent {
   private readonly medicinesService = inject(MedicinesService);
+  private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
   private readonly dialogRef = inject(MatDialogRef<BatchFormDialogComponent>);
 
@@ -66,6 +72,8 @@ export class BatchFormDialogComponent {
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
   protected readonly submitting = signal(false);
   protected readonly today = startOfDay(new Date());
+  protected readonly file = signal<File | null>(null);
+  protected readonly fileUploading = signal(false);
 
   constructor() {
     void this.medicinesService.get(this.medicineId).then((details) => {
@@ -116,6 +124,28 @@ export class BatchFormDialogComponent {
     return `1 ${v.packageUnitName} = ${v.unitsPerPackage} ${v.baseUnitName}s. ${this.form.controls.packagesReceived.value} ${v.packageUnitName}s = ${total} ${v.baseUnitName}s.`;
   });
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        this.toast.show('Only PDF, JPG, and PNG files are allowed.', 'error');
+        return;
+      }
+      if (file.size > maxSize) {
+        this.toast.show('File size must be less than 5MB.', 'error');
+        return;
+      }
+      this.file.set(file);
+    }
+  }
+
+  removeFile(): void {
+    this.file.set(null);
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
@@ -125,7 +155,8 @@ export class BatchFormDialogComponent {
     this.submitting.set(true);
     try {
       const value = this.form.getRawValue();
-      await this.medicinesService.addBatch(this.medicineId, {
+
+      const batch = await this.medicinesService.addBatch(this.medicineId, {
         medicineVariantId: value.medicineVariantId as string,
         manufactureDate: toDateString(value.manufactureDate)!,
         expiryDate: toDateString(value.expiryDate)!,
@@ -133,6 +164,18 @@ export class BatchFormDialogComponent {
         unitCost: value.unitCost,
         supplierName: value.supplierName || ''
       });
+
+      // Upload file for Batch if provided
+      if (this.file()) {
+        this.fileUploading.set(true);
+        try {
+          const file = this.file()!;
+          await this.fileService.upload('Batch', batch.id, file);
+        } finally {
+          this.fileUploading.set(false);
+        }
+      }
+
       this.toast.show('Batch added.', 'success');
       this.dialogRef.close(true);
     } catch {

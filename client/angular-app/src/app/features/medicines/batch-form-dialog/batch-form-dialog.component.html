@@ -58,6 +58,29 @@
           <mat-label>{{ 'dialogs.batchForm.supplier' | translate }}</mat-label>
           <input matInput formControlName="supplierName" [placeholder]="'dialogs.batchForm.supplierPlaceholder' | translate" />
         </mat-form-field>
+
+        <div class="file-upload-section">
+          <label class="file-upload-label">
+            <mat-icon>attach_file</mat-icon>
+            <span>{{ 'dialogs.batchForm.attachFile' | translate }}</span>
+            <input type="file" #fileInput (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png" hidden />
+            @if (file(); as f) {
+              <mat-icon class="file-icon">description</mat-icon>
+              <span class="file-name">{{ f.name }}</span>
+              <button type="button" mat-icon-button (click)="removeFile()" matTooltip="{{ 'dialogs.batchForm.removeFile' | translate }}">
+                <mat-icon>close</mat-icon>
+              </button>
+            } @else {
+              <button type="button" mat-stroked-button (click)="fileInput.click()">
+                <mat-icon>upload_file</mat-icon>
+                {{ 'dialogs.batchForm.browse' | translate }}
+              </button>
+            }
+          </label>
+          @if (fileUploading()) {
+            <mat-progress-bar mode="indeterminate" class="upload-progress"></mat-progress-bar>
+          }
+        </div>
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">

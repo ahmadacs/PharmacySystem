@@ -67,14 +67,6 @@
             </mat-expansion-panel>
           }
         </mat-accordion>
-
-        <div class="files-section">
-          <h3>{{ 'dialogs.medicineDetails.attachments' | translate }}</h3>
-          <app-file-upload (fileSelected)="onFileSelected($event)"></app-file-upload>
-          @for (f of files(); track f.id) {
-            <div class="file-item"><a [href]="fileService.downloadUrl(f.id)" target="_blank">{{ f.fileName }}</a> ({{ f.contentType }})</div>
-          }
-        </div>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button [mat-dialog-close]="true">{{ 'dialogs.medicineDetails.close' | translate }}</button>

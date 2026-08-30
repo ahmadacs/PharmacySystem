@@ -4,6 +4,8 @@ using Application.Common.Security;
 using Application.Features.Files.Dtos;
 using Application.Features.Prescriptions.Common;
 using Domain.Entities.Files;
+using Domain.Entities.Inventory;
+using Domain.Entities.Medicines;
 using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -58,7 +60,7 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
             throw new FileValidationException("File is empty.");
 
         if (!Enum.TryParse<FileEntityType>(request.EntityType, true, out var entityType))
-            throw new FileValidationException($"Invalid entity type '{request.EntityType}'. Use Medicine or Prescription.");
+            throw new FileValidationException($"Invalid entity type '{request.EntityType}'. Use Medicine, Prescription, Batch, or InventoryAdjustment.");
 
         // Authorization per entity type
         if (entityType == FileEntityType.Medicine)
@@ -68,13 +70,31 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
             var exists = await _files.MedicineExistsAsync(request.EntityId, cancellationToken);
             if (!exists) throw new EntityNotFoundException(typeof(Domain.Entities.Medicines.Medicine), request.EntityId);
         }
-        else
+        else if (entityType == FileEntityType.Prescription)
         {
             var exists = await _files.PrescriptionExistsAsync(request.EntityId, cancellationToken);
             if (!exists) throw new EntityNotFoundException(typeof(Domain.Entities.Prescriptions.Prescription), request.EntityId);
             var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
             if (prescription is not null)
                 await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
+        }
+        else if (entityType == FileEntityType.Batch)
+        {
+            var hasPerm = _currentUser.Permissions.Contains(Permissions.Inventory.View) || _currentUser.Permissions.Contains(Permissions.Inventory.Adjust);
+            if (!hasPerm) throw new ForbiddenResourceException("Missing permission to upload batch files.");
+            var exists = await _files.BatchExistsAsync(request.EntityId, cancellationToken);
+            if (!exists) throw new EntityNotFoundException(typeof(MedicineBatch), request.EntityId);
+        }
+        else if (entityType == FileEntityType.InventoryAdjustment)
+        {
+            var hasPerm = _currentUser.Permissions.Contains(Permissions.Inventory.Adjust);
+            if (!hasPerm) throw new ForbiddenResourceException("Missing permission to upload inventory adjustment files.");
+            var exists = await _files.InventoryAdjustmentExistsAsync(request.EntityId, cancellationToken);
+            if (!exists) throw new EntityNotFoundException(typeof(InventoryAdjustment), request.EntityId);
+        }
+        else
+        {
+            throw new FileValidationException($"Unsupported entity type '{entityType}'.");
         }
 
         // Validate extension matches content type

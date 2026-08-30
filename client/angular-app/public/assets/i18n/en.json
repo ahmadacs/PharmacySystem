@@ -580,7 +580,10 @@
       "supplier": "Supplier",
       "supplierPlaceholder": "Optional",
       "cancel": "Cancel",
-      "addBatch": "Add batch"
+      "addBatch": "Add batch",
+      "attachFile": "Attach file",
+      "browse": "Browse",
+      "removeFile": "Remove file"
     },
     "medicineDetailInventory": {
       "generic": "Generic",
@@ -635,7 +638,10 @@
       "reasonRequired": "Reason is required.",
       "cancel": "Cancel",
       "receiveStock": "Receive stock",
-      "adjust": "Adjust"
+      "adjust": "Adjust",
+      "attachFile": "Attach file",
+      "browse": "Browse",
+      "removeFile": "Remove file"
     },
     "dispensePicker": {
       "title": "Dispense prescription",

@@ -19,6 +19,17 @@ public sealed record AdjustInventoryRequest
 
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
+
+    /// <summary>Optional file attachment (e.g., supporting document, invoice, photo)</summary>
+    public FileUploadDto? File { get; init; }
+}
+
+public sealed record FileUploadDto
+{
+    public string FileName { get; init; } = string.Empty;
+    public string ContentType { get; init; } = string.Empty;
+    public long SizeBytes { get; init; }
+    public string Base64Content { get; init; } = string.Empty;
 }
 
 /// <summary>

@@ -580,7 +580,10 @@
       "supplier": "المورد",
       "supplierPlaceholder": "اختياري",
       "cancel": "إلغاء",
-      "addBatch": "إضافة دفعة"
+      "addBatch": "إضافة دفعة",
+      "attachFile": "إرفاق ملف",
+      "browse": "تصفح",
+      "removeFile": "إزالة الملف"
     },
     "medicineDetailInventory": {
       "generic": "الاسم العلمي",
@@ -635,7 +638,10 @@
       "reasonRequired": "السبب مطلوب.",
       "cancel": "إلغاء",
       "receiveStock": "استلام مخزون",
-      "adjust": "تعديل"
+      "adjust": "تعديل",
+      "attachFile": "إرفاق ملف",
+      "browse": "تصفح",
+      "removeFile": "إزالة الملف"
     },
     "dispensePicker": {
       "title": "صرف وصفة",
