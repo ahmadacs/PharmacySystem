@@ -54,12 +54,16 @@ public class ExportDataProvider : IExportDataProvider
         )).ToList();
     }
 
-    public async Task<IReadOnlyList<PrescriptionExportRow>> GetPrescriptionsAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<PrescriptionExportRow>> GetPrescriptionsAsync(CancellationToken ct = default, string? id = null)
     {
-        var list = await _db.Prescriptions.AsNoTracking()
+        var query = _db.Prescriptions.AsNoTracking()
             .Include(p => p.Patient)
-            .Include(p => p.Items)
-            .ToListAsync(ct);
+            .Include(p => p.Items);
+        if (!string.IsNullOrEmpty(id) && Guid.TryParse(id, out var guidId))
+        {
+            query = query.Where(p => p.Id == guidId);
+        }
+        var list = await query.ToListAsync(ct);
         return list.Select(p => new PrescriptionExportRow(
             p.Id.ToString()[..8],
             p.Patient != null ? $"{p.Patient.FirstName} {p.Patient.LastName}" : p.PatientId.ToString()[..8],

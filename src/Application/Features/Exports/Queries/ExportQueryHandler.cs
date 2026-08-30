@@ -44,7 +44,7 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, ExportFile
         {
             "medicines" => await ExportMedicines(isExcel, cancellationToken),
             "inventory" => await ExportInventory(isExcel, cancellationToken),
-            "prescriptions" => await ExportPrescriptions(isExcel, cancellationToken),
+            "prescriptions" => await ExportPrescriptions(isExcel, request.Id, cancellationToken),
             "dispensing" => await ExportDispensing(isExcel, cancellationToken),
             _ => throw new FileValidationException($"Unknown entity type '{request.EntityType}'.")
         };
@@ -66,9 +66,9 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, ExportFile
         return new ExportFileResult(bytes, isExcel ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf", isExcel ? "inventory.xlsx" : "inventory.pdf");
     }
 
-    private async Task<ExportFileResult> ExportPrescriptions(bool isExcel, CancellationToken ct)
+    private async Task<ExportFileResult> ExportPrescriptions(bool isExcel, string? id, CancellationToken ct)
     {
-        var data = await _provider.GetPrescriptionsAsync(ct);
+        var data = await _provider.GetPrescriptionsAsync(ct, id);
         var title = "Prescriptions Report";
         var bytes = isExcel ? _export.ExportToExcel(data, "Prescriptions") : _export.ExportToPdf(data, title);
         return new ExportFileResult(bytes, isExcel ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf", isExcel ? "prescriptions.xlsx" : "prescriptions.pdf");

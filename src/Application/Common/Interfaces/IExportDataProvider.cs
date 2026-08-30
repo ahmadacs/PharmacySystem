@@ -4,7 +4,7 @@ public interface IExportDataProvider
 {
     Task<IReadOnlyList<MedicineExportRow>> GetMedicinesAsync(CancellationToken ct = default);
     Task<IReadOnlyList<InventoryExportRow>> GetInventoryAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<PrescriptionExportRow>> GetPrescriptionsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<PrescriptionExportRow>> GetPrescriptionsAsync(CancellationToken ct = default, string? id = null);
     Task<IReadOnlyList<DispensingExportRow>> GetDispensingAsync(CancellationToken ct = default);
 }
 

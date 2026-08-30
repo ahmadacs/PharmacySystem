@@ -7,8 +7,9 @@ import { environment } from '../../../environments/environment';
 export class ExportService {
   private readonly http = inject(HttpClient);
 
-  async export(entityType: 'medicines' | 'inventory' | 'prescriptions' | 'dispensing', format: 'excel' | 'pdf'): Promise<void> {
-    const url = `${environment.apiUrl}/exports/${entityType}?format=${format}`;
+  async export(entityType: 'medicines' | 'inventory' | 'prescriptions' | 'dispensing', format: 'excel' | 'pdf', id?: string): Promise<void> {
+    let url = `${environment.apiUrl}/exports/${entityType}?format=${format}`;
+    if (id) url += `&id=${encodeURIComponent(id)}`;
     const blob = await firstValueFrom(this.http.get(url, { responseType: 'blob' }));
     const ext = format === 'pdf' ? 'pdf' : 'xlsx';
     const contentType = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

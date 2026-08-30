@@ -118,7 +118,7 @@ export class PrescriptionDetailsDialogComponent {
 
   async print(): Promise<void> {
     try {
-      await this.exportService.export('prescriptions', 'pdf');
+      await this.exportService.export('prescriptions', 'pdf', this.prescriptionId);
       this.toast.show('Prescription exported.', 'success');
     } catch {
       // handled
