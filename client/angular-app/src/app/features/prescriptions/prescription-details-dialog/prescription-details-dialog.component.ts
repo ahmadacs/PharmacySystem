@@ -19,6 +19,7 @@ import { firstValueFrom } from 'rxjs';
 import { Permissions } from '../../../core/constants/permissions';
 import { PrescriptionDetailsDto } from '../../../core/models/api.models';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { TranslateService } from '@ngx-translate/core';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PrescriptionsService } from '../prescriptions.service';
@@ -56,6 +57,7 @@ export class PrescriptionDetailsDialogComponent {
   private readonly authStore = inject(AuthStore);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionDetailsDialogComponent>);
   private readonly exportService = inject(ExportService);
+  protected readonly translate = inject(TranslateService);
 
   readonly prescriptionId = inject<string>(MAT_DIALOG_DATA);
   protected readonly prescription = signal<PrescriptionDetailsDto | null>(null);
