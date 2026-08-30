@@ -56,7 +56,7 @@ public class ExportDataProvider : IExportDataProvider
 
     public async Task<IReadOnlyList<PrescriptionExportRow>> GetPrescriptionsAsync(CancellationToken ct = default, string? id = null)
     {
-        var query = _db.Prescriptions.AsNoTracking()
+        IQueryable<Domain.Entities.Prescriptions.Prescription> query = _db.Prescriptions.AsNoTracking()
             .Include(p => p.Patient)
             .Include(p => p.Items);
         if (!string.IsNullOrEmpty(id) && Guid.TryParse(id, out var guidId))
