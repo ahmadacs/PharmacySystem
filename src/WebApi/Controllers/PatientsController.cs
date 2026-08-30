@@ -15,11 +15,10 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
     [HttpGet("by-phone/{phone}")]
     [Authorize(Policy = Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByPhone(string phone, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(new GetPatientByPhoneQuery(phone), cancellationToken);
-        return result is null ? NotFound(new { message = "Patient not found." }) : Ok(result);
+        return Ok(result);
     }
 
     /// <summary>Lists prescriptions for a patient.</summary>

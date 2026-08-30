@@ -58,7 +58,7 @@
         @if (canCancel(p)) {
           <button mat-stroked-button color="warn" (click)="cancel(p.id)">{{ 'dialogs.prescriptionDetails.cancelPrescription' | translate }}</button>
         }
-        <button mat-stroked-button color="primary" onclick="window.print()">{{ 'dialogs.prescriptionDetails.print' | translate }}</button>
+        <button mat-stroked-button color="primary" (click)="print()">{{ 'dialogs.prescriptionDetails.print' | translate }}</button>
         <button mat-button [mat-dialog-close]="false">{{ 'dialogs.prescriptionDetails.close' | translate }}</button>
       </mat-dialog-actions>
     }

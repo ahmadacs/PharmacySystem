@@ -22,6 +22,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PrescriptionsService } from '../prescriptions.service';
+import { ExportService } from '../../../core/services/export.service';
 
 @Component({
   selector: 'app-prescription-details-dialog',
@@ -54,6 +55,7 @@ export class PrescriptionDetailsDialogComponent {
   private readonly dialog = inject(MatDialog);
   private readonly authStore = inject(AuthStore);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionDetailsDialogComponent>);
+  private readonly exportService = inject(ExportService);
 
   readonly prescriptionId = inject<string>(MAT_DIALOG_DATA);
   protected readonly prescription = signal<PrescriptionDetailsDto | null>(null);
@@ -111,6 +113,15 @@ export class PrescriptionDetailsDialogComponent {
       this.dialogRef.close(true);
     } catch {
       // error toast already shown by the error interceptor
+    }
+  }
+
+  async print(): Promise<void> {
+    try {
+      await this.exportService.export('prescriptions', 'pdf');
+      this.toast.show('Prescription exported.', 'success');
+    } catch {
+      // handled
     }
   }
 

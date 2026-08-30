@@ -167,26 +167,32 @@ export class PrescriptionFormDialogComponent {
   private async searchPatient(phone: string): Promise<void> {
     this.phoneSearching.set(true);
     try {
-      const patient = await firstValueFrom(this.http.get<{ id: string; firstName: string; lastName: string; dateOfBirth: string; phoneNumber: string }>(`${environment.apiUrl}/patients/by-phone/${encodeURIComponent(phone)}`));
-      this.foundPatient.set(patient);
-      this.isNewPatient.set(false);
-      this.form.controls.patientFirstName.setValue(patient.firstName);
-      this.form.controls.patientLastName.setValue(patient.lastName);
-      this.form.controls.patientDateOfBirth.setValue(patient.dateOfBirth ? new Date(patient.dateOfBirth) : null);
-      this.setPatientReadonly(true);
-      // Load previous prescriptions
-      try {
-        const list = await firstValueFrom(this.http.get<{ items: { id: string; issuedDate: string; status: string; itemCount: number }[] }>(`${environment.apiUrl}/patients/${patient.id}/prescriptions`));
-        this.previousPrescriptions.set(list.items ?? []);
-      } catch { this.previousPrescriptions.set([]); }
+      const patient = await firstValueFrom(this.http.get<{ id: string; firstName: string; lastName: string; dateOfBirth: string; phoneNumber: string } | null>(`${environment.apiUrl}/patients/by-phone/${encodeURIComponent(phone)}`));
+      if (patient) {
+        this.foundPatient.set(patient);
+        this.isNewPatient.set(false);
+        this.form.controls.patientFirstName.setValue(patient.firstName);
+        this.form.controls.patientLastName.setValue(patient.lastName);
+        this.form.controls.patientDateOfBirth.setValue(patient.dateOfBirth ? new Date(patient.dateOfBirth) : null);
+        this.setPatientReadonly(true);
+        try {
+          const list = await firstValueFrom(this.http.get<{ items: { id: string; issuedDate: string; status: string; itemCount: number }[] }>(`${environment.apiUrl}/patients/${patient.id}/prescriptions`));
+          this.previousPrescriptions.set(list.items ?? []);
+        } catch { this.previousPrescriptions.set([]); }
+      } else {
+        this.foundPatient.set(null);
+        this.isNewPatient.set(true);
+        this.previousPrescriptions.set([]);
+        this.setPatientReadonly(false);
+      }
     } catch {
-      // Not an error — new patient needs name + DOB entry
       this.foundPatient.set(null);
       this.isNewPatient.set(true);
       this.previousPrescriptions.set([]);
       this.setPatientReadonly(false);
     } finally { this.phoneSearching.set(false); }
   }
+
 
   get items(): FormArray<FormGroup> {
     return this.form.controls.items;
