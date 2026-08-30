@@ -43,7 +43,7 @@ This is a production-shaped pharmacy backend and SPA:
 ### 1. Clone & Environment Setup
 
 ```bash
-git clone <your-fork-url>
+git clone https://github.com/ahmadacs/PharmacySystem.git
 cd PharmacySystem
 ```
 
