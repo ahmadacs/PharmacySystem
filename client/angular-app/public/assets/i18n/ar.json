@@ -722,6 +722,7 @@
       "remaining": "المتبقي",
       "dosage": "الجرعة",
       "refill": "إعادة صرف",
+      "print": "طباعة",
       "cancelPrescription": "إلغاء الوصفة",
       "close": "إغلاق"
     }

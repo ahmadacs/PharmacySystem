@@ -5,6 +5,7 @@
 
     @if (medicine(); as details) {
       <h2 mat-dialog-title>{{ displayName(details) }}</h2>
+      <p class="subtitle">{{ genericDisplay(details) }}</p>
       <mat-dialog-content class="details">
         <div class="details__meta">
           <span><strong>{{ 'dialogs.medicineDetails.generic' | translate }}:</strong> {{ genericDisplay(details) }}</span>
@@ -21,7 +22,7 @@
 
         <mat-accordion class="variants" [multi]="true">
           @for (variant of details.variants; track variant.id; let first = $first) {
-            <mat-expansion-panel [expanded]="first">
+            <mat-expansion-panel [expanded]="false">
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   {{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength ?? '' }} {{ variant.unit | enumTranslate:'MedicineUnit' }}

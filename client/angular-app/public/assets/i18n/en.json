@@ -722,6 +722,7 @@
       "remaining": "Remaining",
       "dosage": "Dosage",
       "refill": "Refill",
+      "print": "Print",
       "cancelPrescription": "Cancel prescription",
       "close": "Close"
     }
