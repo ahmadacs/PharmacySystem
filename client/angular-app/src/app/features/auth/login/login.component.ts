@@ -14,6 +14,8 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { LocalizationService } from '../../../core/services/localization.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -22,6 +24,7 @@ import { ToastService } from '../../../core/services/toast.service';
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    TranslatePipe,
     MatCard,
     MatCardHeader,
     MatCardTitle,
@@ -45,6 +48,8 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
+  protected readonly localizationService = inject(LocalizationService);
 
   protected readonly submitting = signal(false);
 
@@ -67,7 +72,7 @@ export class LoginComponent {
     try {
       const { email, password } = this.form.getRawValue();
       await this.authStore.login(email, password);
-      this.toast.show('Signed in successfully.', 'success');
+      this.toast.show(this.translate.instant('auth.signedInSuccess'), 'success');
 
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
       await this.router.navigateByUrl(returnUrl);

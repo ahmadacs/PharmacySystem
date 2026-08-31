@@ -3,21 +3,25 @@
   <mat-card class="auth-page__card">
     <mat-card-header class="auth-page__header">
       <mat-icon class="auth-page__logo" fontIcon="person_add" />
-      <mat-card-title>Create account</mat-card-title>
-      <mat-card-subtitle>Register for the Pharmacy System</mat-card-subtitle>
+      <mat-card-title>{{ 'auth.createAccountTitle' | translate }}</mat-card-title>
+      <mat-card-subtitle>{{ 'auth.registerSubtitle' | translate }}</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <div class="auth-page__row">
-          <mat-form-field appearance="outline"><mat-label>First name</mat-label><input matInput formControlName="firstName" autocomplete="given-name" /><mat-error>First name is required.</mat-error></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Last name</mat-label><input matInput formControlName="lastName" autocomplete="family-name" /><mat-error>Last name is required.</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>{{ 'auth.firstName' | translate }}</mat-label><input matInput formControlName="firstName" autocomplete="given-name" /><mat-error>{{ 'auth.firstNameRequired' | translate }}</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>{{ 'auth.lastName' | translate }}</mat-label><input matInput formControlName="lastName" autocomplete="family-name" /><mat-error>{{ 'auth.lastNameRequired' | translate }}</mat-error></mat-form-field>
         </div>
-        <mat-form-field appearance="outline" class="auth-page__field"><mat-label>Email</mat-label><input matInput formControlName="email" type="email" autocomplete="email" /><mat-error>Enter a valid email address.</mat-error></mat-form-field>
-        <mat-form-field appearance="outline" class="auth-page__field"><mat-label>Password</mat-label><input matInput formControlName="password" type="password" autocomplete="new-password" /><mat-error>Password must be at least 8 characters.</mat-error></mat-form-field>
-        <mat-form-field appearance="outline" class="auth-page__field"><mat-label>Confirm password</mat-label><input matInput formControlName="confirmPassword" type="password" autocomplete="new-password" /><mat-error>Confirmation is required.</mat-error></mat-form-field>
-        <button mat-flat-button color="primary" class="auth-page__submit" type="submit" [disabled]="submitting()">Create account</button>
+        <mat-form-field appearance="outline" class="auth-page__field"><mat-label>{{ 'auth.email' | translate }}</mat-label><input matInput formControlName="email" type="email" autocomplete="email" /><mat-error>{{ 'auth.emailInvalid' | translate }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline" class="auth-page__field"><mat-label>{{ 'auth.password' | translate }}</mat-label><input matInput formControlName="password" type="password" autocomplete="new-password" /><mat-error>{{ 'auth.passwordMinLength' | translate }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline" class="auth-page__field"><mat-label>{{ 'auth.confirmPassword' | translate }}</mat-label><input matInput formControlName="confirmPassword" type="password" autocomplete="new-password" /><mat-error>{{ 'auth.confirmRequired' | translate }}</mat-error></mat-form-field>
+        <button mat-flat-button color="primary" class="auth-page__submit" type="submit" [disabled]="submitting()">{{ 'auth.createAccountButton' | translate }}</button>
+        <button mat-button type="button" style="background: transparent; box-shadow: none; margin-top: 0.5rem;" (click)="localizationService.toggle()">
+          <mat-icon>language</mat-icon>
+          {{ 'common.language' | translate }}
+        </button>
       </form>
     </mat-card-content>
-    <mat-card-footer class="auth-page__footer"><a routerLink="/login">Already have an account? Sign in</a></mat-card-footer>
+    <mat-card-footer class="auth-page__footer"><a routerLink="/login">{{ 'auth.alreadyHaveAccount' | translate }}</a></mat-card-footer>
   </mat-card>
 </div>

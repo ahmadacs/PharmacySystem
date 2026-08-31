@@ -14,6 +14,7 @@ import { Permissions } from '../../core/constants/permissions';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ThemeService } from '../../core/services/theme.service';
 import { LocalizationService } from '../../core/services/localization.service';
+import { TranslateService } from '@ngx-translate/core';
 import { ToastService } from '../../core/services/toast.service';
 import { ChangePasswordDialogComponent } from './change-password-dialog/change-password-dialog.component';
 import { NotificationBellComponent } from './notification-bell/notification-bell.component';
@@ -72,6 +73,7 @@ export class ShellComponent {
   protected readonly themeService = inject(ThemeService);
   protected readonly localizationService = inject(LocalizationService);
   protected readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
 
   private readonly isHandsetSignal = toSignal(
     this.breakpointObserver.observe([Breakpoints.Handset]),
@@ -109,7 +111,7 @@ export class ShellComponent {
 
   async logout(): Promise<void> {
     await this.authStore.logout();
-    this.toast.show('Signed out.', 'info');
+    this.toast.show(this.translate.instant('shell.logout'), 'info');
   }
 
   openChangePassword(): void {

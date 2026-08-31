@@ -7,6 +7,8 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
+import { LocalizationService } from '../../../core/services/localization.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TokenStore } from '../../../core/auth/token.store';
@@ -15,7 +17,7 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatCardFooter, MatFormField, MatInput, MatLabel, MatError, MatButton, MatIcon, MatProgressBar, RouterLink],
+  imports: [ReactiveFormsModule, TranslatePipe, MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatCardFooter, MatFormField, MatInput, MatLabel, MatError, MatButton, MatIcon, MatProgressBar, RouterLink],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -25,6 +27,7 @@ export class RegisterComponent {
   private readonly tokenStore = inject(TokenStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  protected readonly localizationService = inject(LocalizationService);
   protected readonly submitting = signal(false);
 
   protected readonly form = new FormGroup({
