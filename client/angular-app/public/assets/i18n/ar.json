@@ -559,6 +559,8 @@
       "attachments": "المرفقات",
       "close": "إغلاق",
       "batch": "الدفعة",
+      "expiry": "الانتهاء",
+      "supplier": "المورد",
       "pkg": "عبوة"
     },
     "batchForm": {

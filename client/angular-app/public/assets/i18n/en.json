@@ -559,6 +559,8 @@
       "attachments": "Attachments",
       "close": "Close",
       "batch": "Batch",
+      "expiry": "Expiry",
+      "supplier": "Supplier",
       "pkg": "Pkg"
     },
     "batchForm": {
