@@ -166,7 +166,7 @@
       "item": "الصنف",
       "type": "النوع",
       "quantityChanged": "التغيير",
-      "beforeAfter": "قبل → بعد",
+      "beforeAfter": "قبل ← بعد",
       "reason": "السبب",
       "adjustedBy": "تم التعديل بواسطة",
       "name": "الدواء",

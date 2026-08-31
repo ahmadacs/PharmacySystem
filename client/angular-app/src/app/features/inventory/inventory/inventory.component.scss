@@ -96,6 +96,14 @@ table {
   background: color-mix(in srgb, var(--status-critical) 15%, transparent);
 }
 
+.arrow {
+  display: inline-block;
+
+  :host-context([dir='rtl']) & {
+    transform: rotate(180deg);
+  }
+}
+
 .tab-badge {
   display: inline-flex;
   align-items: center;
