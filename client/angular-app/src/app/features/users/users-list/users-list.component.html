@@ -1,20 +1,20 @@
-<app-page-header title="Users" subtitle="Manage pharmacy staff accounts and roles">
+<app-page-header [title]="'users.title' | translate" [subtitle]="'users.subtitle' | translate">
   <button actions mat-flat-button color="primary" *appHasPermission="permissions.UsersManage" (click)="openCreate()">
     <mat-icon>person_add</mat-icon>
-    New user
+    {{ 'users.newUser' | translate }}
   </button>
 </app-page-header>
 
 <div class="filters">
   <mat-form-field appearance="outline">
-    <mat-label>Search</mat-label>
-    <input matInput [formControl]="searchControl" placeholder="Email or name" />
+    <mat-label>{{ 'common.search' | translate }}</mat-label>
+    <input matInput [formControl]="searchControl" [placeholder]="'users.filters.search' | translate" />
   </mat-form-field>
 
   <mat-form-field appearance="outline">
-    <mat-label>Role</mat-label>
+    <mat-label>{{ 'users.filters.role' | translate }}</mat-label>
     <mat-select [value]="role()" (selectionChange)="role.set($event.value ?? null); page.set(1)">
-      <mat-option [value]="null">All</mat-option>
+      <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
       @for (role of roles; track role) {
         <mat-option [value]="role">{{ role }}</mat-option>
       }
@@ -22,11 +22,11 @@
   </mat-form-field>
 
   <mat-form-field appearance="outline">
-    <mat-label>Status</mat-label>
+    <mat-label>{{ 'users.tables.status' | translate }}</mat-label>
     <mat-select [value]="isActive()" (selectionChange)="isActive.set($event.value ?? null); page.set(1)">
-      <mat-option [value]="null">All</mat-option>
-      <mat-option [value]="true">Active</mat-option>
-      <mat-option [value]="false">Inactive</mat-option>
+      <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+      <mat-option [value]="true">{{ 'dictionary.status.active' | translate }}</mat-option>
+      <mat-option [value]="false">{{ 'dictionary.status.inactive' | translate }}</mat-option>
     </mat-select>
   </mat-form-field>
 </div>
@@ -38,36 +38,36 @@
 <div class="table-card mat-elevation-z2">
   <table mat-table matSort (matSortChange)="onSort($event)" [dataSource]="users.value()!.items">
     <ng-container matColumnDef="email">
-      <th mat-header-cell mat-sort-header *matHeaderCellDef>Email</th>
+      <th mat-header-cell mat-sort-header *matHeaderCellDef>{{ 'users.tables.email' | translate }}</th>
       <td mat-cell *matCellDef="let row">{{ row.email }}</td>
     </ng-container>
 
     <ng-container matColumnDef="fullName">
-      <th mat-header-cell mat-sort-header *matHeaderCellDef>Name</th>
+      <th mat-header-cell mat-sort-header *matHeaderCellDef>{{ 'users.tables.name' | translate }}</th>
       <td mat-cell *matCellDef="let row">{{ row.fullName || '-' }}</td>
     </ng-container>
 
     <ng-container matColumnDef="role">
-      <th mat-header-cell mat-sort-header disabled *matHeaderCellDef>Role</th>
+      <th mat-header-cell mat-sort-header disabled *matHeaderCellDef>{{ 'users.tables.role' | translate }}</th>
       <td mat-cell *matCellDef="let row">{{ row.roles.join(', ') }}</td>
     </ng-container>
 
     <ng-container matColumnDef="isActive">
-      <th mat-header-cell mat-sort-header disabled *matHeaderCellDef>Status</th>
+      <th mat-header-cell mat-sort-header disabled *matHeaderCellDef>{{ 'users.tables.status' | translate }}</th>
       <td mat-cell *matCellDef="let row">
         <span class="badge" [class.badge-inactive]="!row.isActive">
-          {{ row.isActive ? 'Active' : 'Inactive' }}
+          {{ row.isActive ? ('dictionary.status.active' | translate) : ('dictionary.status.inactive' | translate) }}
         </span>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="actions">
-      <th mat-header-cell *matHeaderCellDef class="col-actions">Actions</th>
+      <th mat-header-cell *matHeaderCellDef class="col-actions">{{ 'users.tables.actions' | translate }}</th>
       <td mat-cell *matCellDef="let row" class="col-actions">
         <button
           mat-icon-button
           *appHasPermission="permissions.UsersManage"
-          [matTooltip]="row.isActive ? 'Deactivate' : 'Activate'"
+          [matTooltip]="row.isActive ? ('users.deactivate' | translate) : ('users.activate' | translate)"
           [color]="row.isActive ? 'warn' : 'primary'"
           (click)="toggleActive(row)"
         >
@@ -81,7 +81,7 @@
   </table>
 
   @if (!users.isLoading() && users.value()!.items.length === 0) {
-    <app-empty-state icon="group" message="No users found" hint="Adjust your search or filters." />
+    <app-empty-state icon="group" [message]="'users.empty.message' | translate" [hint]="'users.empty.hint' | translate" />
   }
 
   <mat-paginator

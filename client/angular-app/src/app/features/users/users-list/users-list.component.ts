@@ -29,6 +29,7 @@ import { Permissions } from '../../../core/constants/permissions';
 import { PagedResult, UserDto, UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { emptyPage } from '../../../core/utils/empty-page';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -67,6 +68,7 @@ const USER_ROLES: UserRole[] = ['Admin', 'Pharmacist', 'Doctor'];
     MatTooltip,
     MatSort,
     MatSortHeader,
+    TranslatePipe,
     PageHeaderComponent,
     EmptyStateComponent,
     HasPermissionDirective

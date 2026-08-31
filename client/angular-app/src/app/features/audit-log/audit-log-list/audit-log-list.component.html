@@ -1,17 +1,17 @@
-<app-page-header title="Audit Log" subtitle="Who changed what, when, and with which old/new values" />
+<app-page-header [title]="'auditLog.title' | translate" [subtitle]="'auditLog.subtitle' | translate" />
 
 <div class="filters">
   <mat-form-field appearance="outline">
-    <mat-label>Search</mat-label>
-    <input matInput [formControl]="searchControl" placeholder="Entity or user" />
+    <mat-label>{{ 'common.search' | translate }}</mat-label>
+    <input matInput [formControl]="searchControl" [placeholder]="'auditLog.filters.search' | translate" />
   </mat-form-field>
 
   <mat-form-field appearance="outline">
-    <mat-label>Action</mat-label>
+    <mat-label>{{ 'auditLog.tables.action' | translate }}</mat-label>
     <mat-select [value]="action()" (selectionChange)="action.set($event.value ?? ''); onFilterChange()">
-      <mat-option value="">All</mat-option>
+      <mat-option value="">{{ 'common.all' | translate }}</mat-option>
       @for (action of actions; track action) {
-        <mat-option [value]="action">{{ action }}</mat-option>
+        <mat-option [value]="action">{{ action | enumTranslate:'AuditAction' }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
@@ -30,7 +30,7 @@
     multiTemplateDataRows
   >
     <ng-container matColumnDef="action">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Action</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'auditLog.tables.action' | translate }}</th>
       <td mat-cell *matCellDef="let row">
         <span
           class="badge"
@@ -38,34 +38,34 @@
           [class.badge-update]="row.action === 'Updated'"
           [class.badge-delete]="row.action === 'Deleted'"
         >
-          {{ row.action }}
+          {{ row.action | enumTranslate:'AuditAction' }}
         </span>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="entity">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Entity</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'auditLog.tables.entity' | translate }}</th>
       <td mat-cell *matCellDef="let row">
-        <span class="cell-strong">{{ row.entityName }}</span>
+        <span class="cell-strong">{{ row.entityName | enumTranslate:'EntityName' }}</span>
         <span class="cell-sub">{{ row.entityId }}</span>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="user">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>User</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'auditLog.tables.user' | translate }}</th>
       <td mat-cell *matCellDef="let row">{{ row.changedByName ?? 'System' }}</td>
     </ng-container>
 
     <ng-container matColumnDef="changedAt">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
-      <td mat-cell *matCellDef="let row">{{ row.changedAt | riyadhDate: 'medium' }}</td>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'auditLog.tables.date' | translate }}</th>
+      <td mat-cell *matCellDef="let row">{{ row.changedAt | riyadhDate: 'yyyy-MM-dd HH:mm' }}</td>
     </ng-container>
 
     <ng-container matColumnDef="expand">
       <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
       <td mat-cell *matCellDef="let row" class="col-actions">
         @if (row.changes.length > 0) {
-          <button mat-icon-button matTooltip="Toggle details" (click)="$event.stopPropagation(); toggleDetails(row.id)">
+          <button mat-icon-button [matTooltip]="'auditLog.tooltip.toggle' | translate" (click)="$event.stopPropagation(); toggleDetails(row.id)">
             <mat-icon>{{ expandedId() === row.id ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
         }
@@ -79,11 +79,11 @@
             <div class="detail-grid">
               @for (change of row.changes; track change.property) {
                 <div class="detail-item">
-                  <div class="detail-property">{{ change.property }}</div>
+                  <div class="detail-property">{{ change.property | enumTranslate:'AuditProperty' }}</div>
                   <div class="detail-values">
-                    <span class="value old">{{ change.oldValue ?? '—' }}</span>
+                    <span class="value old">{{ change.oldValue ? (change.oldValue | enumTranslate:'PrescriptionStatus') : '—' }}</span>
                     <mat-icon class="value-arrow">arrow_forward</mat-icon>
-                    <span class="value new">{{ change.newValue ?? '—' }}</span>
+                    <span class="value new">{{ change.newValue ? (change.newValue | enumTranslate:'PrescriptionStatus') : '—' }}</span>
                   </div>
                 </div>
               }
@@ -106,8 +106,8 @@
   @if (!audit.isLoading() && audit.value().items.length === 0) {
     <app-empty-state
       icon="receipt_long"
-      message="No audit entries found"
-      hint="Try adjusting your search or filters."
+      [message]="'auditLog.empty.message' | translate"
+      [hint]="'auditLog.empty.hint' | translate"
     />
   }
 

@@ -124,4 +124,8 @@ table {
   height: 1rem;
   width: 1rem;
   opacity: 0.5;
+
+  :host-context([dir='rtl']) & {
+    transform: scaleX(-1);
+  }
 }

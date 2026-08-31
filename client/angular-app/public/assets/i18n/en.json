@@ -340,6 +340,12 @@
     "filters": {
       "search": "Search users...",
       "role": "Role"
+    },
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "empty": {
+      "message": "No users found",
+      "hint": "Adjust your search or filters."
     }
   },
   "auditLog": {
@@ -355,6 +361,58 @@
     "filters": {
       "search": "Search logs...",
       "user": "User"
+    },
+    "actions": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted"
+    },
+    "entities": {
+      "medicine": "Medicine",
+      "medicineVariant": "Dosage Form",
+      "medicineBatch": "Medicine Batch",
+      "prescription": "Prescription",
+      "prescriptionItem": "Prescribed Medicine",
+      "patient": "Patient",
+      "doctor": "Doctor",
+      "pharmacist": "Pharmacist",
+      "user": "User",
+      "dispensingRecord": "Dispensing Record",
+      "dispensingRecordItem": "Dispensed Item",
+      "inventoryAdjustment": "Inventory",
+      "notification": "Notification"
+    },
+    "properties": {
+      "Id": "ID",
+      "MedicineBatchId": "Batch",
+      "MedicineVariantId": "Dosage Form",
+      "PrescriptionId": "Prescription",
+      "PatientId": "Patient",
+      "DoctorId": "Doctor",
+      "QuantityBefore": "Quantity Before",
+      "QuantityAfter": "Quantity After",
+      "QuantityChanged": "Change",
+      "QuantityReceived": "Received Quantity",
+      "QuantityAvailable": "Available Quantity",
+      "AdjustedAt": "Adjusted At",
+      "AdjustedBy": "Adjusted By",
+      "Reason": "Reason",
+      "Type": "Type",
+      "Name": "Name",
+      "GenericName": "Generic Name",
+      "Category": "Category",
+      "ReorderLevel": "Reorder Level",
+      "BatchNumber": "Batch Number",
+      "ExpiryDate": "Expiry Date",
+      "UnitCost": "Unit Cost",
+      "SupplierName": "Supplier"
+    },
+    "empty": {
+      "message": "No audit entries found",
+      "hint": "Try adjusting your search or filters."
+    },
+    "tooltip": {
+      "toggle": "Toggle details"
     }
   },
   "files": {

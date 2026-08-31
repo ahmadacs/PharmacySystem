@@ -13,6 +13,9 @@ const PREFIX_MAP: Record<string, string> = {
   InventoryAdjustmentType: 'inventory.adjustmentTypes',
   BatchStatus: 'inventory.chips',
   UserRole: 'users.roles',
+  AuditAction: 'auditLog.actions',
+  EntityName: 'auditLog.entities',
+  AuditProperty: 'auditLog.properties',
 };
 
 const ENUM_OBJECTS: Record<string, any> = {

@@ -340,6 +340,12 @@
     "filters": {
       "search": "بحث عن مستخدمين...",
       "role": "الدور"
+    },
+    "activate": "تفعيل",
+    "deactivate": "إلغاء التفعيل",
+    "empty": {
+      "message": "لا يوجد مستخدمون",
+      "hint": "جرّب تعديل البحث أو الفلاتر."
     }
   },
   "auditLog": {
@@ -355,6 +361,58 @@
     "filters": {
       "search": "بحث في السجلات...",
       "user": "المستخدم"
+    },
+    "actions": {
+      "created": "إنشاء",
+      "updated": "تحديث",
+      "deleted": "حذف"
+    },
+    "entities": {
+      "medicine": "دواء",
+      "medicineVariant": "شكل جرعي",
+      "medicineBatch": "دفعة دواء",
+      "prescription": "وصفة طبية",
+      "prescriptionItem": "دواء موصوف",
+      "patient": "مريض",
+      "doctor": "طبيب",
+      "pharmacist": "صيدلي",
+      "user": "مستخدم",
+      "dispensingRecord": "سجل صرف",
+      "dispensingRecordItem": "صنف مصروف",
+      "inventoryAdjustment": "المخزون",
+      "notification": "إشعار"
+    },
+    "properties": {
+      "Id": "المعرّف",
+      "MedicineBatchId": "الدفعة",
+      "MedicineVariantId": "الشكل الجرعي",
+      "PrescriptionId": "الوصفة",
+      "PatientId": "المريض",
+      "DoctorId": "الطبيب",
+      "QuantityBefore": "الكمية قبل",
+      "QuantityAfter": "الكمية بعد",
+      "QuantityChanged": "مقدار التغيير",
+      "QuantityReceived": "الكمية المستلمة",
+      "QuantityAvailable": "الكمية المتاحة",
+      "AdjustedAt": "تاريخ التعديل",
+      "AdjustedBy": "عدّل بواسطة",
+      "Reason": "السبب",
+      "Type": "النوع",
+      "Name": "الاسم",
+      "GenericName": "الاسم العلمي",
+      "Category": "التصنيف",
+      "ReorderLevel": "حد إعادة الطلب",
+      "BatchNumber": "رقم الدفعة",
+      "ExpiryDate": "تاريخ الانتهاء",
+      "UnitCost": "سعر الوحدة",
+      "SupplierName": "المورد"
+    },
+    "empty": {
+      "message": "لا توجد سجلات تدقيق",
+      "hint": "جرّب تعديل البحث أو الفلاتر."
+    },
+    "tooltip": {
+      "toggle": "عرض التفاصيل"
     }
   },
   "files": {

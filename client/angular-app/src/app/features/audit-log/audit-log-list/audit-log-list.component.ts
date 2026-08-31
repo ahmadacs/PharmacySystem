@@ -26,8 +26,10 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { environment } from '../../../../environments/environment';
 import { AuditAction, AuditEntryDto, PagedResult } from '../../../core/models/api.models';
 import { emptyPage } from '../../../core/utils/empty-page';
+import { TranslatePipe } from '@ngx-translate/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 
 export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
@@ -37,6 +39,8 @@ export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    TranslatePipe,
+    EnumTranslatePipe,
     RiyadhDatePipe,
     MatFormField,
     MatInput,
