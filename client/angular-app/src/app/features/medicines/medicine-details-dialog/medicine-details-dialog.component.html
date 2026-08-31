@@ -29,7 +29,7 @@
                 </mat-panel-title>
                 <mat-panel-description>
                   {{ variant.form | enumTranslate:'MedicineForm' }} · {{ variant.unit | enumTranslate:'MedicineUnit' }}
-                  <span class="badge">Pkg: {{ variant.packageUnitName }} of {{ variant.unitsPerPackage }} {{ variant.baseUnitName }}s</span>
+                  <span class="badge">{{ 'dialogs.medicineDetails.pkg' | translate }}: {{ variant.packageUnitName }} of {{ variant.unitsPerPackage }} {{ variant.baseUnitName }}s</span>
                   <span class="badge">{{ 'dialogs.medicineDetails.available' | translate }}: {{ variant.availableQuantity }} {{ variant.baseUnitName }}s</span>
                 </mat-panel-description>
               </mat-expansion-panel-header>

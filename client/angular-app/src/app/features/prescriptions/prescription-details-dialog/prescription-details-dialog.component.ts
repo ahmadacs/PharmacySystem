@@ -20,6 +20,7 @@ import { Permissions } from '../../../core/constants/permissions';
 import { PrescriptionDetailsDto } from '../../../core/models/api.models';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TranslateService } from '@ngx-translate/core';
+import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PrescriptionsService } from '../prescriptions.service';
@@ -33,6 +34,7 @@ import { ExportService } from '../../../core/services/export.service';
     MatProgressBar,
     MatTable,
     TranslatePipe,
+    EnumTranslatePipe,
     MatColumnDef,
     MatHeaderCellDef,
     MatCellDef,

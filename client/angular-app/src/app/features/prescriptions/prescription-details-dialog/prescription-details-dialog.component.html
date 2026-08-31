@@ -10,7 +10,7 @@
           <span><strong>{{ 'dialogs.prescriptionDetails.patient' | translate }}:</strong> {{ p.patientName }} ({{ p.patientAge }} {{ 'dialogs.dispense.patientAge' | translate }})</span>
           <span><strong>{{ 'dialogs.prescriptionDetails.doctor' | translate }}:</strong> {{ p.doctorName }}</span>
           <span><strong>{{ 'dialogs.prescriptionDetails.issued' | translate }}:</strong> {{ p.issuedDate }}</span>
-          <span><strong>{{ 'dialogs.prescriptionDetails.status' | translate }}:</strong> <span class="badge">{{ p.status }}</span></span>
+            <span><strong>{{ 'dialogs.prescriptionDetails.status' | translate }}:</strong> <span class="badge">{{ p.status | enumTranslate:'PrescriptionStatus' }}</span></span>
         </div>
         @if (p.diagnosis) {
           <p><strong>{{ 'dialogs.prescriptionDetails.diagnosis' | translate }}:</strong> {{ p.diagnosis }}</p>

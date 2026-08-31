@@ -558,7 +558,8 @@
       "noBatches": "No batches for this variant.",
       "attachments": "Attachments",
       "close": "Close",
-      "batch": "Batch"
+      "batch": "Batch",
+      "pkg": "Pkg"
     },
     "batchForm": {
       "title": "Add batch",

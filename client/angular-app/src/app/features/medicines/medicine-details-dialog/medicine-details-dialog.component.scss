@@ -32,8 +32,8 @@
       padding: 0.2rem 0.6rem;
       border-radius: 999px;
       font-size: 0.75rem;
-      background: var(--mat-sys-secondary-container);
-      color: var(--mat-sys-on-secondary-container);
+      background: var(--mat-sys-secondary-container, #e3f2fd);
+      color: var(--mat-sys-on-secondary-container, #0d47a1);
     }
     .badge-danger {
       background: var(--mat-sys-error-container);
