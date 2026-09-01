@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { CategoryEnum, MedicineForm } from '../../core/models/api.models';
+import { CategoryEnum, MedicineForm, MedicineUnit } from '../../core/models/api.models';
 
 const PREFIX_MAP: Record<string, string> = {
   CategoryEnum: 'dictionary.categories',
@@ -21,6 +21,7 @@ const PREFIX_MAP: Record<string, string> = {
 const ENUM_OBJECTS: Record<string, any> = {
   CategoryEnum,
   MedicineForm,
+  MedicineUnit,
 };
 
 function toTranslationKey(enumName: string): string {

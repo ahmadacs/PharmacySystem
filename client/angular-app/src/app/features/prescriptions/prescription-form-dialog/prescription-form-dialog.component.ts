@@ -53,6 +53,22 @@ function notInFuture(control: FormControl<Date | null>): Record<string, boolean>
   return startOfDay(value) <= startOfDay(new Date()) ? null : { futureDate: true };
 }
 
+type PatientPhoneCheckPayload = {
+  id?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  dateOfBirth?: string | null;
+  phoneNumber?: string | null;
+  exists?: boolean;
+};
+
+interface PatientPhoneCheckResponse {
+  isFailure?: boolean;
+  value?: PatientPhoneCheckPayload | null;
+  error?: unknown;
+  statusCode?: number;
+}
+
 @Component({
   selector: 'app-prescription-form-dialog',
   standalone: true,
@@ -167,30 +183,51 @@ export class PrescriptionFormDialogComponent {
   private async searchPatient(phone: string): Promise<void> {
     this.phoneSearching.set(true);
     try {
-      const patient = await firstValueFrom(this.http.get<{ id: string; firstName: string; lastName: string; dateOfBirth: string; phoneNumber: string } | null>(`${environment.apiUrl}/patients/by-phone/${encodeURIComponent(phone)}`));
-      if (patient) {
+      const result = await firstValueFrom(
+        this.http.get<PatientPhoneCheckResponse>(`${environment.apiUrl}/patients/by-phone/${encodeURIComponent(phone)}`)
+      );
+
+      const payload = result?.value ?? (result as PatientPhoneCheckPayload | undefined);
+      const patientData: PatientPhoneCheckPayload | null = payload && typeof payload === 'object' ? payload : null;
+
+      const isExistingPatient = !result?.isFailure && !!patientData && (
+        patientData.exists === true ||
+        !!patientData.firstName ||
+        !!patientData.lastName ||
+        !!patientData.dateOfBirth
+      );
+
+      if (isExistingPatient) {
+        const patient = {
+          id: patientData.id ?? '',
+          firstName: patientData.firstName ?? '',
+          lastName: patientData.lastName ?? '',
+          dateOfBirth: patientData.dateOfBirth ?? '',
+          phoneNumber: patientData.phoneNumber ?? phone
+        };
+
         this.foundPatient.set(patient);
         this.isNewPatient.set(false);
         this.form.controls.patientFirstName.setValue(patient.firstName);
         this.form.controls.patientLastName.setValue(patient.lastName);
         this.form.controls.patientDateOfBirth.setValue(patient.dateOfBirth ? new Date(patient.dateOfBirth) : null);
         this.setPatientReadonly(true);
-        try {
-          const list = await firstValueFrom(this.http.get<{ items: { id: string; issuedDate: string; status: string; itemCount: number }[] }>(`${environment.apiUrl}/patients/${patient.id}/prescriptions`));
-          this.previousPrescriptions.set(list.items ?? []);
-        } catch { this.previousPrescriptions.set([]); }
-      } else {
-        this.foundPatient.set(null);
-        this.isNewPatient.set(true);
         this.previousPrescriptions.set([]);
-        this.setPatientReadonly(false);
+        return;
       }
+
+      this.foundPatient.set(null);
+      this.isNewPatient.set(true);
+      this.previousPrescriptions.set([]);
+      this.setPatientReadonly(false);
     } catch {
       this.foundPatient.set(null);
       this.isNewPatient.set(true);
       this.previousPrescriptions.set([]);
       this.setPatientReadonly(false);
-    } finally { this.phoneSearching.set(false); }
+    } finally {
+      this.phoneSearching.set(false);
+    }
   }
 
 

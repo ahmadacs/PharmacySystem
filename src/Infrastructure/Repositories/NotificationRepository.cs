@@ -66,4 +66,7 @@ public sealed class NotificationRepository : BaseRepository<Notification>, INoti
         => Db.Set<Notification>().AnyAsync(
             n => n.UserId == userId && n.Type == type && n.Data == data && !n.IsRead,
             cancellationToken);
+
+    public Task<int> CountUnreadAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Db.Set<Notification>().CountAsync(n => n.UserId == userId && !n.IsRead, cancellationToken);
 }

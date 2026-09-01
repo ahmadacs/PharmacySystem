@@ -20,17 +20,24 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
     {
     }
 
-    public async Task<GenericName> GetOrCreateGenericNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<GenericName> GetOrCreateGenericNameAsync(string name, string? nameAr = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Generic (scientific) name is required.", nameof(name));
 
         var trimmed = name.Trim();
+        var trimmedAr = nameAr?.Trim();
         var existing = await Db.Set<GenericName>().FirstOrDefaultAsync(g => g.Name == trimmed, cancellationToken);
         if (existing is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(trimmedAr) && existing.NameAr != trimmedAr)
+            {
+                existing.Rename(trimmed, trimmedAr);
+            }
             return existing;
+        }
 
-        var genericName = new GenericName(trimmed);
+        var genericName = new GenericName(trimmed, trimmedAr);
         // Add only to the DbContext. The Unit of Work / caller is responsible for SaveChanges.
         Db.Set<GenericName>().Add(genericName);
         return genericName;

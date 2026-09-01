@@ -35,6 +35,9 @@ public sealed record CreateMedicineRequest
     [StringLength(200)]
     public string? NameAr { get; init; }
 
+    [StringLength(200)]
+    public string? GenericNameAr { get; init; }
+
     [Required, StringLength(200)]
     public string GenericName { get; init; } = string.Empty;
 
@@ -59,6 +62,9 @@ public sealed record UpdateMedicineRequest
 
     [StringLength(200)]
     public string? NameAr { get; init; }
+
+    [StringLength(200)]
+    public string? GenericNameAr { get; init; }
 
     [Required, StringLength(200)]
     public string GenericName { get; init; } = string.Empty;

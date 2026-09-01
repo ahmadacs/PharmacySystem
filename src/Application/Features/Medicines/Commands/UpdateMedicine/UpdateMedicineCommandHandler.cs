@@ -28,7 +28,7 @@ public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicin
         if (await _repo.MedicineNameExistsAsync(req.Name, req.Id, cancellationToken))
             return Result.Failure($"A medicine named '{req.Name}' already exists.", 409);
 
-        var genericName = await _repo.GetOrCreateGenericNameAsync(req.GenericName, cancellationToken);
+        var genericName = await _repo.GetOrCreateGenericNameAsync(req.GenericName, req.GenericNameAr, cancellationToken);
 
         medicine.UpdateDetails(
             req.Name,

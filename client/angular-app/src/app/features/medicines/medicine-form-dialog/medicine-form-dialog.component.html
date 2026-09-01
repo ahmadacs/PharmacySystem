@@ -11,9 +11,23 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.medicineForm.nameAr' | translate }}</mat-label>
+            <input matInput formControlName="nameAr" [placeholder]="'dialogs.medicineForm.nameArPlaceholder' | translate" dir="rtl" />
+            <mat-error>{{ 'dialogs.medicineForm.nameArRequired' | translate }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="grow">
             <mat-label>{{ 'dialogs.medicineForm.genericName' | translate }}</mat-label>
             <input matInput formControlName="genericName" [placeholder]="'dialogs.medicineForm.genericNamePlaceholder' | translate" />
             <mat-error>{{ 'dialogs.medicineForm.genericNameRequired' | translate }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="grow">
+            <mat-label>{{ 'dialogs.medicineForm.genericNameAr' | translate }}</mat-label>
+            <input matInput formControlName="genericNameAr" [placeholder]="'dialogs.medicineForm.genericNameArPlaceholder' | translate" dir="rtl" />
+            <mat-error>{{ 'dialogs.medicineForm.genericNameArRequired' | translate }}</mat-error>
           </mat-form-field>
         </div>
 

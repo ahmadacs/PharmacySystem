@@ -19,7 +19,7 @@ public interface IMedicineRepository : IBaseRepository<Medicine>
     /// Returns the scientific name with the given name, creating and tracking a
     /// new one when it does not exist yet. Returns null when the name is blank.
     /// </summary>
-    Task<GenericName> GetOrCreateGenericNameAsync(string name, CancellationToken cancellationToken = default);
+    Task<GenericName> GetOrCreateGenericNameAsync(string name, string? nameAr = null, CancellationToken cancellationToken = default);
 
     /// <summary>Returns a variant with the given medicine + form + unit + strength, or null.</summary>
     Task<MedicineVariant?> FindVariantAsync(Guid medicineId, MedicineForm form, MedicineUnit unit, decimal strength, CancellationToken cancellationToken = default);

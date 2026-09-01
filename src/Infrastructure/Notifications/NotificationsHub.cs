@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using System.Linq;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Infrastructure.Notifications;
@@ -14,16 +15,30 @@ namespace Infrastructure.Notifications;
 [Authorize]
 public sealed class NotificationsHub : Hub
 {
+    private readonly Application.Common.Interfaces.INotificationRepository _notifications;
+
+    public NotificationsHub(Application.Common.Interfaces.INotificationRepository notifications)
+    {
+        _notifications = notifications;
+    }
     private const string RoleClaimType = "role";
 
     public override async Task OnConnectedAsync()
     {
         var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (!string.IsNullOrEmpty(userId))
+        {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
 
-        foreach (var role in Context.User?.FindAll(RoleClaimType).Select(c => c.Value).Distinct() ?? [])
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"role:{role}");
+            foreach (var role in Context.User?.FindAll(RoleClaimType).Select(c => c.Value).Distinct() ?? Enumerable.Empty<string>())
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"role:{role}");
+
+            if (Guid.TryParse(userId, out var uid))
+            {
+                var count = await _notifications.CountUnreadAsync(uid);
+                await Clients.Caller.SendAsync("unreadCount", count);
+            }
+        }
 
         await base.OnConnectedAsync();
     }

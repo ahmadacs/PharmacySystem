@@ -171,7 +171,9 @@ export interface MedicineVariantRequest {
 
 export interface CreateMedicineRequest {
   name: string;
+  nameAr?: string;
   genericName: string;
+  genericNameAr?: string;
   category: number;
   reorderLevel: number;
   isControlled: boolean;
@@ -181,7 +183,9 @@ export interface CreateMedicineRequest {
 export interface UpdateMedicineRequest {
   id: string;
   name: string;
+  nameAr?: string;
   genericName: string;
+  genericNameAr?: string;
   category: number;
   reorderLevel: number;
   isControlled: boolean;

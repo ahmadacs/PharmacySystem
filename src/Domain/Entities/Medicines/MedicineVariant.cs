@@ -95,9 +95,13 @@ public class MedicineVariant : BaseEntity
             remaining -= take;
         }
 
-        if (remaining > 0)
+        var fulfilled = needed.Value - remaining;
+
+        // If nothing could be fulfilled, keep throwing as before.
+        if (fulfilled == 0)
             throw new InsufficientStockException(Id, needed.Value, needed.Value - remaining);
 
+        // Otherwise return the plan (possibly partial) so caller can record partial dispenses.
         return plan;
     }
 }

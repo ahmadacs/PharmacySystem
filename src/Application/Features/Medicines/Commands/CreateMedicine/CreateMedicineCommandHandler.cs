@@ -26,7 +26,7 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
         if (await _repo.MedicineNameExistsAsync(req.Name, null, cancellationToken))
             return Result<Guid>.Failure($"A medicine named '{req.Name}' already exists.", 409);
 
-        GenericName genericName = await _repo.GetOrCreateGenericNameAsync(req.GenericName, cancellationToken);
+        GenericName genericName = await _repo.GetOrCreateGenericNameAsync(req.GenericName, req.GenericNameAr, cancellationToken);
 
         var medicine = req.ToEntity(req.Category, genericName);
 

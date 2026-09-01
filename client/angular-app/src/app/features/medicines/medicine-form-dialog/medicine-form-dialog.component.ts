@@ -66,7 +66,9 @@ export class MedicineFormDialogComponent {
 
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
+    nameAr: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(200)] }),
     genericName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
+    genericNameAr: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(200)] }),
     category: new FormControl<number | null>(null, { nonNullable: true, validators: [Validators.required] }),
     reorderLevel: new FormControl(10, { nonNullable: true, validators: [Validators.min(0)] }),
     isControlled: new FormControl(false, { nonNullable: true }),
@@ -79,7 +81,9 @@ export class MedicineFormDialogComponent {
     if (this.isEdit && this.medicine) {
       this.form.patchValue({
         name: this.medicine.name,
+        nameAr: this.medicine.nameAr ?? '',
         genericName: this.medicine.genericName,
+        genericNameAr: this.medicine.genericNameAr ?? '',
         category: this.medicine.category,
         reorderLevel: this.medicine.reorderLevel,
         isControlled: this.medicine.isControlled,
@@ -127,7 +131,9 @@ export class MedicineFormDialogComponent {
         await this.medicinesService.update(this.medicine.id, {
           id: this.medicine.id,
           name: value.name,
+          nameAr: value.nameAr || undefined,
           genericName: value.genericName,
+          genericNameAr: value.genericNameAr || undefined,
           category: categoryValue,
           reorderLevel: value.reorderLevel,
           isControlled: value.isControlled,
@@ -137,7 +143,9 @@ export class MedicineFormDialogComponent {
       } else {
         await this.medicinesService.create({
           name: value.name,
+          nameAr: value.nameAr || undefined,
           genericName: value.genericName,
+          genericNameAr: value.genericNameAr || undefined,
           category: categoryValue,
           reorderLevel: value.reorderLevel,
           isControlled: value.isControlled,

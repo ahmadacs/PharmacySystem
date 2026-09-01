@@ -32,9 +32,11 @@ export class NotificationBellComponent {
   private readonly notificationsPanelOpened = signal(false);
   protected readonly notifications = this.notificationsSignal.asReadonly();
   protected readonly unreadCount = computed(() => this.notifications().filter((n) => !n.isRead).length);
-  protected readonly showUnreadBadge = computed(() => this.notificationsPanelOpened() && this.unreadCount() > 0);
+  protected readonly showUnreadBadge = computed(() => this.unreadCount() > 0);
 
   constructor() {
+    void this.load();
+
     effect(() => {
       const latest = this.signalr.latestNotification();
       if (latest) {
