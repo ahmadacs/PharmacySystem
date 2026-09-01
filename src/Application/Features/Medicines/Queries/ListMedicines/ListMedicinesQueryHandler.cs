@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Medicines.Queries;
 
-public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQuery, PagedResult<MedicineListItemDto>>
+public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQuery, PagedList<MedicineListItemDto>>
 {
     private readonly IMedicineRepository _repo;
 
@@ -14,6 +14,6 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
         _repo = repo;
     }
 
-    public Task<PagedResult<MedicineListItemDto>> Handle(ListMedicinesQuery request, CancellationToken cancellationToken)
+    public Task<PagedList<MedicineListItemDto>> Handle(ListMedicinesQuery request, CancellationToken cancellationToken)
         => _repo.ListAsync(request, cancellationToken);
 }

@@ -13,12 +13,12 @@ public interface IPrescriptionRepository : IBaseRepository<Prescription>
     Task<Prescription?> GetByIdWithItemsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Prescription?> GetByIdWithItemsAndDoctorAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PagedResult<PrescriptionListItemDto>> ListAsync(
+    Task<PagedList<PrescriptionListItemDto>> ListAsync(
         ListPrescriptionsQuery query,
         Guid? restrictedToDoctorId,
         CancellationToken cancellationToken = default);
 
-    Task<PagedResult<DispensingRecordDto>> ListDispensingRecordsAsync(DispensingRecordListQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<DispensingRecordDto>> ListDispensingRecordsAsync(DispensingRecordListQuery query, CancellationToken cancellationToken = default);
 
     void AddDispensingRecord(DispensingRecord record);
 }

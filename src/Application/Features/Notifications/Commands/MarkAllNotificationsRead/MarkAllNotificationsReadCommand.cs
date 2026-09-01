@@ -1,12 +1,14 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Features.Prescriptions.Common;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Notifications.Commands;
 
-public sealed record MarkAllNotificationsReadCommand : IRequest;
+public sealed record MarkAllNotificationsReadCommand : IRequest<Result>;
 
-public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<MarkAllNotificationsReadCommand>
+public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<MarkAllNotificationsReadCommand, Result>
 {
     private readonly INotificationRepository _notifications;
     private readonly ICurrentUserService _currentUser;
@@ -22,11 +24,18 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
         _uow = uow;
     }
 
-    public async Task Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
     {
-        var userId = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        if (authResult.IsSuccess)
+        {
+            var userId = authResult.Value;
 
-        await _notifications.MarkAllReadAsync(userId, cancellationToken);
-        await _uow.SaveChangesAsync(cancellationToken);
+            await _notifications.MarkAllReadAsync(userId, cancellationToken);
+            await _uow.SaveChangesAsync(cancellationToken);
+            return Result.Success();
+        }
+
+        return Result.Failure(authResult.Error!, authResult.StatusCode);
     }
 }

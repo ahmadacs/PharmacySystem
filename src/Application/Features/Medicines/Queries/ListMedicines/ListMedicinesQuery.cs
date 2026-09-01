@@ -18,4 +18,4 @@ public sealed record ListMedicinesQuery(
     string SortDir = "asc",
     int? CategoryId = null,
     Domain.Enums.MedicineForm? Form = null,
-    bool? IsActive = null) : IRequest<PagedResult<MedicineListItemDto>>;
+    bool? IsActive = null) : IRequest<PagedList<MedicineListItemDto>>;

@@ -21,4 +21,4 @@ public sealed record MedicineInventorySummaryQuery(
     [param: StringLength(50, ErrorMessage = "SortBy must be at most 50 characters.")]
     string? SortBy = "name",
     [param: RegularExpression("^(asc|desc)$", ErrorMessage = "SortDir must be 'asc' or 'desc'.")]
-    string SortDir = "asc") : IRequest<PagedResult<MedicineInventorySummaryDto>>;
+    string SortDir = "asc") : IRequest<PagedList<MedicineInventorySummaryDto>>;

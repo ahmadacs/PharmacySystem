@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Inventory.Queries;
 
-public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertListQuery, PagedResult<ExpiryAlertDto>>
+public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertListQuery, Result<PagedList<ExpiryAlertDto>>>
 {
     private readonly IMedicineRepository _repo;
 
@@ -14,6 +14,9 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
         _repo = repo;
     }
 
-    public Task<PagedResult<ExpiryAlertDto>> Handle(ExpiryAlertListQuery request, CancellationToken cancellationToken)
-        => _repo.ListExpiryAlertsAsync(request, cancellationToken);
+    public async Task<Result<PagedList<ExpiryAlertDto>>> Handle(ExpiryAlertListQuery request, CancellationToken cancellationToken)
+    {
+        var page = await _repo.ListExpiryAlertsAsync(request, cancellationToken);
+        return Result<PagedList<ExpiryAlertDto>>.Success(page);
+    }
 }

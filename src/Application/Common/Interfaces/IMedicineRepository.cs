@@ -36,11 +36,11 @@ public interface IMedicineRepository : IBaseRepository<Medicine>
         IReadOnlyCollection<Guid> variantIds,
         CancellationToken cancellationToken = default);
 
-    Task<PagedResult<MedicineListItemDto>> ListAsync(ListMedicinesQuery query, CancellationToken cancellationToken = default);
-    Task<PagedResult<MedicineBatchDto>> ListBatchesAsync(BatchListQuery query, CancellationToken cancellationToken = default);
-    Task<PagedResult<MedicineInventorySummaryDto>> ListMedicineSummaryAsync(MedicineInventorySummaryQuery query, CancellationToken cancellationToken = default);
-    Task<PagedResult<ExpiryAlertDto>> ListExpiryAlertsAsync(ExpiryAlertListQuery query, CancellationToken cancellationToken = default);
-    Task<PagedResult<InventoryAdjustmentDto>> ListAdjustmentsAsync(InventoryAdjustmentListQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<MedicineListItemDto>> ListAsync(ListMedicinesQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<MedicineBatchDto>> ListBatchesAsync(BatchListQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<MedicineInventorySummaryDto>> ListMedicineSummaryAsync(MedicineInventorySummaryQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<ExpiryAlertDto>> ListExpiryAlertsAsync(ExpiryAlertListQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<InventoryAdjustmentDto>> ListAdjustmentsAsync(InventoryAdjustmentListQuery query, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LowStockDto>> GetLowStockAsync(CancellationToken cancellationToken = default);
 
     Task<bool> MedicineNameExistsAsync(string name, Guid? excludeId, CancellationToken cancellationToken = default);

@@ -1,12 +1,11 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Features.Medicines.Dtos;
-using Domain.Entities.Medicines;
-using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Medicines.Queries;
 
-public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, MedicineDetailsDto>
+public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, Result<MedicineDetailsDto>>
 {
     private readonly IMedicineRepository _repo;
 
@@ -15,11 +14,12 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
         _repo = repo;
     }
 
-    public async Task<MedicineDetailsDto> Handle(GetMedicineQuery request, CancellationToken cancellationToken)
+    public async Task<Result<MedicineDetailsDto>> Handle(GetMedicineQuery request, CancellationToken cancellationToken)
     {
-        var medicine = await _repo.GetByIdWithVariantsAsync(request.Id, cancellationToken)
-            ?? throw new EntityNotFoundException(typeof(Medicine), request.Id);
+        var medicine = await _repo.GetByIdWithVariantsAsync(request.Id, cancellationToken);
+        if (medicine is null)
+            return Result<MedicineDetailsDto>.Failure($"Medicine not found with id '{request.Id}'.");
 
-        return medicine.ToDetailsDto(DateOnly.FromDateTime(DateTime.UtcNow));
+        return Result<MedicineDetailsDto>.Success(medicine.ToDetailsDto(DateOnly.FromDateTime(DateTime.UtcNow)));
     }
 }

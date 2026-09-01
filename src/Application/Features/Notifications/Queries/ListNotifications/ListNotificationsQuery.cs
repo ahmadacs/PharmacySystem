@@ -10,4 +10,4 @@ public sealed record ListNotificationsQuery(
     [param: Range(1, int.MaxValue, ErrorMessage = "Page must be at least 1.")]
     int Page = 1,
     [param: Range(1, 200, ErrorMessage = "PageSize must be between 1 and 200.")]
-    int PageSize = 10) : IRequest<PagedResult<NotificationListItemDto>>;
+    int PageSize = 10) : IRequest<Result<PagedList<NotificationListItemDto>>>;

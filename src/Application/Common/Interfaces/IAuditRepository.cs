@@ -6,5 +6,5 @@ namespace Application.Common.Interfaces;
 
 public interface IAuditRepository
 {
-    Task<PagedResult<AuditEntryDto>> ListAsync(ListAuditEntriesQuery query, CancellationToken cancellationToken = default);
+    Task<PagedList<AuditEntryDto>> ListAsync(ListAuditEntriesQuery query, CancellationToken cancellationToken = default);
 }

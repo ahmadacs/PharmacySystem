@@ -6,7 +6,7 @@ using MediatR;
 namespace Application.Features.Inventory.Queries;
 
 public sealed class MedicineInventorySummaryQueryHandler
-    : IRequestHandler<MedicineInventorySummaryQuery, PagedResult<MedicineInventorySummaryDto>>
+    : IRequestHandler<MedicineInventorySummaryQuery, PagedList<MedicineInventorySummaryDto>>
 {
     private readonly IMedicineRepository _repo;
 
@@ -15,7 +15,7 @@ public sealed class MedicineInventorySummaryQueryHandler
         _repo = repo;
     }
 
-    public Task<PagedResult<MedicineInventorySummaryDto>> Handle(
+    public Task<PagedList<MedicineInventorySummaryDto>> Handle(
         MedicineInventorySummaryQuery request,
         CancellationToken cancellationToken)
         => _repo.ListMedicineSummaryAsync(request, cancellationToken);

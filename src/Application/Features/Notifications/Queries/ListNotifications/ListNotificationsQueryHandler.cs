@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Application.Features.Notifications.Queries;
 
-public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotificationsQuery, PagedResult<NotificationListItemDto>>
+public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotificationsQuery, Result<PagedList<NotificationListItemDto>>>
 {
     private readonly INotificationRepository _notifications;
     private readonly ICurrentUserService _currentUser;
@@ -17,11 +17,18 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
         _currentUser = currentUser;
     }
 
-    public Task<PagedResult<NotificationListItemDto>> Handle(
+    public async Task<Result<PagedList<NotificationListItemDto>>> Handle(
         ListNotificationsQuery request,
         CancellationToken cancellationToken)
     {
-        var userId = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
-        return _notifications.ListAsync(userId, request.IsRead, request.Page, request.PageSize, cancellationToken);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        if (authResult.IsSuccess)
+        {
+            var userId = authResult.Value;
+            var page = await _notifications.ListAsync(userId, request.IsRead, request.Page, request.PageSize, cancellationToken);
+            return Result<PagedList<NotificationListItemDto>>.Success(page);
+        }
+
+        return Result<PagedList<NotificationListItemDto>>.Failure(authResult.Error!, 403);
     }
 }

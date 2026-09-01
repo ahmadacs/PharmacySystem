@@ -14,7 +14,7 @@ public sealed class NotificationRepository : BaseRepository<Notification>, INoti
     {
     }
 
-    public async Task<PagedResult<NotificationListItemDto>> ListAsync(
+    public async Task<PagedList<NotificationListItemDto>> ListAsync(
         Guid userId,
         bool? isRead,
         int page,
@@ -41,7 +41,7 @@ public sealed class NotificationRepository : BaseRepository<Notification>, INoti
                 n.Id, n.Type, n.Title, n.Message, n.Data, n.LocalizationKey, n.LocalizationParamsJson, n.IsRead, n.CreatedAt))
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<NotificationListItemDto>
+        return new PagedList<NotificationListItemDto>
         {
             Items = items,
             Page = page,

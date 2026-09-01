@@ -1,11 +1,11 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Features.Auth.Dtos;
-using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Auth.Commands;
 
-public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, AuthResponse>
+public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
 {
     private readonly ITokenService _tokens;
     private readonly IUserManager _users;
@@ -16,18 +16,19 @@ public sealed class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCom
         _users = users;
     }
 
-    public async Task<AuthResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
-            throw new InvalidRefreshTokenException();
+            return Result<AuthResponse>.Failure("The refresh token is invalid, expired or has been revoked.", 401);
 
         var tokens = await _tokens.RefreshAsync(request.RefreshToken, cancellationToken);
-        var account = await _users.FindAsync(tokens.UserId, cancellationToken)
-            ?? throw new InvalidRefreshTokenException();
+        var account = await _users.FindAsync(tokens.UserId, cancellationToken);
+        if (account is null)
+            return Result<AuthResponse>.Failure("The refresh token is invalid, expired or has been revoked.", 401);
 
         if (!account.IsActive)
-            throw new AccountDisabledException();
+            return Result<AuthResponse>.Failure("This account has been disabled. Contact an administrator.", 401);
 
-        return AuthMapping.ToResponse(tokens, account);
+        return Result<AuthResponse>.Success(AuthMapping.ToResponse(tokens, account));
     }
 }

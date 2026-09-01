@@ -1,15 +1,15 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Common.Options;
 using Application.Features.Files.Commands.UploadFile;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Medicines;
 using Domain.Enums;
-using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Inventory.Commands;
 
-public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInventoryCommand, Guid>
+public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInventoryCommand, Result<Guid>>
 {
     private readonly IMedicineRepository _repo;
     private readonly IUnitOfWork _uow;
@@ -27,11 +27,12 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
         _sender = sender;
     }
 
-    public async Task<Guid> Handle(AdjustInventoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(AdjustInventoryCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var batch = await _repo.GetBatchByIdAsync(req.MedicineBatchId, cancellationToken)
-            ?? throw new EntityNotFoundException(typeof(MedicineBatch), req.MedicineBatchId);
+        var batch = await _repo.GetBatchByIdAsync(req.MedicineBatchId, cancellationToken);
+        if (batch is null)
+            return Result<Guid>.Failure($"MedicineBatch not found with id '{req.MedicineBatchId}'.", 404);
 
         var quantityBefore = batch.QuantityAvailable.Value;
         var delta = req.Type is InventoryAdjustmentType.Increase
@@ -50,7 +51,14 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
             medicine.RaiseLowStockEventIfNeeded(asOf);
 
         _repo.AddAdjustment(adjustment);
-        await _uow.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _uow.SaveChangesAsync(cancellationToken);
+        }
+        catch (Domain.Exceptions.DomainException ex)
+        {
+            return Result<Guid>.Failure(ex.Message, 422);
+        }
 
         // Upload file if provided
         if (req.File is not null && !string.IsNullOrWhiteSpace(req.File.Base64Content))
@@ -66,6 +74,6 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
                 stream), cancellationToken);
         }
 
-        return adjustment.Id;
+        return Result<Guid>.Success(adjustment.Id);
     }
 }

@@ -47,7 +47,7 @@ public interface IUserManager
     Task<OperationResult> SetActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
 
     /// <summary>Returns a paged, filtered and sorted page of user accounts.</summary>
-    Task<PagedResult<UserAccount>> ListAsync(
+    Task<PagedList<UserAccount>> ListAsync(
         string? search,
         string? role,
         bool? isActive,

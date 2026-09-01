@@ -113,7 +113,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             .AnyAsync(b => b.BatchNumber == trimmed && (excludeId == null || b.Id != excludeId), cancellationToken);
     }
 
-    public async Task<PagedResult<MedicineListItemDto>> ListAsync(ListMedicinesQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedList<MedicineListItemDto>> ListAsync(ListMedicinesQuery query, CancellationToken cancellationToken = default)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -228,7 +228,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                 availableQuantity <= r.ReorderLevel);
         }).ToList();
 
-        return new PagedResult<MedicineListItemDto>
+        return new PagedList<MedicineListItemDto>
         {
             Items = items,
             Page = page,
@@ -238,7 +238,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
     }
 
 
-    public async Task<PagedResult<MedicineBatchDto>> ListBatchesAsync(BatchListQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedList<MedicineBatchDto>> ListBatchesAsync(BatchListQuery query, CancellationToken cancellationToken = default)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -301,7 +301,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
 
         var rows = await projected.ToListAsync(cancellationToken);
 
-        return new PagedResult<MedicineBatchDto>
+        return new PagedList<MedicineBatchDto>
         {
             Items = rows.Select(r => new MedicineBatchDto(
                 r.Id,
@@ -327,7 +327,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
         };
     }
 
-    public async Task<PagedResult<MedicineInventorySummaryDto>> ListMedicineSummaryAsync(
+    public async Task<PagedList<MedicineInventorySummaryDto>> ListMedicineSummaryAsync(
         MedicineInventorySummaryQuery query,
         CancellationToken cancellationToken = default)
     {
@@ -417,7 +417,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                 r.ActiveBatchCount))
             .ToList();
 
-        return new PagedResult<MedicineInventorySummaryDto>
+        return new PagedList<MedicineInventorySummaryDto>
         {
             Items = items,
             Page = page,
@@ -426,7 +426,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
         };
     }
 
-    public async Task<PagedResult<ExpiryAlertDto>> ListExpiryAlertsAsync(
+    public async Task<PagedList<ExpiryAlertDto>> ListExpiryAlertsAsync(
         ExpiryAlertListQuery query,
         CancellationToken cancellationToken = default)
     {
@@ -512,7 +512,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             })
             .ToList();
 
-        return new PagedResult<ExpiryAlertDto>
+        return new PagedList<ExpiryAlertDto>
         {
             Items = items,
             Page = page,
@@ -548,7 +548,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             .ToList();
     }
 
-    public async Task<PagedResult<InventoryAdjustmentDto>> ListAdjustmentsAsync(InventoryAdjustmentListQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedList<InventoryAdjustmentDto>> ListAdjustmentsAsync(InventoryAdjustmentListQuery query, CancellationToken cancellationToken = default)
     {
         IQueryable<InventoryAdjustment> data = Db.Set<InventoryAdjustment>().AsNoTracking();
 
@@ -619,7 +619,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                 r.AdjustedAt))
             .ToList();
 
-        return new PagedResult<InventoryAdjustmentDto>
+        return new PagedList<InventoryAdjustmentDto>
         {
             Items = items,
             Page = page,

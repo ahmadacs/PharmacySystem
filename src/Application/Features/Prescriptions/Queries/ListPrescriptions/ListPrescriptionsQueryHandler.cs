@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Application.Features.Prescriptions.Queries;
 
-public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescriptionsQuery, PagedResult<PrescriptionListItemDto>>
+public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescriptionsQuery, Result<PagedList<PrescriptionListItemDto>>>
 {
     private readonly IPrescriptionRepository _prescriptions;
     private readonly ICurrentUserService _currentUser;
@@ -22,7 +22,7 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
         _staff = staff;
     }
 
-    public async Task<PagedResult<PrescriptionListItemDto>> Handle(
+    public async Task<Result<PagedList<PrescriptionListItemDto>>> Handle(
         ListPrescriptionsQuery request,
         CancellationToken cancellationToken)
     {
@@ -30,10 +30,19 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
 
         if (PrescriptionAccess.CanManageOwn(_currentUser) && !PrescriptionAccess.CanViewAll(_currentUser))
         {
-            var userId = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
-            restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
+            var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+            if (authResult.IsSuccess)
+            {
+                var userId = authResult.Value;
+                restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
+            }
+            else
+            {
+                return Result<PagedList<PrescriptionListItemDto>>.Failure(authResult.Error!, 403);
+            }
         }
 
-        return await _prescriptions.ListAsync(request, restrictedToDoctorId, cancellationToken);
+        var page = await _prescriptions.ListAsync(request, restrictedToDoctorId, cancellationToken);
+        return Result<PagedList<PrescriptionListItemDto>>.Success(page);
     }
 }

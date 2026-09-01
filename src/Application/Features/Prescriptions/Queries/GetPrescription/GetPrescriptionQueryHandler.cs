@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Features.Prescriptions.Dtos;
 using Domain.Entities.Prescriptions;
 using Domain.Exceptions;
@@ -7,7 +8,7 @@ using MediatR;
 
 namespace Application.Features.Prescriptions.Queries;
 
-public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptionQuery, PrescriptionDetailsDto>
+public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptionQuery, Result<PrescriptionDetailsDto>>
 {
     private readonly IPrescriptionRepository _prescriptions;
     private readonly IMedicineRepository _medicines;
@@ -26,10 +27,11 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
         _executor = executor;
     }
 
-    public async Task<PrescriptionDetailsDto> Handle(GetPrescriptionQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PrescriptionDetailsDto>> Handle(GetPrescriptionQuery request, CancellationToken cancellationToken)
     {
-        var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken)
-            ?? throw new EntityNotFoundException(typeof(Prescription), request.Id);
+        var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken);
+        if (prescription is null)
+            return Result<PrescriptionDetailsDto>.Failure($"Resource '{nameof(Prescription)}' with id '{request.Id}' was not found.", 404);
 
         var doctorName = await _staff.GetDoctorNameAsync(prescription.DoctorId, cancellationToken) ?? string.Empty;
 
@@ -46,6 +48,6 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
                 n.MedicineName,
                 $"{n.Form} {n.Strength} {n.Unit}"));
 
-        return prescription.ToDetailsDto(doctorName, infosById);
+        return Result<PrescriptionDetailsDto>.Success(prescription.ToDetailsDto(doctorName, infosById));
     }
 }

@@ -24,7 +24,7 @@ public sealed class AuditRepository : IAuditRepository
         _db = db;
     }
 
-    public async Task<PagedResult<AuditEntryDto>> ListAsync(
+    public async Task<PagedList<AuditEntryDto>> ListAsync(
         ListAuditEntriesQuery query,
         CancellationToken cancellationToken = default)
     {
@@ -88,7 +88,7 @@ public sealed class AuditRepository : IAuditRepository
                 DeserializeChanges(r.Entry.ChangesJson)))
             .ToList();
 
-        return new PagedResult<AuditEntryDto>
+        return new PagedList<AuditEntryDto>
         {
             Items = items,
             Page = page,

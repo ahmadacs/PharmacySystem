@@ -31,12 +31,8 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
-    {
-        var response = await Sender.Send(new LoginCommand(request), cancellationToken);
-        SetRefreshCookie(response.RefreshToken);
-        return Ok(response);
-    }
+    public Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+        => AuthResponse(new LoginCommand(request), SetRefreshCookie, cancellationToken);
 
     /// <summary>Registers a new account and returns the same token pair as login.</summary>
     /// <param name="request">Names, email, password and role.</param>
@@ -46,12 +42,8 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
-    {
-        var response = await Sender.Send(new RegisterCommand(request), cancellationToken);
-        SetRefreshCookie(response.RefreshToken);
-        return Ok(response);
-    }
+    public Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+        => AuthResponse(new RegisterCommand(request), SetRefreshCookie, cancellationToken);
 
     /// <summary>Rotates the refresh token: the old token is revoked and a new pair is issued.</summary>
     /// <param name="cancellationToken">Request cancellation token.</param>
@@ -59,12 +51,10 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     [HttpPost("refresh")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
+    public Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {
         var refreshToken = Request.Cookies[RefreshCookieName];
-        var response = await Sender.Send(new RefreshTokenCommand(refreshToken), cancellationToken);
-        SetRefreshCookie(response.RefreshToken);
-        return Ok(response);
+        return AuthResponse(new RefreshTokenCommand(refreshToken), SetRefreshCookie, cancellationToken);
     }
 
     /// <summary>Revokes the refresh token and clears the httpOnly cookie.</summary>
@@ -86,8 +76,8 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public Task<CurrentUserDto> Me(CancellationToken cancellationToken)
-        => Sender.Send(new GetCurrentUserQuery(), cancellationToken);
+    public Task<IActionResult> Me(CancellationToken cancellationToken)
+        => OkResponse(new GetCurrentUserQuery(), cancellationToken);
 
     /// <summary>Changes the current user's password.</summary>
     /// <param name="request">Current password and new password.</param>

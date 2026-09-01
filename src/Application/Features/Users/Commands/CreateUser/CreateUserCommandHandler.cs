@@ -1,11 +1,12 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Common.Security;
 using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Users.Commands;
 
-public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
+public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Result<Guid>>
 {
     private readonly IUserManager _users;
     private readonly IStaffService _staff;
@@ -16,12 +17,12 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
         _staff = staff;
     }
 
-    public async Task<Guid> Handle(CreateUserCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
         var role = req.Role.Trim();
         if (!Roles.All.Contains(role))
-            throw new ConflictingOperationException($"Unknown role '{role}'.");
+            return Result<Guid>.Failure($"Unknown role '{role}'.", 409);
 
         var result = await _users.TryCreateUserAsync(
             req.Email,
@@ -32,7 +33,7 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
             cancellationToken);
 
         if (result.UserId is null)
-            throw new ConflictingOperationException($"Unable to create the user: {string.Join("; ", result.Errors)}");
+            return Result<Guid>.Failure($"Unable to create the user: {string.Join("; ", result.Errors)}", 409);
 
         var userId = result.UserId.Value;
 
@@ -45,6 +46,6 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
             await _staff.CreatePharmacistProfileAsync(userId, req.LicenseNumber ?? string.Empty, cancellationToken);
         }
 
-        return userId;
+        return Result<Guid>.Success(userId);
     }
 }

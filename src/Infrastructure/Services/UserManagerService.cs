@@ -156,7 +156,7 @@ public sealed class UserManagerService : IUserManager
         return ToOperationResult(result);
     }
 
-    public async Task<PagedResult<UserAccount>> ListAsync(
+    public async Task<PagedList<UserAccount>> ListAsync(
         string? search,
         string? role,
         bool? isActive,
@@ -233,7 +233,7 @@ public sealed class UserManagerService : IUserManager
             })
             .ToList();
 
-        return new PagedResult<UserAccount>
+        return new PagedList<UserAccount>
         {
             Items = accounts,
             Page = page,

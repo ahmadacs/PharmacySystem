@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Dispensing.Queries;
 
-public sealed class DispensingRecordListQueryHandler : IRequestHandler<DispensingRecordListQuery, PagedResult<DispensingRecordDto>>
+public sealed class DispensingRecordListQueryHandler : IRequestHandler<DispensingRecordListQuery, Result<PagedList<DispensingRecordDto>>>
 {
     private readonly IPrescriptionRepository _prescriptions;
 
@@ -14,8 +14,11 @@ public sealed class DispensingRecordListQueryHandler : IRequestHandler<Dispensin
         _prescriptions = prescriptions;
     }
 
-    public Task<PagedResult<DispensingRecordDto>> Handle(
+    public async Task<Result<PagedList<DispensingRecordDto>>> Handle(
         DispensingRecordListQuery request,
         CancellationToken cancellationToken)
-        => _prescriptions.ListDispensingRecordsAsync(request, cancellationToken);
+    {
+        var page = await _prescriptions.ListDispensingRecordsAsync(request, cancellationToken);
+        return Result<PagedList<DispensingRecordDto>>.Success(page);
+    }
 }

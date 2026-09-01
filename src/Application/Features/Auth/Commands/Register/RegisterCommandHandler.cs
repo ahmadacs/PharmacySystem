@@ -1,12 +1,12 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Common.Security;
 using Application.Features.Auth.Dtos;
-using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Auth.Commands;
 
-public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthResponse>
+public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResponse>>
 {
     private readonly IUserManager _users;
     private readonly IStaffService _staff;
@@ -19,12 +19,12 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         _tokens = tokens;
     }
 
-    public async Task<AuthResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
         var role = req.Role.Trim();
         if (role != Roles.Doctor && role != Roles.Pharmacist)
-            throw new ConflictingOperationException("Self-registration is only available for Doctor and Pharmacist accounts.");
+            return Result<AuthResponse>.Failure("Self-registration is only available for Doctor and Pharmacist accounts.", 409);
 
         var result = await _users.TryCreateUserAsync(
             req.Email,
@@ -35,7 +35,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
             cancellationToken);
 
         if (result.UserId is null)
-            throw new ConflictingOperationException($"Unable to register the account: {string.Join("; ", result.Errors)}");
+            return Result<AuthResponse>.Failure($"Unable to register the account: {string.Join("; ", result.Errors)}", 409);
 
         var userId = result.UserId.Value;
 
@@ -49,9 +49,10 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         }
 
         var tokens = await _tokens.CreateAsync(userId, cancellationToken);
-        var account = await _users.FindAsync(userId, cancellationToken)
-            ?? throw new InvalidCredentialsException();
+        var account = await _users.FindAsync(userId, cancellationToken);
+        if (account is null)
+            return Result<AuthResponse>.Failure("The email or password is incorrect.", 401);
 
-        return AuthMapping.ToResponse(tokens, account);
+        return Result<AuthResponse>.Success(AuthMapping.ToResponse(tokens, account));
     }
 }

@@ -17,4 +17,4 @@ public sealed record DispensingRecordListQuery(
     [param: StringLength(50, ErrorMessage = "SortBy must be at most 50 characters.")]
     string? SortBy = "dispensedAt",
     [param: RegularExpression("^(asc|desc)$", ErrorMessage = "SortDir must be 'asc' or 'desc'.")]
-    string SortDir = "desc") : IRequest<PagedResult<DispensingRecordDto>>;
+    string SortDir = "desc") : IRequest<Result<PagedList<DispensingRecordDto>>>;

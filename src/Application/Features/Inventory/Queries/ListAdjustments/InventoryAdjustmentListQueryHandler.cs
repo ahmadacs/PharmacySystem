@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Inventory.Queries;
 
-public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<InventoryAdjustmentListQuery, PagedResult<InventoryAdjustmentDto>>
+public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<InventoryAdjustmentListQuery, Result<PagedList<InventoryAdjustmentDto>>>
 {
     private readonly IMedicineRepository _repo;
 
@@ -14,8 +14,11 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
         _repo = repo;
     }
 
-    public Task<PagedResult<InventoryAdjustmentDto>> Handle(
+    public async Task<Result<PagedList<InventoryAdjustmentDto>>> Handle(
         InventoryAdjustmentListQuery request,
         CancellationToken cancellationToken)
-        => _repo.ListAdjustmentsAsync(request, cancellationToken);
+    {
+        var page = await _repo.ListAdjustmentsAsync(request, cancellationToken);
+        return Result<PagedList<InventoryAdjustmentDto>>.Success(page);
+    }
 }

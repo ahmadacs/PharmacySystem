@@ -16,9 +16,6 @@ public sealed class ExportsController(ISender sender) : ApiControllerBase(sender
     [HttpGet("{entityType}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Export(string entityType, [FromQuery] string format = "excel", [FromQuery] string? id = null, CancellationToken cancellationToken = default)
-    {
-        var result = await Sender.Send(new ExportQuery(entityType, format, id), cancellationToken);
-        return File(result.Content, result.ContentType, result.FileName);
-    }
+    public Task<IActionResult> Export(string entityType, [FromQuery] string format = "excel", [FromQuery] string? id = null, CancellationToken cancellationToken = default)
+        => ExportFileResponse(new ExportQuery(entityType, format, id), cancellationToken);
 }

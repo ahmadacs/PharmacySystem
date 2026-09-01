@@ -1,3 +1,4 @@
+using Application.Common.Models;
 using Application.Features.Files.Dtos;
 using MediatR;
 
@@ -10,4 +11,4 @@ public sealed record UploadFileCommand(
     string ContentType,
     long SizeBytes,
     Stream Content
-) : IRequest<FileAttachmentDto>;
+) : IRequest<Result<FileAttachmentDto>>;

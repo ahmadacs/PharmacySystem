@@ -1,10 +1,10 @@
 using Application.Common.Interfaces;
-using Domain.Exceptions;
+using Application.Common.Models;
 using MediatR;
 
 namespace Application.Features.Auth.Commands;
 
-public sealed class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand>
+public sealed class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, Result>
 {
     private readonly ICurrentUserService _currentUser;
     private readonly IUserManager _users;
@@ -15,10 +15,10 @@ public sealed class ChangePasswordCommandHandler : IRequestHandler<ChangePasswor
         _users = users;
     }
 
-    public async Task Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId is null)
-            throw new ForbiddenResourceException();
+            return Result.Failure("You are not allowed to access this resource.", 403);
 
         var result = await _users.ChangePasswordAsync(
             _currentUser.UserId.Value,
@@ -27,6 +27,8 @@ public sealed class ChangePasswordCommandHandler : IRequestHandler<ChangePasswor
             cancellationToken);
 
         if (!result.Succeeded)
-            throw new InvalidCredentialsException(string.Join("; ", result.Errors));
+            return Result.Failure(string.Join("; ", result.Errors), 401);
+
+        return Result.Success();
     }
 }

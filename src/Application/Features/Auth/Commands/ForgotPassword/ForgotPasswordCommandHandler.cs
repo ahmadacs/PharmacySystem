@@ -1,10 +1,11 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Auth.Commands;
 
-public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand>
+public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, Result>
 {
     private readonly IUserManager _users;
     private readonly IEmailService _emails;
@@ -17,17 +18,19 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
         _logger = logger;
     }
 
-    public async Task Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
         // Always return success regardless of whether the email exists so we do
         // not leak which addresses are registered.
         var token = await _users.GeneratePasswordResetTokenAsync(request.Request.Email, cancellationToken);
         if (token is null)
-            return;
+            return Result.Success();
 
         // In a real deployment the token would be embedded in a reset link and
         // emailed. Here the email is mocked to the log for reviewers.
         _logger.LogInformation("Password reset requested for {Email}. Token: {Token}", request.Request.Email, token);
         await _emails.SendAsync(request.Request.Email, "Password reset", $"Your password reset token is: {token}", cancellationToken);
+
+        return Result.Success();
     }
 }

@@ -22,4 +22,4 @@ public sealed record ExpiryAlertListQuery(
     [param: StringLength(50, ErrorMessage = "SortBy must be at most 50 characters.")]
     string? SortBy = "expiryDate",
     [param: RegularExpression("^(asc|desc)$", ErrorMessage = "SortDir must be 'asc' or 'desc'.")]
-    string SortDir = "asc") : IRequest<PagedResult<ExpiryAlertDto>>;
+    string SortDir = "asc") : IRequest<Result<PagedList<ExpiryAlertDto>>>;

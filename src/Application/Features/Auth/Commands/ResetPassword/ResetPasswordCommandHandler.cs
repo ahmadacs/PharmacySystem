@@ -1,10 +1,10 @@
 using Application.Common.Interfaces;
-using Domain.Exceptions;
+using Application.Common.Models;
 using MediatR;
 
 namespace Application.Features.Auth.Commands;
 
-public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand>
+public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, Result>
 {
     private readonly IUserManager _users;
 
@@ -13,11 +13,13 @@ public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordC
         _users = users;
     }
 
-    public async Task Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
         var result = await _users.ResetPasswordAsync(request.Request.Email, request.Request.Token, request.Request.NewPassword, cancellationToken);
 
         if (!result.Succeeded)
-            throw new InvalidCredentialsException(string.Join("; ", result.Errors));
+            return Result.Failure(string.Join("; ", result.Errors), 401);
+
+        return Result.Success();
     }
 }

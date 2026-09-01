@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.AuditLog.Queries;
 
-public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntriesQuery, PagedResult<AuditEntryDto>>
+public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntriesQuery, Result<PagedList<AuditEntryDto>>>
 {
     private readonly IAuditRepository _audit;
 
@@ -14,8 +14,11 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
         _audit = audit;
     }
 
-    public Task<PagedResult<AuditEntryDto>> Handle(
+    public async Task<Result<PagedList<AuditEntryDto>>> Handle(
         ListAuditEntriesQuery request,
         CancellationToken cancellationToken)
-        => _audit.ListAsync(request, cancellationToken);
+    {
+        var page = await _audit.ListAsync(request, cancellationToken);
+        return Result<PagedList<AuditEntryDto>>.Success(page);
+    }
 }

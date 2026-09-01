@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Common.Options;
 using Application.Common.Security;
 using Application.Features.Files.Dtos;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Application.Features.Files.Commands.UploadFile;
 
-public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand, FileAttachmentDto>
+public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand, Result<FileAttachmentDto>>
 {
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -47,54 +48,63 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         _resourceAuth = resourceAuth;
     }
 
-    public async Task<FileAttachmentDto> Handle(UploadFileCommand request, CancellationToken cancellationToken)
+    public async Task<Result<FileAttachmentDto>> Handle(UploadFileCommand request, CancellationToken cancellationToken)
     {
         if (!AllowedContentTypes.Contains(request.ContentType))
-            throw new FileValidationException($"File type '{request.ContentType}' is not allowed. Allowed: jpeg, png, pdf.");
+            return Result<FileAttachmentDto>.Failure($"File type '{request.ContentType}' is not allowed. Allowed: jpeg, png, pdf.", 422);
 
         var maxSize = _options.MaxFileSizeBytes > 0 ? _options.MaxFileSizeBytes : DefaultMaxSize;
         if (request.SizeBytes > maxSize)
-            throw new FileValidationException($"File size {request.SizeBytes} exceeds limit {maxSize} bytes (5MB).");
+            return Result<FileAttachmentDto>.Failure($"File size {request.SizeBytes} exceeds limit {maxSize} bytes (5MB).", 422);
 
         if (request.SizeBytes <= 0)
-            throw new FileValidationException("File is empty.");
+            return Result<FileAttachmentDto>.Failure("File is empty.", 422);
 
         if (!Enum.TryParse<FileEntityType>(request.EntityType, true, out var entityType))
-            throw new FileValidationException($"Invalid entity type '{request.EntityType}'. Use Medicine, Prescription, Batch, or InventoryAdjustment.");
+            return Result<FileAttachmentDto>.Failure($"Invalid entity type '{request.EntityType}'. Use Medicine, Prescription, Batch, or InventoryAdjustment.", 422);
 
         // Authorization per entity type
         if (entityType == FileEntityType.Medicine)
         {
             var hasPerm = _currentUser.Permissions.Contains(Permissions.Medicines.Create) || _currentUser.Permissions.Contains(Permissions.Medicines.Update);
-            if (!hasPerm) throw new ForbiddenResourceException("Missing permission to upload medicine files.");
+            if (!hasPerm) return Result<FileAttachmentDto>.Failure("Missing permission to upload medicine files.", 403);
             var exists = await _files.MedicineExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) throw new EntityNotFoundException(typeof(Domain.Entities.Medicines.Medicine), request.EntityId);
+            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'Medicine' with id '{request.EntityId}' was not found.", 404);
         }
         else if (entityType == FileEntityType.Prescription)
         {
             var exists = await _files.PrescriptionExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) throw new EntityNotFoundException(typeof(Domain.Entities.Prescriptions.Prescription), request.EntityId);
+            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'Prescription' with id '{request.EntityId}' was not found.", 404);
             var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
             if (prescription is not null)
-                await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
+            {
+                try
+                {
+                    await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
+                }
+                catch (ForbiddenResourceException ex)
+                {
+                    return Result<FileAttachmentDto>.Failure(ex.Message, 403);
+                }
+            }
         }
         else if (entityType == FileEntityType.Batch)
         {
             var hasPerm = _currentUser.Permissions.Contains(Permissions.Inventory.View) || _currentUser.Permissions.Contains(Permissions.Inventory.Adjust);
-            if (!hasPerm) throw new ForbiddenResourceException("Missing permission to upload batch files.");
+            if (!hasPerm) return Result<FileAttachmentDto>.Failure("Missing permission to upload batch files.", 403);
             var exists = await _files.BatchExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) throw new EntityNotFoundException(typeof(MedicineBatch), request.EntityId);
+            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'MedicineBatch' with id '{request.EntityId}' was not found.", 404);
         }
         else if (entityType == FileEntityType.InventoryAdjustment)
         {
             var hasPerm = _currentUser.Permissions.Contains(Permissions.Inventory.Adjust);
-            if (!hasPerm) throw new ForbiddenResourceException("Missing permission to upload inventory adjustment files.");
+            if (!hasPerm) return Result<FileAttachmentDto>.Failure("Missing permission to upload inventory adjustment files.", 403);
             var exists = await _files.InventoryAdjustmentExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) throw new EntityNotFoundException(typeof(InventoryAdjustment), request.EntityId);
+            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'InventoryAdjustment' with id '{request.EntityId}' was not found.", 404);
         }
         else
         {
-            throw new FileValidationException($"Unsupported entity type '{entityType}'.");
+            return Result<FileAttachmentDto>.Failure($"Unsupported entity type '{entityType}'.", 422);
         }
 
         // Validate extension matches content type
@@ -107,14 +117,14 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
             _ => Array.Empty<string>()
         };
         if (!allowedExt.Contains(ext))
-            throw new FileValidationException($"File extension '{ext}' does not match content type '{request.ContentType}'.");
+            return Result<FileAttachmentDto>.Failure($"File extension '{ext}' does not match content type '{request.ContentType}'.", 422);
 
         var header = new byte[8];
         request.Content.Position = 0;
         var read = await request.Content.ReadAsync(header, 0, 8, cancellationToken);
         request.Content.Position = 0;
         if (!HasValidSignature(request.ContentType, header, read))
-            throw new FileValidationException("File content does not match its declared type.");
+            return Result<FileAttachmentDto>.Failure("File content does not match its declared type.", 422);
 
         var blobPath = await _storage.SaveAsync(request.Content, request.FileName, request.ContentType, cancellationToken);
 
@@ -123,7 +133,12 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
             var attachment = new FileAttachment(entityType, request.EntityId, request.FileName, request.ContentType, request.SizeBytes, blobPath);
             _files.Add(attachment);
             await _uow.SaveChangesAsync(cancellationToken);
-            return attachment.ToDto();
+            return Result<FileAttachmentDto>.Success(attachment.ToDto());
+        }
+        catch (DomainException ex)
+        {
+            await _storage.DeleteAsync(blobPath, cancellationToken);
+            return Result<FileAttachmentDto>.Failure(ex.Message, 422);
         }
         catch
         {

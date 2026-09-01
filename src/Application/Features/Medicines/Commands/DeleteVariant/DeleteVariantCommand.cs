@@ -1,7 +1,8 @@
 using Application.Common.Caching;
+using Application.Common.Models;
 using MediatR;
 
 namespace Application.Features.Medicines.Commands;
 
 [InvalidateCache(CacheTags.Medicines, CacheTags.Inventory)]
-public sealed record DeleteVariantCommand(Guid Id) : IRequest;
+public sealed record DeleteVariantCommand(Guid Id) : IRequest<Result>;

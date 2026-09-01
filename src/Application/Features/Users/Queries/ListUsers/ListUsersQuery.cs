@@ -18,4 +18,4 @@ public sealed record ListUsersQuery(
     [param: StringLength(50, ErrorMessage = "SortBy must be at most 50 characters.")]
     string? SortBy = "email",
     [param: RegularExpression("^(asc|desc)$", ErrorMessage = "SortDir must be 'asc' or 'desc'.")]
-    string SortDir = "asc") : IRequest<PagedResult<UserDto>>;
+    string SortDir = "asc") : IRequest<PagedList<UserDto>>;

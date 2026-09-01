@@ -1,11 +1,12 @@
 using Application.Common.Caching;
+using Application.Common.Models;
 using Application.Features.Medicines.Dtos;
 using MediatR;
 
 namespace Application.Features.Medicines.Commands;
 
 [InvalidateCache(CacheTags.Medicines, CacheTags.Inventory)]
-public sealed record AddBatchCommand(AddBatchRequest Request, string? Reason = null) : IRequest<Guid>
+public sealed record AddBatchCommand(AddBatchRequest Request, string? Reason = null) : IRequest<Result<Guid>>
 {
     /// <summary>
     /// Auto-recorded reason (NOT user-entered) used when a batch is created via

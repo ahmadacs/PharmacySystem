@@ -32,7 +32,7 @@ public sealed class PrescriptionRepository : BaseRepository<Prescription>, IPres
             .Include(p => p.Doctor)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
-    public async Task<PagedResult<PrescriptionListItemDto>> ListAsync(
+    public async Task<PagedList<PrescriptionListItemDto>> ListAsync(
         ListPrescriptionsQuery query,
         Guid? restrictedToDoctorId,
         CancellationToken cancellationToken = default)
@@ -110,7 +110,7 @@ public sealed class PrescriptionRepository : BaseRepository<Prescription>, IPres
                 p.ItemCount))
             .ToList();
 
-        return new PagedResult<PrescriptionListItemDto>
+        return new PagedList<PrescriptionListItemDto>
         {
             Items = items,
             Page = page,
@@ -119,7 +119,7 @@ public sealed class PrescriptionRepository : BaseRepository<Prescription>, IPres
         };
     }
 
-    public async Task<PagedResult<DispensingRecordDto>> ListDispensingRecordsAsync(
+    public async Task<PagedList<DispensingRecordDto>> ListDispensingRecordsAsync(
         DispensingRecordListQuery query,
         CancellationToken cancellationToken = default)
     {
@@ -212,7 +212,7 @@ public sealed class PrescriptionRepository : BaseRepository<Prescription>, IPres
             itemsByRecord.TryGetValue(r.Id, out var recItems) ? recItems : new List<DispensingRecordItemDto>()))
             .ToList();
 
-        return new PagedResult<DispensingRecordDto>
+        return new PagedList<DispensingRecordDto>
         {
             Items = items,
             Page = page,

@@ -7,7 +7,7 @@ namespace Application.Common.Interfaces;
 
 public interface INotificationRepository : IBaseRepository<Notification>
 {
-    Task<PagedResult<NotificationListItemDto>> ListAsync(
+    Task<PagedList<NotificationListItemDto>> ListAsync(
         Guid userId,
         bool? isRead,
         int page,

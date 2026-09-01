@@ -1,11 +1,12 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Domain.Entities.Prescriptions;
 using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Prescriptions.Commands;
 
-public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPrescriptionCommand>
+public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPrescriptionCommand, Result>
 {
     private readonly IPrescriptionRepository _prescriptions;
     private readonly IUnitOfWork _uow;
@@ -16,12 +17,38 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         _uow = uow;
     }
 
-    public async Task Handle(RefillPrescriptionCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(RefillPrescriptionCommand request, CancellationToken cancellationToken)
     {
-        var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken)
-            ?? throw new EntityNotFoundException(typeof(Prescription), request.Id);
+        var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken);
+        if (prescription is null)
+            return Result.Failure($"Resource '{nameof(Prescription)}' with id '{request.Id}' was not found.", 404);
 
-        prescription.RegisterRefill();
-        await _uow.SaveChangesAsync(cancellationToken);
+        try
+        {
+            prescription.RegisterRefill();
+        }
+        catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
+        {
+            return Result.Failure(ex.Message, 409);
+        }
+        catch (DomainException ex)
+        {
+            return Result.Failure(ex.Message, 422);
+        }
+
+        try
+        {
+            await _uow.SaveChangesAsync(cancellationToken);
+        }
+        catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
+        {
+            return Result.Failure(ex.Message, 409);
+        }
+        catch (DomainException ex)
+        {
+            return Result.Failure(ex.Message, 422);
+        }
+
+        return Result.Success();
     }
 }

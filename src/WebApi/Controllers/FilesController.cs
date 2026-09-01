@@ -28,8 +28,7 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
         stream.Position = 0;
 
         var command = new UploadFileCommand(entityType, entityId, file.FileName, file.ContentType, file.Length, stream);
-        var result = await Sender.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
+        return await UploadResponse(command, nameof(Get), cancellationToken);
     }
 
     /// <summary>Gets file metadata by id.</summary>
@@ -38,9 +37,14 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
     {
-        // Return metadata via list? For now download directly
-        var (content, contentType, fileName) = await Sender.Send(new GetFileQuery(id), cancellationToken);
-        return File(content, contentType, fileName);
+        var result = await Sender.Send(new GetFileQuery(id), cancellationToken);
+        if (result.IsSuccess)
+        {
+            var (content, contentType, fileName) = result.Value;
+            return File(content, contentType, fileName);
+        }
+
+        return FailureResponse(result);
     }
 
     /// <summary>Downloads file content.</summary>
@@ -49,8 +53,14 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
     {
-        var (content, contentType, fileName) = await Sender.Send(new GetFileQuery(id), cancellationToken);
-        return File(content, contentType, fileName);
+        var result = await Sender.Send(new GetFileQuery(id), cancellationToken);
+        if (result.IsSuccess)
+        {
+            var (content, contentType, fileName) = result.Value;
+            return File(content, contentType, fileName);
+        }
+
+        return FailureResponse(result);
     }
 
     /// <summary>Lists files for an entity.</summary>

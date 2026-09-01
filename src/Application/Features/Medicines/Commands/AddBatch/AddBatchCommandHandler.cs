@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Models;
 using Application.Common.Options;
 using Application.Features.Medicines.Dtos;
 using Domain.Entities.Inventory;
@@ -9,7 +10,7 @@ using MediatR;
 
 namespace Application.Features.Medicines.Commands;
 
-public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Guid>
+public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Result<Guid>>
 {
     private readonly IMedicineRepository _repo;
     private readonly IUnitOfWork _uow;
@@ -25,24 +26,26 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Gu
         _notificationOptions = notificationOptions;
     }
 
-    public async Task<Guid> Handle(AddBatchCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(AddBatchCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var variant = await _repo.GetVariantByIdAsync(req.MedicineVariantId, cancellationToken)
-            ?? throw new EntityNotFoundException(typeof(MedicineVariant), req.MedicineVariantId);
+        var variant = await _repo.GetVariantByIdAsync(req.MedicineVariantId, cancellationToken);
+        if (variant is null)
+            return Result<Guid>.Failure($"Resource 'MedicineVariant' with id '{req.MedicineVariantId}' was not found.", 404);
 
         // Get the parent medicine to generate batch number
-        var medicineInfo = await _repo.GetByIdWithVariantsAsync(variant.MedicineId, cancellationToken)
-            ?? throw new EntityNotFoundException(typeof(Medicine), variant.MedicineId);
+        var medicineInfo = await _repo.GetByIdWithVariantsAsync(variant.MedicineId, cancellationToken);
+        if (medicineInfo is null)
+            return Result<Guid>.Failure($"Resource 'Medicine' with id '{variant.MedicineId}' was not found.", 404);
 
         // Generate batch number: First 3 letters of medicine name + variant abbreviation + date
         var batchNumber = GenerateBatchNumber(medicineInfo.Name, variant);
 
         if (await _repo.BatchNumberExistsAsync(batchNumber, null, cancellationToken))
-            throw new ConflictingOperationException($"A batch with number '{batchNumber}' already exists.");
+            return Result<Guid>.Failure($"A batch with number '{batchNumber}' already exists.", 409);
 
         if (req.ExpiryDate <= req.ManufactureDate)
-            throw new ConflictingOperationException("The expiry date must be after the manufacture date.");
+            return Result<Guid>.Failure("The expiry date must be after the manufacture date.", 409);
 
         // Packages are converted to base units via the variant's UnitOfMeasure
         // (e.g. 5 boxes of 30 tablets => 150 tablets), so stored quantities are
@@ -78,9 +81,16 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Gu
 
         _repo.AddBatch(batch);
         _repo.AddAdjustment(adjustment);
-        await _uow.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _uow.SaveChangesAsync(cancellationToken);
+        }
+        catch (DomainException ex)
+        {
+            return Result<Guid>.Failure(ex.Message, 422);
+        }
 
-        return batch.Id;
+        return Result<Guid>.Success(batch.Id);
     }
 
     private static string GenerateBatchNumber(string medicineName, MedicineVariant variant)

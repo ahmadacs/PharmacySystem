@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Inventory.Queries;
 
-public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, PagedResult<MedicineBatchDto>>
+public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Result<PagedList<MedicineBatchDto>>>
 {
     private readonly IMedicineRepository _repo;
 
@@ -14,6 +14,9 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Page
         _repo = repo;
     }
 
-    public Task<PagedResult<MedicineBatchDto>> Handle(BatchListQuery request, CancellationToken cancellationToken)
-        => _repo.ListBatchesAsync(request, cancellationToken);
+    public async Task<Result<PagedList<MedicineBatchDto>>> Handle(BatchListQuery request, CancellationToken cancellationToken)
+    {
+        var page = await _repo.ListBatchesAsync(request, cancellationToken);
+        return Result<PagedList<MedicineBatchDto>>.Success(page);
+    }
 }
