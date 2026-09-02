@@ -2,10 +2,15 @@ namespace Application.Features.Inventory.Dtos;
 
 public sealed record LowStockDto(
     Guid MedicineId,
-    string Name,
-    string? NameAr,
+    string MedicineName,
+    string? MedicineNameAr,
+    Guid MedicineVariantId,
+    string VariantName,
     int AvailableQuantity,
-    int ReorderLevel);
+    int ReorderLevel,
+    Domain.Enums.MedicineForm Form,
+    Domain.Enums.MedicineUnit Unit,
+    decimal Strength);
 
 /// <summary>
 /// Aggregated per-medicine inventory row (sums across all its variants and their

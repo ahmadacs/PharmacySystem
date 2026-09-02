@@ -1,12 +1,14 @@
 namespace Domain.Events;
 
 /// <summary>
-/// Raised when a medicine's available stock falls at or below its reorder level.
+/// Raised when a medicine variant's available stock falls at or below its reorder level.
 /// Emitted from stock-changing operations (dispensing, inventory adjustments).
 /// </summary>
 public record MedicineLowStockEvent(
     Guid MedicineId,
+    Guid MedicineVariantId,
     string MedicineName,
+    string VariantName,
     int AvailableStock,
     int ReorderLevel,
     DateTime OccurredAtUtc)

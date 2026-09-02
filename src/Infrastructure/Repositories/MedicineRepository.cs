@@ -68,6 +68,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
     public async Task<List<MedicineVariant>> GetForDispensingAsync(IReadOnlyCollection<Guid> variantIds, CancellationToken cancellationToken = default)
         => await Db.Set<MedicineVariant>()
             .Include(v => v.Batches)
+            .Include(v => v.Medicine)
             .Where(v => variantIds.Contains(v.Id))
             .ToListAsync(cancellationToken);
 
@@ -160,8 +161,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             Category = m.CategoryEnum,
             m.IsControlled,
             m.IsActive,
-            ReorderLevel = m.ReorderLevel.Value,
-            // Variant summaries
+            // Variant summaries — now each variant carries its own ReorderLevel
             Variants = m.Variants
                 .Where(v => !v.IsDeleted && v.IsActive)
                 .Select(v => new
@@ -170,6 +170,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                     v.Form,
                     v.Unit,
                     v.Strength,
+                    ReorderLevel = v.ReorderLevel.Value,
                     BaseUnitName = v.UnitOfMeasure.BaseUnitName,
                     PackageUnitName = v.UnitOfMeasure.PackageUnitName,
                     UnitsPerPackage = v.UnitOfMeasure.UnitsPerPackage,
@@ -214,10 +215,13 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                 v.Strength,
                 $"{v.Form} {v.Strength} {v.Unit}",
                 v.Available,
+                v.ReorderLevel,
+                v.Available <= v.ReorderLevel,
                 v.BaseUnitName,
                 v.PackageUnitName,
                 v.UnitsPerPackage,
                 v.IsDivisible)).ToList();
+            var isLowStock = variants.Any(v => v.IsLowStock);
 
             return new MedicineListItemDto(
                 r.Id,
@@ -229,10 +233,9 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                 variants,
                 r.IsControlled,
                 r.IsActive,
-                r.ReorderLevel,
                 availableQuantity,
                 r.VariantCount,
-                availableQuantity <= r.ReorderLevel);
+                isLowStock);
         }).ToList();
 
         return new PagedList<MedicineListItemDto>
@@ -358,28 +361,30 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             NameAr = m.NameAr,
             GenericName = m.GenericName != null ? m.GenericName.Name : string.Empty,
             GenericNameAr = m.GenericName != null ? m.GenericName.NameAr : null,
-            ReorderLevel = m.ReorderLevel.Value,
+            ReorderLevel = m.Variants.Where(v => v.IsActive && !v.IsDeleted).Sum(v => (int?)v.ReorderLevel.Value) ?? 0,
             TotalQuantity = m.Variants
-                .Where(v => v.IsActive)
-                .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf))
+                .Where(v => v.IsActive && !v.IsDeleted)
+                .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted))
                 .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
-            VariantCount = m.Variants.Count(v => v.IsActive),
+            HasLowVariant = m.Variants.Where(v => v.IsActive && !v.IsDeleted).Any(v =>
+                v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value),
+            VariantCount = m.Variants.Count(v => v.IsActive && !v.IsDeleted),
             ActiveBatchCount = m.Variants
                 .SelectMany(v => v.Batches)
-                .Count(b => b.ExpiryDate > asOf && b.QuantityAvailable.Value > 0),
+                .Count(b => b.ExpiryDate > asOf && b.QuantityAvailable.Value > 0 && !b.IsDeleted),
             NearestExpiryDate = m.Variants
                 .SelectMany(v => v.Batches)
-                .Where(b => b.ExpiryDate >= asOf)
+                .Where(b => b.ExpiryDate >= asOf && !b.IsDeleted)
                 .Min(b => (DateOnly?)b.ExpiryDate)
         });
 
         switch (query.StockStatus?.ToLowerInvariant())
         {
             case "instock" or "in_stock":
-                projected = projected.Where(x => x.TotalQuantity > x.ReorderLevel);
+                projected = projected.Where(x => x.TotalQuantity > 0 && !x.HasLowVariant);
                 break;
             case "low" or "lowstock" or "low_stock":
-                projected = projected.Where(x => x.TotalQuantity > 0 && x.TotalQuantity <= x.ReorderLevel);
+                projected = projected.Where(x => x.TotalQuantity > 0 && x.HasLowVariant);
                 break;
             case "out" or "outofstock" or "out_of_stock":
                 projected = projected.Where(x => x.TotalQuantity == 0);
@@ -417,7 +422,7 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
                 r.ReorderLevel,
                 r.TotalQuantity == 0
                     ? InventoryStatus.OutOfStock
-                    : r.TotalQuantity <= r.ReorderLevel
+                    : r.HasLowVariant
                         ? InventoryStatus.LowStock
                         : InventoryStatus.InStock,
                 r.NearestExpiryDate,
@@ -532,26 +537,39 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var rows = await Db.Set<Medicine>()
+        var rows = await Db.Set<MedicineVariant>()
             .AsNoTracking()
-            .Where(m => m.IsActive)
-            .Select(m => new
+            .Where(v => v.IsActive && !v.IsDeleted && v.Medicine != null && v.Medicine.IsActive)
+            .Select(v => new
             {
-                m.Id,
-                m.Name,
-                NameAr = m.NameAr,
-                ReorderLevel = m.ReorderLevel.Value,
-                Available = m.Variants
-                    .Where(v => v.IsActive)
-                    .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf))
-                    .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0
+                MedicineId = v.MedicineId,
+                MedicineName = v.Medicine != null ? v.Medicine.Name : "Unknown",
+                MedicineNameAr = v.Medicine != null ? v.Medicine.NameAr : null,
+                MedicineVariantId = v.Id,
+                VariantName = $"{v.Form} {v.Strength} {v.Unit}",
+                v.Form,
+                v.Unit,
+                v.Strength,
+                ReorderLevel = v.ReorderLevel.Value,
+                Available = v.Batches.Where(b => !b.IsDeleted && b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0
             })
             .Where(x => x.Available <= x.ReorderLevel)
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.MedicineName)
+            .ThenBy(x => x.Strength)
             .ToListAsync(cancellationToken);
 
         return rows
-            .Select(r => new LowStockDto(r.Id, r.Name, r.NameAr, r.Available, r.ReorderLevel))
+            .Select(r => new LowStockDto(
+                r.MedicineId,
+                r.MedicineName,
+                r.MedicineNameAr,
+                r.MedicineVariantId,
+                r.VariantName,
+                r.Available,
+                r.ReorderLevel,
+                r.Form,
+                r.Unit,
+                r.Strength))
             .ToList();
     }
 

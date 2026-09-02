@@ -115,7 +115,10 @@
       "stock": "Stock",
       "status": "Status",
       "actions": "Actions",
-      "reorderAt": "reorder at {{level}}"
+      "reorderAt": "reorder at {{level}}",
+      "lowStock": "Low stock",
+      "inStock": "In stock",
+      "outOfStock": "Out of stock"
     },
     "filters": {
       "search": "Search medicines...",
@@ -156,6 +159,7 @@
       "nearestExpiry": "Nearest expiry",
       "medicineName": "Medicine",
       "variantName": "Type",
+      "variant": "Variant",
       "quantityAvailable": "Available",
       "dispensedQuantity": "Dispensed",
       "supplierName": "Supplier",

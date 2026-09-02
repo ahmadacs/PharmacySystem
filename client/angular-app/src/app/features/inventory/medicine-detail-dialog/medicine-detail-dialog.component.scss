@@ -66,9 +66,20 @@
 }
 
 .chip-expired,
-.chip-depleted {
+.chip-depleted,
+.chip-out {
   color: var(--status-critical);
   background: color-mix(in srgb, var(--status-critical) 15%, transparent);
+}
+
+.chip-low {
+  color: var(--status-warning);
+  background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+}
+
+.chip-ok {
+  color: var(--status-safe);
+  background: color-mix(in srgb, var(--status-safe) 15%, transparent);
 }
 
 .nested-table {

@@ -82,9 +82,8 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
             }
 
             var asOf = DateOnly.FromDateTime(now);
-            var medicines = await _medicines.GetMedicinesByVariantIdsForStockCheckAsync(variantIds, cancellationToken);
-            foreach (var medicine in medicines)
-                medicine.RaiseLowStockEventIfNeeded(asOf);
+            foreach (var variant in variants)
+                variant.RaiseLowStockEventIfNeeded(asOf);
             foreach (var batch in variants.SelectMany(v => v.Batches))
                 batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 

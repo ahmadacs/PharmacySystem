@@ -30,11 +30,12 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
 
         var medicine = req.ToEntity(req.Category, genericName);
 
-        var seenVariants = new HashSet<MedicineVariantRequest>();
+        var seenKeys = new HashSet<(MedicineForm, MedicineUnit, decimal)>();
 
         foreach (var variantRequest in req.Variants)
         {
-            if (!seenVariants.Add(variantRequest))
+            var key = (variantRequest.Form, variantRequest.Unit, variantRequest.Strength);
+            if (!seenKeys.Add(key))
                 return Result<Guid>.Failure(
                     $"A duplicate variant '{variantRequest.Form} {variantRequest.Strength} {variantRequest.Unit}' was provided in this request.", 409);
 

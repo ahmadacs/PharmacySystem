@@ -10,7 +10,6 @@
         <div class="details__meta">
           <span><strong>{{ 'dialogs.medicineDetails.generic' | translate }}:</strong> {{ genericDisplay(details) }}</span>
           <span><strong>{{ 'dialogs.medicineDetails.category' | translate }}:</strong> {{ details.category | enumTranslate:'CategoryEnum' }}</span>
-          <span><strong>{{ 'dialogs.medicineDetails.reorderLevel' | translate }}:</strong> {{ details.reorderLevel }}</span>
           <span><strong>{{ 'dialogs.medicineDetails.totalStock' | translate }}:</strong> {{ details.availableQuantity }}</span>
           <span class="badge" [class.badge-danger]="details.isControlled">
             {{ details.isControlled ? ('dialogs.medicineDetails.controlled' | translate) : ('dialogs.medicineDetails.notControlled' | translate) }}
@@ -29,7 +28,14 @@
                 </mat-panel-title>
                 <mat-panel-description>
                   {{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength ?? '' }} {{ variant.unit | enumTranslate:'MedicineUnit' }}
-                  <span>{{ 'dialogs.medicineDetails.available' | translate }}: {{ variant.availableQuantity }}</span>
+                  <span>{{ 'dialogs.medicineDetails.available' | translate }}: {{ variant.availableQuantity }} / {{ variant.reorderLevel }}</span>
+                  @if (variant.availableQuantity === 0) {
+                    <span class="chip chip-out">{{ 'medicines.tables.outOfStock' | translate }}</span>
+                  } @else if (variant.isLowStock) {
+                    <span class="chip chip-low">{{ 'medicines.tables.lowStock' | translate }}</span>
+                  } @else {
+                    <span class="chip chip-ok">{{ 'medicines.tables.inStock' | translate }}</span>
+                  }
                 </mat-panel-description>
               </mat-expansion-panel-header>
 

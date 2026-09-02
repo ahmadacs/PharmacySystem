@@ -70,7 +70,6 @@ export class MedicineFormDialogComponent {
     genericName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
     genericNameAr: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(200)] }),
     category: new FormControl<number | null>(null, { nonNullable: true, validators: [Validators.required] }),
-    reorderLevel: new FormControl(10, { nonNullable: true, validators: [Validators.min(0)] }),
     isControlled: new FormControl(false, { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true }),
     variants: new FormArray<FormGroup>([])
@@ -85,7 +84,6 @@ export class MedicineFormDialogComponent {
         genericName: this.medicine.genericName,
         genericNameAr: this.medicine.genericNameAr ?? '',
         category: this.medicine.category,
-        reorderLevel: this.medicine.reorderLevel,
         isControlled: this.medicine.isControlled,
         isActive: this.medicine.isActive
       });
@@ -104,6 +102,7 @@ export class MedicineFormDialogComponent {
         form: new FormControl<string | null>(null, { validators: [Validators.required] }),
         unit: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
         strength: new FormControl<number | null>(null, { validators: [Validators.min(0.01)] }),
+        reorderLevel: new FormControl(10, { nonNullable: true, validators: [Validators.min(0)] }),
         baseUnitName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
         packageUnitName: new FormControl('Box', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
         unitsPerPackage: new FormControl(30, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
@@ -135,7 +134,6 @@ export class MedicineFormDialogComponent {
           genericName: value.genericName,
           genericNameAr: value.genericNameAr || undefined,
           category: categoryValue,
-          reorderLevel: value.reorderLevel,
           isControlled: value.isControlled,
           isActive: value.isActive
         });
@@ -147,12 +145,12 @@ export class MedicineFormDialogComponent {
           genericName: value.genericName,
           genericNameAr: value.genericNameAr || undefined,
           category: categoryValue,
-          reorderLevel: value.reorderLevel,
           isControlled: value.isControlled,
           variants: value.variants.map((v) => ({
             form: v['form'] as MedicineForm,
             unit: v['unit'],
             strength: v['strength'] ?? null,
+            reorderLevel: v['reorderLevel'] ?? 10,
             baseUnitName: v['baseUnitName'],
             packageUnitName: v['packageUnitName'],
             unitsPerPackage: v['unitsPerPackage'],

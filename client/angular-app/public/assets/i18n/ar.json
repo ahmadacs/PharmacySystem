@@ -115,7 +115,10 @@
       "stock": "المخزون",
       "status": "الحالة",
       "actions": "إجراءات",
-      "reorderAt": "حد الطلب عند {{level}}"
+      "reorderAt": "حد الطلب عند {{level}}",
+      "lowStock": "مخزون منخفض",
+      "inStock": "متوفر",
+      "outOfStock": "نفد المخزون"
     },
     "filters": {
       "search": "بحث عن أدوية...",
@@ -156,6 +159,7 @@
       "nearestExpiry": "أقرب انتهاء",
       "medicineName": "الدواء",
       "variantName": "النوع",
+      "variant": "النوع",
       "quantityAvailable": "المتوفر",
       "dispensedQuantity": "المصروف",
       "supplierName": "المورد",

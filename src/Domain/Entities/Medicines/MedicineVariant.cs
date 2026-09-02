@@ -1,5 +1,6 @@
 using Domain.Common;
 using Domain.Enums;
+using Domain.Events;
 using Domain.Exceptions;
 using Domain.ValueObjects;
 
@@ -13,6 +14,7 @@ public class MedicineVariant : BaseEntity
     public MedicineForm Form { get; private set; }
     public MedicineUnit Unit { get; private set; }
     public decimal Strength { get; private set; }
+    public Quantity ReorderLevel { get; private set; } = Quantity.Zero;
     public UnitOfMeasure UnitOfMeasure { get; private set; } = UnitOfMeasure.Create("Unit", "Box", 1);
     public bool IsActive { get; private set; } = true;
 
@@ -22,7 +24,7 @@ public class MedicineVariant : BaseEntity
     private MedicineVariant() { }
 
     public MedicineVariant(Guid medicineId, MedicineForm form, MedicineUnit unit, decimal strength,
-        UnitOfMeasure? unitOfMeasure = null)
+        int reorderLevel = 10, UnitOfMeasure? unitOfMeasure = null)
     {
         if (medicineId == Guid.Empty)
             throw new ArgumentException("MedicineId is required.", nameof(medicineId));
@@ -33,10 +35,11 @@ public class MedicineVariant : BaseEntity
         Form = form;
         Unit = unit;
         Strength = strength;
+        ReorderLevel = Quantity.Of(reorderLevel);
         UnitOfMeasure = unitOfMeasure ?? UnitOfMeasure.Create("Unit", "Box", 1);
     }
 
-    public void UpdateDetails(MedicineForm form, MedicineUnit unit, decimal strength, UnitOfMeasure? unitOfMeasure = null)
+    public void UpdateDetails(MedicineForm form, MedicineUnit unit, decimal strength, int reorderLevel, UnitOfMeasure? unitOfMeasure = null)
     {
         if (strength <= 0)
             throw new ArgumentException("Strength must be greater than zero.", nameof(strength));
@@ -44,12 +47,57 @@ public class MedicineVariant : BaseEntity
         Form = form;
         Unit = unit;
         Strength = strength;
+        ReorderLevel = Quantity.Of(reorderLevel);
         if (unitOfMeasure is not null)
             UnitOfMeasure = unitOfMeasure;
     }
 
+    public void UpdateReorderLevel(int reorderLevel) => ReorderLevel = Quantity.Of(reorderLevel);
+
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;
+
+    public bool IsLowStock(DateOnly asOf) => GetAvailableStock(asOf).Value <= ReorderLevel.Value;
+
+    /// <summary>
+    /// Raises MedicineLowStockEvent when this variant's available stock is at or below its reorder level.
+    /// </summary>
+    public void RaiseLowStockEventIfNeeded(DateOnly asOf)
+    {
+        if (!IsLowStock(asOf))
+            return;
+
+        var variantName = $"{Form} {Strength} {Unit}";
+        var medicineName = Medicine?.Name ?? "Unknown";
+        RaiseDomainEvent(new MedicineLowStockEvent(
+            MedicineId,
+            Id,
+            medicineName,
+            variantName,
+            GetAvailableStock(asOf).Value,
+            ReorderLevel.Value,
+            DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// Raises low-stock considering an additional quantity that will be added (e.g., a new batch not yet in Batches collection).
+    /// </summary>
+    public void RaiseLowStockEventIfNeededWithAdditional(DateOnly asOf, int additionalQuantity)
+    {
+        var availableAfter = GetAvailableStock(asOf).Value + additionalQuantity;
+        if (availableAfter > ReorderLevel.Value)
+            return;
+        var variantName = $"{Form} {Strength} {Unit}";
+        var medicineName = Medicine?.Name ?? "Unknown";
+        RaiseDomainEvent(new MedicineLowStockEvent(
+            MedicineId,
+            Id,
+            medicineName,
+            variantName,
+            availableAfter,
+            ReorderLevel.Value,
+            DateTime.UtcNow));
+    }
 
     public void AddBatch(MedicineBatch batch)
     {

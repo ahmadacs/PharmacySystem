@@ -33,7 +33,6 @@ public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicin
         medicine.UpdateDetails(
             req.Name,
             req.Category,
-            req.ReorderLevel,
             genericName,
             req.IsControlled,
             req.NameAr);

@@ -14,8 +14,21 @@ public static class MedicineMapping
     public static MedicineListItemDto ToListItemDto(this Medicine medicine, DateOnly asOf)
     {
         var available = medicine.GetAvailableStock(asOf).Value;
-        var reorder = medicine.ReorderLevel.Value;
         var activeVariants = medicine.Variants.NotDeleted().Where(v => v.IsActive).ToList();
+        var variantDtos = activeVariants.Select(v => new MedicineVariantSummaryDto(
+                v.Id,
+                v.Form,
+                v.Unit,
+                v.Strength,
+                $"{v.Form} {v.Strength} {v.Unit}",
+                v.GetAvailableStock(asOf).Value,
+                v.ReorderLevel.Value,
+                v.IsLowStock(asOf),
+                v.UnitOfMeasure.BaseUnitName,
+                v.UnitOfMeasure.PackageUnitName,
+                v.UnitOfMeasure.UnitsPerPackage,
+                v.UnitOfMeasure.IsDivisible)).ToList();
+        var isLowStock = variantDtos.Any(v => v.IsLowStock);
 
         return new MedicineListItemDto(
             medicine.Id,
@@ -24,23 +37,12 @@ public static class MedicineMapping
             medicine.GenericName.Name,
             medicine.GenericName.NameAr,
             medicine.CategoryEnum,
-            activeVariants.Select(v => new MedicineVariantSummaryDto(
-                v.Id,
-                v.Form,
-                v.Unit,
-                v.Strength,
-                $"{v.Form} {v.Strength} {v.Unit}",
-                v.GetAvailableStock(asOf).Value,
-                v.UnitOfMeasure.BaseUnitName,
-                v.UnitOfMeasure.PackageUnitName,
-                v.UnitOfMeasure.UnitsPerPackage,
-                v.UnitOfMeasure.IsDivisible)).ToList(),
+            variantDtos,
             medicine.IsControlled,
             medicine.IsActive,
-            reorder,
             available,
             activeVariants.Count,
-            available <= reorder);
+            isLowStock);
     }
 
     public static MedicineDetailsDto ToDetailsDto(this Medicine medicine, DateOnly asOf)
@@ -53,7 +55,6 @@ public static class MedicineMapping
             medicine.CategoryEnum,
             medicine.IsControlled,
             medicine.IsActive,
-            medicine.ReorderLevel.Value,
             medicine.GetAvailableStock(asOf).Value,
             medicine.Variants.NotDeleted()
                 .OrderBy(v => v.Form)
@@ -71,6 +72,8 @@ public static class MedicineMapping
             $"{variant.Form} {variant.Strength} {variant.Unit}",
             variant.IsActive,
             variant.GetAvailableStock(asOf).Value,
+            variant.ReorderLevel.Value,
+            variant.IsLowStock(asOf),
             variant.UnitOfMeasure.BaseUnitName,
             variant.UnitOfMeasure.PackageUnitName,
             variant.UnitOfMeasure.UnitsPerPackage,
@@ -121,17 +124,16 @@ public static class MedicineMapping
         => new(
             request.Name,
             categoryEnum,
-            request.ReorderLevel,
             genericName,
             request.IsControlled,
             request.NameAr);
 
     public static MedicineVariant ToEntity(this MedicineVariantRequest request, Guid medicineId)
-        => new(medicineId, request.Form, request.Unit, request.Strength,
+        => new(medicineId, request.Form, request.Unit, request.Strength, request.ReorderLevel,
             UnitOfMeasure.Create(request.BaseUnitName, request.PackageUnitName, request.UnitsPerPackage, request.IsDivisible));
 
     public static MedicineVariant ToEntity(this CreateVariantRequest request)
-        => new(request.MedicineId, request.Form, request.Unit, request.Strength,
+        => new(request.MedicineId, request.Form, request.Unit, request.Strength, request.ReorderLevel,
             UnitOfMeasure.Create(request.BaseUnitName, request.PackageUnitName, request.UnitsPerPackage, request.IsDivisible));
 
     public static MedicineBatch ToEntity(this AddBatchRequest request, UnitOfMeasure unitOfMeasure, string batchNumber)

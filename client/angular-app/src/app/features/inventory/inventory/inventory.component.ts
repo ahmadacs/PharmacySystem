@@ -105,10 +105,10 @@ export class InventoryComponent {
   protected readonly adjustmentTypes: InventoryAdjustmentType[] = [
     'Increase', 'Decrease', 'Correction', 'Damaged', 'Expired', 'Returned', 'Sold', 'TransferOut', 'TransferIn'
   ];
-  protected readonly summaryColumns = ['name', 'stockStatus', 'totalQuantity', 'reorderLevel', 'variantCount', 'activeBatchCount', 'nearestExpiryDate'];
+  protected readonly summaryColumns = ['name', 'totalQuantity', 'reorderLevel', 'variantCount', 'activeBatchCount', 'nearestExpiryDate'];
   protected readonly batchColumns = ['medicineName', 'batchNumber', 'expiryDate', 'quantityAvailable', 'dispensed', 'supplierName', 'status'];
   protected readonly adjColumns = ['adjustedAt', 'item', 'type', 'quantityChanged', 'beforeAfter', 'reason', 'adjustedBy'];
-  protected readonly lowStockColumns = ['name', 'availableQuantity', 'reorderLevel'];
+  protected readonly lowStockColumns = ['medicine', 'variant', 'availableQuantity', 'reorderLevel', 'status'];
   protected readonly alertColumns = ['medicine', 'batch', 'expiryDate', 'daysToExpiry', 'remainingQuantity', 'status'];
 
   // ---- Medicines summary tab ----

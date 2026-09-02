@@ -12,16 +12,6 @@
         <mat-label>{{ 'inventory.filters.summarySearch' | translate }}</mat-label>
         <input matInput [formControl]="summarySearchControl" [placeholder]="'inventory.filters.summarySearch' | translate" />
       </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>{{ 'inventory.filters.stockStatus' | translate }}</mat-label>
-        <mat-select [value]="stockStatus()" (selectionChange)="stockStatus.set($event.value); summaryPage.set(1)">
-          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
-          @for (status of stockFilters; track status) {
-            <mat-option [value]="status">{{ status | enumTranslate:'StockStatus' }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
     </div>
 
     @if (summary.isLoading()) {
@@ -38,22 +28,9 @@
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="stockStatus">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.stockStatus' | translate }}</th>
-          <td mat-cell *matCellDef="let row">
-            <span class="chip" [class.chip-instock]="row.stockStatus === 'InStock'"
-              [class.chip-low]="row.stockStatus === 'LowStock'"
-              [class.chip-out]="row.stockStatus === 'OutOfStock'">
-              {{ row.stockStatus | enumTranslate:'StockStatus' }}
-            </span>
-          </td>
-        </ng-container>
-
         <ng-container matColumnDef="totalQuantity">
           <th mat-header-cell *matHeaderCellDef mat-sort-header="totalQuantity">{{ 'inventory.tables.totalQuantity' | translate }}</th>
-          <td mat-cell *matCellDef="let row">
-            <span [class.stock-low]="row.stockStatus === 'LowStock' || row.stockStatus === 'OutOfStock'">{{ row.totalQuantity }}</span>
-          </td>
+          <td mat-cell *matCellDef="let row">{{ row.totalQuantity }}</td>
         </ng-container>
 
         <ng-container matColumnDef="reorderLevel">
@@ -381,19 +358,36 @@
 
     <div class="table-card mat-elevation-z2">
       <table mat-table [dataSource]="lowStock.value()">
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.name' | translate }}</th>
-          <td mat-cell *matCellDef="let row">{{ displayMedicineName(row) }}</td>
+        <ng-container matColumnDef="medicine">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicine' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.medicineName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="variant">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.variantName' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.variantName }}</td>
         </ng-container>
         <ng-container matColumnDef="availableQuantity">
           <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.availableQuantity' | translate }}</th>
           <td mat-cell *matCellDef="let row">
-            <span class="stock-low">{{ row.availableQuantity }}</span>
+            <span [class.stock-out]="row.availableQuantity === 0"
+                  [class.stock-low]="row.availableQuantity > 0 && row.availableQuantity <= row.reorderLevel">{{ row.availableQuantity }}</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="reorderLevel">
           <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.reorder' | translate }}</th>
           <td mat-cell *matCellDef="let row">{{ row.reorderLevel }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.stockStatus' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.availableQuantity === 0) {
+              <span class="chip chip-out">{{ 'medicines.tables.outOfStock' | translate }}</span>
+            } @else if (row.availableQuantity <= row.reorderLevel) {
+              <span class="chip chip-low">{{ 'medicines.tables.lowStock' | translate }}</span>
+            } @else {
+              <span class="chip chip-ok">{{ 'medicines.tables.inStock' | translate }}</span>
+            }
+          </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="lowStockColumns"></tr>

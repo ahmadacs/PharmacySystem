@@ -46,9 +46,10 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
-        var medicines = await _repo.GetMedicinesByVariantIdsForStockCheckAsync([batch.MedicineVariantId], cancellationToken);
-        foreach (var medicine in medicines)
-            medicine.RaiseLowStockEventIfNeeded(asOf);
+        // Need tracked variant with batches + medicine for domain event; load with batches
+        var variantsForEvent = await _repo.GetForDispensingAsync([batch.MedicineVariantId], cancellationToken);
+        foreach (var v in variantsForEvent)
+            v.RaiseLowStockEventIfNeeded(asOf);
 
         _repo.AddAdjustment(adjustment);
         try

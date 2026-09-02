@@ -15,11 +15,6 @@ public class MedicineConfiguration : IEntityTypeConfiguration<Medicine>
         builder.Property(m => m.Name).IsRequired().HasMaxLength(200);
         builder.Property(m => m.NameAr).HasMaxLength(200);
 
-        builder.ComplexProperty(m => m.ReorderLevel, cp =>
-        {
-            cp.Property(q => q.Value).HasColumnName("ReorderLevel").IsRequired();
-        });
-
         builder.Property(m => m.CategoryEnum)
             .IsRequired()
             .HasConversion<int>();

@@ -9,7 +9,6 @@
     <div class="meta">
       <span><strong>{{ 'dialogs.medicineDetailInventory.generic' | translate }}:</strong> {{ genericDisplay(details) }}</span>
       <span><strong>{{ 'dialogs.medicineDetailInventory.category' | translate }}:</strong> {{ details.category | enumTranslate:'CategoryEnum' }}</span>
-      <span><strong>{{ 'dialogs.medicineDetailInventory.reorderLevel' | translate }}:</strong> {{ details.reorderLevel }}</span>
       <span><strong>{{ 'dialogs.medicineDetailInventory.totalStock' | translate }}:</strong> {{ details.availableQuantity }}</span>
     </div>
 
@@ -20,7 +19,15 @@
           <span class="variant-meta">
             {{ 'dialogs.medicineDetailInventory.unit' | translate }}: {{ variant.unit | enumTranslate:'MedicineUnit' }} ·
             {{ 'dialogs.medicineDetailInventory.pkg' | translate }}: {{ variant.packageUnitName }} of {{ variant.unitsPerPackage }} {{ variant.baseUnitName }}s ·
-            {{ 'dialogs.medicineDetailInventory.total' | translate }}: {{ variant.availableQuantity }} {{ variant.baseUnitName }}s
+            {{ 'dialogs.medicineDetailInventory.total' | translate }}: {{ variant.availableQuantity }} {{ variant.baseUnitName }}s ·
+            {{ 'dialogs.medicineDetailInventory.reorderLevel' | translate }}: {{ variant.reorderLevel }}
+            @if (variant.availableQuantity === 0) {
+              <span class="chip chip-out">{{ 'medicines.tables.outOfStock' | translate }}</span>
+            } @else if (variant.isLowStock) {
+              <span class="chip chip-low">{{ 'medicines.tables.lowStock' | translate }}</span>
+            } @else {
+              <span class="chip chip-ok">{{ 'medicines.tables.inStock' | translate }}</span>
+            }
           </span>
         </div>
 
@@ -45,7 +52,7 @@
                   <td>
                     <span [class.expired]="batch.isExpired">{{ batch.expiryDate }}</span>
                   </td>
-                  <td>{{ batch.receivedDate | riyadhDate: 'mediumDate' }}</td>
+                  <td>{{ batch.receivedDate | riyadhDate: 'yyyy-MM-dd' }}</td>
                   <td>{{ batch.unitCost | currency }}</td>
                   <td>{{ batch.supplierName || '-' }}</td>
                   <td>

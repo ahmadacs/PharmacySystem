@@ -42,19 +42,13 @@
             <mat-error>{{ 'dialogs.medicineForm.categoryRequired' | translate }}</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="grow">
-            <mat-label>{{ 'dialogs.medicineForm.reorderLevel' | translate }}</mat-label>
-            <input matInput formControlName="reorderLevel" type="number" min="0" />
-            <mat-error>{{ 'dialogs.medicineForm.reorderLevelError' | translate }}</mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="row controls">
           <mat-checkbox formControlName="isControlled">{{ 'dialogs.medicineForm.controlledSubstance' | translate }}</mat-checkbox>
           @if (isEdit) {
             <mat-checkbox formControlName="isActive">{{ 'dialogs.medicineForm.active' | translate }}</mat-checkbox>
           }
         </div>
+
+
 
         @if (!isEdit) {
           <div formArrayName="variants" class="variants">
@@ -83,6 +77,11 @@
                   <mat-form-field appearance="outline">
                     <mat-label>{{ 'dialogs.medicineForm.variantStrength' | translate }}</mat-label>
                     <input matInput formControlName="strength" type="number" min="0" step="0.01" [placeholder]="'dialogs.medicineForm.variantStrengthPlaceholder' | translate" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ 'dialogs.medicineForm.reorderLevel' | translate }}</mat-label>
+                    <input matInput formControlName="reorderLevel" type="number" min="0" />
+                    <mat-error>{{ 'dialogs.medicineForm.reorderLevelError' | translate }}</mat-error>
                   </mat-form-field>
                   @if (variants.length > 1) {
                     <button mat-icon-button type="button" (click)="removeVariant(i)" [aria-label]="'dialogs.medicineForm.removeVariant' | translate">

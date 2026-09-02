@@ -16,6 +16,11 @@ public class MedicineVariantConfiguration : IEntityTypeConfiguration<MedicineVar
         builder.Property(v => v.Unit).IsRequired();
         builder.Property(v => v.Strength).HasPrecision(18, 2).IsRequired();
 
+        builder.ComplexProperty(v => v.ReorderLevel, cp =>
+        {
+            cp.Property(q => q.Value).HasColumnName("ReorderLevel").IsRequired();
+        });
+
         builder.ComplexProperty(v => v.UnitOfMeasure, cp =>
         {
             cp.Property(u => u.BaseUnitName).HasColumnName("BaseUnitName").IsRequired().HasMaxLength(50);

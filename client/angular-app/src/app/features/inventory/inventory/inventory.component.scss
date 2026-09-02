@@ -39,7 +39,17 @@ table {
 }
 
 .stock-low {
+  color: var(--status-warning);
+  font-weight: 600;
+}
+
+.stock-out {
   color: var(--status-critical);
+  font-weight: 600;
+}
+
+.stock-ok {
+  color: var(--status-safe);
   font-weight: 600;
 }
 
@@ -77,7 +87,8 @@ table {
 
 .chip-instock,
 .chip-active,
-.chip-safe {
+.chip-safe,
+.chip-ok {
   color: var(--status-safe);
   background: color-mix(in srgb, var(--status-safe) 15%, transparent);
 }

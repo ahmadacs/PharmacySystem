@@ -14,6 +14,8 @@ public sealed record MedicineVariantSummaryDto(
     decimal Strength,
     string DisplayName,
     int AvailableQuantity,
+    int ReorderLevel,
+    bool IsLowStock,
     string BaseUnitName,
     string PackageUnitName,
     int UnitsPerPackage,
@@ -29,7 +31,6 @@ public sealed record MedicineListItemDto(
     IReadOnlyList<MedicineVariantSummaryDto> Variants,
     bool IsControlled,
     bool IsActive,
-    int ReorderLevel,
     int AvailableQuantity,
     int VariantCount,
     bool IsLowStock);
@@ -43,6 +44,8 @@ public sealed record MedicineVariantDto(
     string DisplayName,
     bool IsActive,
     int AvailableQuantity,
+    int ReorderLevel,
+    bool IsLowStock,
     string BaseUnitName,
     string PackageUnitName,
     int UnitsPerPackage,
@@ -58,7 +61,6 @@ public sealed record MedicineDetailsDto(
     CategoryEnum Category,
     bool IsControlled,
     bool IsActive,
-    int ReorderLevel,
     int AvailableQuantity,
     IReadOnlyList<MedicineVariantDto> Variants);
 

@@ -29,9 +29,15 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     public async Task<Result<Guid>> Handle(AddBatchCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var variant = await _repo.GetVariantByIdAsync(req.MedicineVariantId, cancellationToken);
+        var variantsForEvent = await _repo.GetForDispensingAsync([req.MedicineVariantId], cancellationToken);
+        var variant = variantsForEvent.FirstOrDefault(v => v.Id == req.MedicineVariantId);
         if (variant is null)
-            return Result<Guid>.Failure($"Resource 'MedicineVariant' with id '{req.MedicineVariantId}' was not found.", 404);
+        {
+            // Fallback to single fetch if not found via batch method (e.g., no batches yet)
+            variant = await _repo.GetVariantByIdAsync(req.MedicineVariantId, cancellationToken);
+            if (variant is null)
+                return Result<Guid>.Failure($"Resource 'MedicineVariant' with id '{req.MedicineVariantId}' was not found.", 404);
+        }
 
         // Get the parent medicine to generate batch number
         var medicineInfo = await _repo.GetByIdWithVariantsAsync(variant.MedicineId, cancellationToken);
@@ -75,9 +81,8 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
-        var medicineList = await _repo.GetMedicinesByVariantIdsForStockCheckAsync([variant.Id], cancellationToken);
-        foreach (var medicineItem in medicineList)
-            medicineItem.RaiseLowStockEventIfNeeded(asOf);
+        // Evaluate low-stock for the variant AFTER the new batch is added.
+        variant.RaiseLowStockEventIfNeededWithAdditional(asOf, totalUnits);
 
         _repo.AddBatch(batch);
         _repo.AddAdjustment(adjustment);

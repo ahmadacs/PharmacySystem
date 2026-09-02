@@ -14,11 +14,13 @@ namespace Application.Features.Notifications.Events;
 /// </summary>
 public sealed record MedicineLowStockNotification(
     Guid MedicineId,
+    Guid MedicineVariantId,
     string MedicineName,
+    string VariantName,
     int AvailableStock,
     int ReorderLevel,
     DateTime OccurredAtUtc)
-    : MedicineLowStockEvent(MedicineId, MedicineName, AvailableStock, ReorderLevel, OccurredAtUtc), INotification;
+    : MedicineLowStockEvent(MedicineId, MedicineVariantId, MedicineName, VariantName, AvailableStock, ReorderLevel, OccurredAtUtc), INotification;
 
 public sealed record MedicineBatchNearExpiryNotification(
     Guid MedicineBatchId,
@@ -45,17 +47,17 @@ public sealed class MedicineLowStockNotificationHandler : INotificationHandler<M
     public Task Handle(MedicineLowStockNotification notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "Low stock for medicine {MedicineId} ({MedicineName}): {AvailableStock} <= {ReorderLevel}",
-            notification.MedicineId, notification.MedicineName,
+            "Low stock for variant {VariantId} ({VariantName}) of medicine {MedicineId} ({MedicineName}): {AvailableStock} <= {ReorderLevel}",
+            notification.MedicineVariantId, notification.VariantName, notification.MedicineId, notification.MedicineName,
             notification.AvailableStock, notification.ReorderLevel);
 
         var create = new NotificationCreate(
             NotificationType.LowStock,
             "Low stock alert",
-            $"Available stock for {notification.MedicineName} is {notification.AvailableStock} (reorder level {notification.ReorderLevel}).",
-            Data: JsonSerializer.Serialize(new { medicineId = notification.MedicineId }),
+            $"Low stock for {notification.MedicineName} {notification.VariantName}: {notification.AvailableStock} (reorder level {notification.ReorderLevel}).",
+            Data: JsonSerializer.Serialize(new { medicineId = notification.MedicineId, variantId = notification.MedicineVariantId }),
             LocalizationKey: "notifications.lowStock",
-            LocalizationParamsJson: JsonSerializer.Serialize(new { medicineName = notification.MedicineName, availableStock = notification.AvailableStock, reorderLevel = notification.ReorderLevel }));
+            LocalizationParamsJson: JsonSerializer.Serialize(new { medicineName = $"{notification.MedicineName} {notification.VariantName}", availableStock = notification.AvailableStock, reorderLevel = notification.ReorderLevel }));
 
         return SendToStaffAsync(create, cancellationToken);
     }

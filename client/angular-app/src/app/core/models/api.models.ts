@@ -163,6 +163,7 @@ export interface MedicineVariantRequest {
   form: MedicineForm;
   unit: string;
   strength: number | null;
+  reorderLevel: number;
   baseUnitName: string;
   packageUnitName: string;
   unitsPerPackage: number;
@@ -175,7 +176,6 @@ export interface CreateMedicineRequest {
   genericName: string;
   genericNameAr?: string;
   category: number;
-  reorderLevel: number;
   isControlled: boolean;
   variants: MedicineVariantRequest[];
 }
@@ -187,7 +187,6 @@ export interface UpdateMedicineRequest {
   genericName: string;
   genericNameAr?: string;
   category: number;
-  reorderLevel: number;
   isControlled: boolean;
   isActive: boolean;
 }
@@ -210,6 +209,8 @@ export interface MedicineVariantDto {
   displayName: string;
   isActive: boolean;
   availableQuantity: number;
+  reorderLevel: number;
+  isLowStock: boolean;
   baseUnitName: string;
   packageUnitName: string;
   unitsPerPackage: number;
@@ -243,6 +244,8 @@ export interface MedicineVariantSummaryDto {
   strength: number | null;
   displayName: string;
   availableQuantity: number;
+  reorderLevel: number;
+  isLowStock: boolean;
   baseUnitName: string;
   packageUnitName: string;
   unitsPerPackage: number;
@@ -260,7 +263,6 @@ export interface MedicineListItemDto {
   variants: MedicineVariantSummaryDto[];
   isControlled: boolean;
   isActive: boolean;
-  reorderLevel: number;
   availableQuantity: number;
   variantCount: number;
   isLowStock: boolean;
@@ -276,7 +278,6 @@ export interface MedicineDetailsDto {
   categoryAr?: string;
   isControlled: boolean;
   isActive: boolean;
-  reorderLevel: number;
   availableQuantity: number;
   variants: MedicineVariantDto[];
 }
@@ -376,10 +377,15 @@ export interface DispensingRecordDto {
 
 export interface LowStockDto {
   medicineId: string;
-  name: string;
-  nameAr?: string;
+  medicineName: string;
+  medicineNameAr?: string;
+  medicineVariantId: string;
+  variantName: string;
   availableQuantity: number;
   reorderLevel: number;
+  form: MedicineForm;
+  unit: string;
+  strength: number | null;
 }
 
 export interface FileUploadDto {

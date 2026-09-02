@@ -123,7 +123,7 @@ export class DashboardComponent {
   protected readonly expiringCount = computed(() => this.expiring.value()?.totalCount ?? 0);
   protected readonly pendingCount = computed(() => this.pendingPrescriptions.value()?.totalCount ?? 0);
 
-  protected readonly lowStockColumns = ['name', 'availableQuantity', 'reorderLevel'];
+  protected readonly lowStockColumns = ['medicine', 'variant', 'availableQuantity', 'reorderLevel'];
   protected readonly pendingColumns = ['patientName', 'issuedDate', 'status', 'itemCount'];
 
 }

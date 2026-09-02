@@ -91,3 +91,28 @@
   opacity: 0.7;
   margin: 0;
 }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.chip-ok {
+  color: var(--status-safe);
+  background: color-mix(in srgb, var(--status-safe) 15%, transparent);
+}
+
+.chip-low {
+  color: var(--status-warning);
+  background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+}
+
+.chip-out {
+  color: var(--status-critical);
+  background: color-mix(in srgb, var(--status-critical) 15%, transparent);
+}

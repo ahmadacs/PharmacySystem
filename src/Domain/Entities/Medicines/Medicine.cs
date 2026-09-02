@@ -16,7 +16,6 @@ public class Medicine : BaseEntity
     public GenericName GenericName { get; private set; } = null!;
 
     public bool IsControlled { get; private set; }
-    public Quantity ReorderLevel { get; private set; } = Quantity.Zero;
     public bool IsActive { get; private set; } = true;
 
     private readonly List<MedicineVariant> _variants = new();
@@ -24,7 +23,7 @@ public class Medicine : BaseEntity
 
     private Medicine() { }
 
-    public Medicine(string name, CategoryEnum categoryEnum, int reorderLevel,
+    public Medicine(string name, CategoryEnum categoryEnum,
         GenericName genericName, bool isControlled = false, string? nameAr = null)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -35,11 +34,10 @@ public class Medicine : BaseEntity
         ArgumentNullException.ThrowIfNull(genericName, nameof(genericName));
         GenericName = genericName;
         GenericNameId = genericName.Id;
-        ReorderLevel = Quantity.Of(reorderLevel);
         IsControlled = isControlled;
     }
 
-    public void UpdateDetails(string name, CategoryEnum categoryEnum, int reorderLevel,
+    public void UpdateDetails(string name, CategoryEnum categoryEnum,
         GenericName genericName, bool isControlled, string? nameAr = null)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -50,7 +48,6 @@ public class Medicine : BaseEntity
         ArgumentNullException.ThrowIfNull(genericName, nameof(genericName));
         GenericName = genericName;
         GenericNameId = genericName.Id;
-        ReorderLevel = Quantity.Of(reorderLevel);
         IsControlled = isControlled;
     }
 
@@ -72,20 +69,9 @@ public class Medicine : BaseEntity
             .Select(v => v.GetAvailableStock(asOf))
             .Aggregate(Quantity.Zero, (total, q) => total.Add(q));
 
-    public bool IsLowStock(DateOnly asOf) => GetAvailableStock(asOf).Value <= ReorderLevel.Value;
-
-    /// <summary>
-    /// Raises MedicineLowStockEvent when the available stock is at or below the
-    /// reorder level. Called after a stock-changing operation on one of its batches.
-    /// </summary>
-    public void RaiseLowStockEventIfNeeded(DateOnly asOf)
-    {
-        if (!IsLowStock(asOf))
-            return;
-
-        RaiseDomainEvent(new MedicineLowStockEvent(
-            Id, Name, GetAvailableStock(asOf).Value, ReorderLevel.Value, DateTime.UtcNow));
-    }
+    /// <summary>True when any active variant is at or below its reorder level.</summary>
+    public bool HasAnyLowStockVariant(DateOnly asOf) =>
+        _variants.NotDeleted().Where(v => v.IsActive).Any(v => v.IsLowStock(asOf));
 
     public IEnumerable<MedicineBatch> GetExpiredBatches(DateOnly asOf) =>
         _variants.NotDeleted().SelectMany(v => v.GetExpiredBatches(asOf));

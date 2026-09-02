@@ -48,9 +48,13 @@
         }
         @if (lowStock.value()!.length > 0) {
           <table mat-table [dataSource]="lowStock.value()!">
-            <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.patient' | translate }}</th>
-              <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+            <ng-container matColumnDef="medicine">
+              <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicine' | translate }}</th>
+              <td mat-cell *matCellDef="let row">{{ row.medicineName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="variant">
+              <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.variantName' | translate }}</th>
+              <td mat-cell *matCellDef="let row">{{ row.variantName }}</td>
             </ng-container>
             <ng-container matColumnDef="availableQuantity">
               <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.availableQuantity' | translate }}</th>

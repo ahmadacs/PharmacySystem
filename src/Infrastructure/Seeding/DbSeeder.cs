@@ -90,17 +90,17 @@ public static class DbSeeder
         // forms, e.g. Paracetamol -> Tablet + Syrup + Drops).
         var medicines = new List<(Medicine Medicine, (MedicineForm Form, MedicineUnit Unit, decimal Strength)[] Variants)>
         {
-            (new Medicine("Paracetamol", CategoryEnum.Analgesics, 30, genericNames.First(g => g.Name == "Acetaminophen"), false, "باراسيتامول"),
+            (new Medicine("Paracetamol", CategoryEnum.Analgesics, genericNames.First(g => g.Name == "Acetaminophen"), false, "باراسيتامول"),
                 new[] { (MedicineForm.Tablet, MedicineUnit.Mg, 500m), (MedicineForm.Syrup, MedicineUnit.Ml, 120m), (MedicineForm.Drops, MedicineUnit.Ml, 100m) }),
-            (new Medicine("Ibuprofen", CategoryEnum.Analgesics, 30, genericNames.First(g => g.Name == "Ibuprofen"), false, "إيبوبروفين"),
+            (new Medicine("Ibuprofen", CategoryEnum.Analgesics, genericNames.First(g => g.Name == "Ibuprofen"), false, "إيبوبروفين"),
                 new[] { (MedicineForm.Capsule, MedicineUnit.Mg, 200m), (MedicineForm.Tablet, MedicineUnit.Mg, 400m), (MedicineForm.Suspension, MedicineUnit.Ml, 100m) }),
-            (new Medicine("Amoxicillin", CategoryEnum.Antibiotics, 30, genericNames.First(g => g.Name == "Amoxicillin"), true, "أموكسيسيلين"),
+            (new Medicine("Amoxicillin", CategoryEnum.Antibiotics, genericNames.First(g => g.Name == "Amoxicillin"), true, "أموكسيسيلين"),
                 new[] { (MedicineForm.Capsule, MedicineUnit.Mg, 250m), (MedicineForm.Suspension, MedicineUnit.Ml, 250m) }),
-            (new Medicine("Cetirizine", CategoryEnum.Antihistamines, 30, genericNames.First(g => g.Name == "Cetirizine"), false, "سيتيريزين"),
+            (new Medicine("Cetirizine", CategoryEnum.Antihistamines, genericNames.First(g => g.Name == "Cetirizine"), false, "سيتيريزين"),
                 new[] { (MedicineForm.Tablet, MedicineUnit.Mg, 10m), (MedicineForm.Syrup, MedicineUnit.Ml, 5m) }),
-            (new Medicine("Metformin", CategoryEnum.Antidiabetics, 30, genericNames.First(g => g.Name == "Metformin Hydrochloride"), false, "ميتفورمين"),
+            (new Medicine("Metformin", CategoryEnum.Antidiabetics, genericNames.First(g => g.Name == "Metformin Hydrochloride"), false, "ميتفورمين"),
                 new[] { (MedicineForm.Tablet, MedicineUnit.Mg, 500m), (MedicineForm.Tablet, MedicineUnit.Mg, 850m) }),
-            (new Medicine("Loratadine", CategoryEnum.Antihistamines, 30, genericNames.First(g => g.Name == "Loratadine"), false, "لوراتادين"),
+            (new Medicine("Loratadine", CategoryEnum.Antihistamines, genericNames.First(g => g.Name == "Loratadine"), false, "لوراتادين"),
                 new[] { (MedicineForm.Tablet, MedicineUnit.Mg, 10m), (MedicineForm.Syrup, MedicineUnit.Ml, 5m) }),
         };
 
@@ -128,7 +128,8 @@ public static class DbSeeder
             foreach (var (form, unit, strength) in variants)
             {
                 var uom = UnitOfMeasureFor(form);
-                var variant = new MedicineVariant(medicine.Id, form, unit, strength, uom);
+                // Each variant now carries its own reorder level (10 by default, matches the DTO default).
+                var variant = new MedicineVariant(medicine.Id, form, unit, strength, 10, uom);
                 medicine.AddVariant(variant);
                 db.MedicineVariants.Add(variant);
 

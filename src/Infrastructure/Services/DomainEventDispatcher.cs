@@ -32,7 +32,7 @@ public sealed class DomainEventDispatcher : IDomainEventDispatcher
         PrescriptionDispensedEvent e => new PrescriptionDispensedNotification(
             e.PrescriptionId, e.OccurredAtUtc, e.TotalDispensedQuantity),
         MedicineLowStockEvent e => new MedicineLowStockNotification(
-            e.MedicineId, e.MedicineName, e.AvailableStock, e.ReorderLevel, e.OccurredAtUtc),
+            e.MedicineId, e.MedicineVariantId, e.MedicineName, e.VariantName, e.AvailableStock, e.ReorderLevel, e.OccurredAtUtc),
         MedicineBatchNearExpiryEvent e => new MedicineBatchNearExpiryNotification(
             e.MedicineBatchId, e.MedicineVariantId, e.BatchNumber, e.ExpiryDate, e.OccurredAtUtc),
         _ => throw new NotSupportedException($"No notification mapping for '{domainEvent.GetType().Name}'.")

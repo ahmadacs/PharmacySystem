@@ -15,6 +15,9 @@ public sealed record MedicineVariantRequest
     [Range(0.01, (double)decimal.MaxValue)]
     public decimal Strength { get; init; }
 
+    [Range(0, int.MaxValue)]
+    public int ReorderLevel { get; init; } = 10;
+
     [Required, StringLength(50)]
     public string BaseUnitName { get; init; } = string.Empty;
 
@@ -44,9 +47,6 @@ public sealed record CreateMedicineRequest
     [EnumDataType(typeof(CategoryEnum))]
     public CategoryEnum Category { get; init; }
 
-    [Range(0, int.MaxValue)]
-    public int ReorderLevel { get; init; }
-
     public bool IsControlled { get; init; }
 
     [MinLength(1)]
@@ -71,9 +71,6 @@ public sealed record UpdateMedicineRequest
 
     [EnumDataType(typeof(CategoryEnum))]
     public CategoryEnum Category { get; init; }
-
-    [Range(0, int.MaxValue)]
-    public int ReorderLevel { get; init; }
 
     public bool IsControlled { get; init; }
     public bool IsActive { get; init; }
@@ -115,6 +112,9 @@ public sealed record CreateVariantRequest
 
     [Range(0.01, (double)decimal.MaxValue)]
     public decimal Strength { get; init; }
+
+    [Range(0, int.MaxValue)]
+    public int ReorderLevel { get; init; } = 10;
 
     [Required, StringLength(50)]
     public string BaseUnitName { get; init; } = string.Empty;
