@@ -16,6 +16,7 @@
     "updated": "Updated successfully",
     "deleted": "Deleted successfully",
     "close": "Close",
+    "system": "System",
     "language": "العربية",
     "all": "All",
     "more": "+{{count}} more",
@@ -337,15 +338,24 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Pharmacy overview",
+    "dailyTitle": "Today's Overview",
+    "dailyLiveUpdate": "Live dispensing and stock update",
     "stats": {
       "medicines": "Medicines",
       "lowStock": "Low stock",
       "expiringSoon": "Expiring soon (30d)",
-      "pendingPrescriptions": "Pending prescriptions"
+      "pendingPrescriptions": "Pending prescriptions",
+      "dispensedToday": "Dispensed today",
+      "pending": "Pending",
+      "createdToday": "Prescriptions created today",
+      "lowStockDaily": "Low stock items",
+      "expiringDaily": "Expiring soon"
     },
     "panels": {
       "lowStockItems": "Low stock items",
-      "latestPending": "Latest pending prescriptions",
+      "latestPending": "Pending prescriptions",
+      "latestDispensed": "Partially dispensed prescriptions",
+      "latestFragmented": "Current fragmented prescriptions",
       "nothingLow": "Nothing low",
       "allAboveReorder": "All medicines are above reorder levels."
     },
@@ -356,7 +366,9 @@
       "items": "Items"
     },
     "empty": {
-      "noPending": "No pending prescriptions"
+      "noPending": "No pending prescriptions",
+      "noDispensed": "No partially dispensed prescriptions",
+      "noFragmented": "No fragmented prescriptions"
     }
   },
   "users": {
@@ -697,6 +709,8 @@
       "unit": "Unit",
       "pkg": "Pkg",
       "total": "Total",
+      "packageOf": "{{package}} of {{count}} {{unit}}",
+      "totalUnits": "{{count}} {{unit}}",
       "batch": "Batch",
       "available": "Available",
       "expiry": "Expiry",

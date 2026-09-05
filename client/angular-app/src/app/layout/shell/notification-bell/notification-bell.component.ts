@@ -29,7 +29,6 @@ export class NotificationBellComponent {
   private readonly translate = inject(TranslateService);
 
   private readonly notificationsSignal = signal<NotificationDto[]>([]);
-  private readonly notificationsPanelOpened = signal(false);
   protected readonly notifications = this.notificationsSignal.asReadonly();
   protected readonly unreadCount = computed(() => this.notifications().filter((n) => !n.isRead).length);
   protected readonly showUnreadBadge = computed(() => this.unreadCount() > 0);
@@ -47,7 +46,6 @@ export class NotificationBellComponent {
   }
 
   async load(): Promise<void> {
-    this.notificationsPanelOpened.set(true);
     try {
       const result = await this.api.list(1, 50);
       this.notificationsSignal.set(result.items);
@@ -119,7 +117,6 @@ export class NotificationBellComponent {
       const translated = this.translate.instant(titleKey);
       if (translated !== titleKey) return translated;
     }
-    // fallback mapping by type
     const typeTitleMap: Record<string, string> = {
       LowStock: 'notifications.lowStockTitle',
       NearExpiry: 'notifications.nearExpiryTitle',
@@ -141,7 +138,6 @@ export class NotificationBellComponent {
       const translated = this.translate.instant(key, params);
       if (translated !== key) return translated;
     }
-    // fallback: try type-specific message keys
     if (notification.localizationParamsJson) {
       try {
         const params = JSON.parse(notification.localizationParamsJson);
@@ -156,7 +152,9 @@ export class NotificationBellComponent {
           const t = this.translate.instant(k, params);
           if (t !== k) return t;
         }
-      } catch {}
+      } catch {
+        // Keep the API message when localization params are malformed.
+      }
     }
     return notification.message;
   }

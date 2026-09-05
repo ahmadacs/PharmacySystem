@@ -1,4 +1,4 @@
-.filters {
+﻿.filters {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
@@ -6,13 +6,26 @@
 }
 
 .table-card {
-  border-radius: 8px;
+  --line: #D9D8C8;
+  --paper: #FBFAF5;
+  border-radius: 4px;
   overflow-x: auto;
-  background: var(--mat-sys-surface-container-low);
+  background: var(--paper);
+  border: 1px solid var(--line);
 }
 
 table {
   width: 100%;
+  border-collapse: collapse;
+}
+
+th.mat-mdc-header-cell,
+td.mat-mdc-cell {
+  border-bottom: 1px solid var(--line);
+}
+
+.mat-mdc-header-row {
+  border-bottom: 1px solid var(--line);
 }
 
 .clickable-row {
@@ -20,7 +33,7 @@ table {
   transition: background 0.15s ease;
 
   &:hover {
-    background: var(--mat-sys-surface-container-highest);
+    background: var(--bg);
   }
 }
 
@@ -58,7 +71,7 @@ table {
 
 .badge-cancelled,
 .badge-expired {
-  background: var(--mat-sys-surface-variant);
+  background: var(--line);
   color: var(--mat-sys-on-surface-variant);
 }
 

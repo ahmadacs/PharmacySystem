@@ -1,23 +1,41 @@
+// Login - مثل register تماماً على الألوان الجديدة
 .login {
+  --bg: #F1F3ED;
+  --paper: #FBFAF5;
+  --ink: #1E2B22;
+  --ink-soft: #4B5A50;
+  --line: #D9D8C8;
+  --deep-green: #28392F;
+  --amber: #B8823C;
+  --amber-soft: #EFE0C4;
+
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 2rem 1rem;
   box-sizing: border-box;
   position: relative;
+  background: var(--bg);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
 
   &__progress {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
+    --mdc-linear-progress-active-indicator-color: var(--amber);
   }
 
   &__card {
     width: 100%;
-    max-width: 400px;
-    padding: 0.5rem;
+    max-width: 420px;
+    padding: 0;
+    background: var(--paper) !important;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(30, 43, 34, 0.08) !important;
+    overflow: hidden;
   }
 
   &__header {
@@ -25,69 +43,169 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 1rem 0 0.5rem;
+    padding: 2rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
   }
 
   &__logo {
-    font-size: 3rem;
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 0.5rem;
-    color: var(--mat-sys-primary);
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--deep-green);
+    background: var(--amber-soft);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+  }
+
+  :host ::ng-deep .mat-mdc-card-title {
+    font-family: 'Aref Ruqaa', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  :host ::ng-deep .mat-mdc-card-subtitle {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
   }
 
   &__field {
     width: 100%;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
+
+    :host ::ng-deep .mat-mdc-form-field {
+      --mdc-outlined-text-field-input-text-color: var(--ink) !important;
+      --mdc-outlined-text-field-label-text-color: var(--ink-soft) !important;
+      --mdc-outlined-text-field-caret-color: var(--ink) !important;
+      --mat-form-field-input-text-color: var(--ink) !important;
+    }
+
+    :host ::ng-deep .mdc-notched-outline__leading,
+    :host ::ng-deep .mdc-notched-outline__notch,
+    :host ::ng-deep .mdc-notched-outline__trailing {
+      border-color: var(--line) !important;
+    }
+
+    :host ::ng-deep .mat-focused .mdc-notched-outline__leading,
+    :host ::ng-deep .mat-focused .mdc-notched-outline__notch,
+    :host ::ng-deep .mat-focused .mdc-notched-outline__trailing {
+      border-color: var(--amber) !important;
+    }
+
+    :host ::ng-deep .mat-mdc-input-element,
+    :host ::ng-deep input.mat-mdc-input-element {
+      color: var(--ink) !important;
+      -webkit-text-fill-color: var(--ink) !important;
+      caret-color: var(--ink) !important;
+      opacity: 1 !important;
+    }
+
+    :host ::ng-deep input:-webkit-autofill,
+    :host ::ng-deep input:-webkit-autofill:hover,
+    :host ::ng-deep input:-webkit-autofill:focus,
+    :host ::ng-deep input:-webkit-autofill:active {
+      -webkit-text-fill-color: var(--ink) !important;
+      -webkit-box-shadow: 0 0 0 1000px var(--paper) inset !important;
+      caret-color: var(--ink) !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
   }
 
   &__submit {
     width: 100%;
-    margin-top: 1rem;
+    margin-top: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    background: var(--deep-green) !important;
+    color: #F4EEDD !important;
+    --mdc-filled-button-container-color: var(--deep-green) !important;
+    --mdc-filled-button-label-text-color: #F4EEDD !important;
+    border-radius: 4px !important;
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
   &__spinner {
     animation: spin 1s linear infinite;
   }
 
+  &__lang-inside {
+    color: var(--ink-soft) !important;
+    --mdc-text-button-label-text-color: var(--ink-soft) !important;
+    font-size: 0.85rem;
+    margin-top: 0.75rem !important;
+    &:hover {
+      background: var(--bg) !important;
+      color: var(--deep-green) !important;
+    }
+  }
+
   &__footer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem 0 0.25rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    gap: 0.75rem;
   }
 
   &__hint {
     margin: 0;
     font-size: 0.75rem;
-    opacity: 0.7;
+    color: var(--ink-soft);
+    text-align: center;
   }
 
   &__links {
     display: flex;
-    gap: 1rem;
+    gap: 1.25rem;
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 0.75rem;
+
+    a {
+      color: var(--deep-green);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-bottom: 1px solid transparent;
+      &:hover {
+        border-bottom-color: var(--deep-green);
+      }
+    }
   }
 
   &__accounts {
     display: flex;
-    gap: 0.25rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
     justify-content: center;
+
+    button {
+      border: 1px solid var(--line) !important;
+      background: var(--paper) !important;
+      color: var(--ink-soft) !important;
+      border-radius: 999px !important;
+      font-size: 0.75rem;
+      &:hover {
+        background: var(--bg) !important;
+        border-color: var(--amber) !important;
+        color: var(--deep-green) !important;
+      }
+    }
   }
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

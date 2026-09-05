@@ -16,6 +16,7 @@
     "updated": "تم التحديث بنجاح",
     "deleted": "تم الحذف بنجاح",
     "close": "إغلاق",
+    "system": "النظام",
     "language": "English",
     "all": "الكل",
     "more": "+{{count}} المزيد",
@@ -337,15 +338,24 @@
   "dashboard": {
     "title": "لوحة التحكم",
     "subtitle": "نظرة عامة على الصيدلية",
+    "dailyTitle": "نظرة اليوم",
+    "dailyLiveUpdate": "تحديث مباشر لحالة الصرف والمخزون",
     "stats": {
       "medicines": "الأدوية",
       "lowStock": "مخزون منخفض",
       "expiringSoon": "ستنتهي قريباً (30 يوم)",
-      "pendingPrescriptions": "الوصفات قيد الانتظار"
+      "pendingPrescriptions": "الوصفات قيد الانتظار",
+      "dispensedToday": "وصفات صُرفت اليوم",
+      "pending": "بانتظار الصرف",
+      "createdToday": "وصفات أُنشئت اليوم",
+      "lowStockDaily": "أصناف منخفضة المخزون",
+      "expiringDaily": "أصناف قريبة الانتهاء"
     },
     "panels": {
       "lowStockItems": "أصناف المخزون المنخفض",
-      "latestPending": "أحدث الوصفات قيد الانتظار",
+      "latestPending": "وصفات قيد الانتظار",
+      "latestDispensed": "الوصفات المصروفة جزئياً",
+      "latestFragmented": "الوصفات المجزأة الحالية",
       "nothingLow": "لا شيء منخفض",
       "allAboveReorder": "جميع الأدوية أعلى من حدود إعادة الطلب."
     },
@@ -356,7 +366,9 @@
       "items": "العناصر"
     },
     "empty": {
-      "noPending": "لا توجد وصفات قيد الانتظار"
+      "noPending": "لا توجد وصفات قيد الانتظار",
+      "noDispensed": "لا توجد وصفات مصروفة جزئياً",
+      "noFragmented": "لا توجد وصفات مجزأة"
     }
   },
   "users": {
@@ -697,6 +709,8 @@
       "unit": "الوحدة",
       "pkg": "العبوة",
       "total": "الإجمالي",
+      "packageOf": "{{package}} من {{count}} {{unit}}",
+      "totalUnits": "{{count}} {{unit}}",
       "batch": "الدفعة",
       "available": "المتوفر",
       "expiry": "الانتهاء",

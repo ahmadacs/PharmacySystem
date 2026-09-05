@@ -16,37 +16,375 @@ html {
   );
 }
 
-html.dark {
-  color-scheme: dark;
-
-  @include mat.theme(
-    (
-      color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-        theme-type: dark
-      ),
-      typography: Roboto,
-      density: 0
-    )
-  );
-}
-
 :root {
   --status-critical: var(--mat-sys-error);
   --status-warning: #f57c00;
   --status-safe: #2e7d32;
+  --bg: #F1F3ED;
+  --paper: #FBFAF5;
+  --ink: #1E2B22;
+  --ink-soft: #4B5A50;
+  --line: #D9D8C8;
+  --deep-green: #28392F;
+  --deep-green-2: #324A3C;
+  --amber: #B8823C;
+  --amber-soft: #EFE0C4;
+  --good: #3F7A5C;
+  --good-soft: #DCEAE0;
+  --low: #B8823C;
+  --low-soft: #F3E6CB;
+  --out: #A63F32;
+  --out-soft: #F3DBD6;
+  --expiry: #6B5B7A;
+  --expiry-soft: #E7E1EE;
 }
 
-html.dark {
-  --status-warning: #ffb74d;
-  --status-safe: #81c784;
+// تعميم لون #D9D8C8 لكل الجداول و إصلاح الخلفيات البيضاء
+table,
+.mat-mdc-table,
+.mat-mdc-header-cell,
+.mat-mdc-cell,
+.mat-mdc-header-row,
+.mat-mdc-row {
+  border-color: var(--line) !important;
+}
+
+// إصلاح خلفية الجداول والـ dialogs - كانت بيضاء (#fff) والصحيح paper #FBFAF5
+.mat-mdc-table,
+.mat-mdc-header-row,
+.mat-mdc-row,
+.mat-mdc-header-cell,
+.mat-mdc-cell,
+.mat-mdc-paginator,
+.mat-mdc-card,
+.mat-mdc-dialog-surface,
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.cdk-overlay-pane .mat-mdc-menu-panel {
+  background: var(--paper) !important;
+  background-color: var(--paper) !important;
+}
+
+// إزالة max-width الافتراضي من Material عن كل قوائم mat-menu
+.mat-mdc-menu-panel {
+  max-width: none !important;
+}
+
+// إزالة padding: 8px 0 الافتراضي من Material عن محتوى كل القوائم
+.mat-mdc-menu-content {
+  padding: 0 !important;
+}
+
+.notification-menu-panel {
+  min-width: min(400px, calc(100vw - 24px)) !important;
+  max-width: min(420px, calc(100vw - 24px)) !important;
+  margin-top: 82px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 12px 32px rgba(30, 43, 34, 0.14) !important;
+  background: var(--paper) !important;
+}
+
+.notification-menu-panel .mat-mdc-menu-content {
+  max-height: min(70vh, 560px) !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.notification-menu-panel .mat-mdc-menu-content::-webkit-scrollbar,
+.notification-menu-panel .mat-mdc-menu-content::-webkit-scrollbar-button,
+.notification-menu-panel .mat-mdc-menu-content *::-webkit-scrollbar,
+.notification-menu-panel .mat-mdc-menu-content *::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+// إخفاء مؤشر السكرول من كل مكان (عامودي وأفقي) — التمرير يبقى يعمل بالعجلة واللمس
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar,
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+// مسافة بين التبويبات في كل الصفحات + لون الحقل المختار بدل الأزرق
+.mat-mdc-tab-group {
+  --mdc-tab-indicator-active-indicator-color: var(--amber) !important;
+  --mat-tab-header-active-label-text-color: var(--deep-green) !important;
+  --mat-tab-header-inactive-label-text-color: var(--ink-soft) !important;
+}
+
+.mdc-tab-indicator__content--underline {
+  border-color: var(--amber) !important;
+  border-top-width: 2px !important;
+}
+
+// غير خلفية رقم الإشعارات من الأحمر
+.mat-badge-content,
+.mat-mdc-badge .mat-badge-content {
+  background: var(--amber) !important;
+  background-color: var(--amber) !important;
+  color: #fff !important;
+  font-family: 'JetBrains Mono', sans-serif !important;
+}
+
+.mat-mdc-tab-header {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px !important;
+}
+
+.mat-mdc-tab-body-wrapper {
+  padding-top: 12px;
+}
+
+// مسافة موحدة بين الفلاتر في كل الصفحات
+.filters {
+  gap: 1.25rem !important;
+  margin: 1.25rem 0 1.5rem !important;
+}
+
+// لون حدود الفلاتر (بحث، تصنيف، شكل، حالة) - بدل الأزرق
+.mdc-notched-outline__leading,
+.mdc-notched-outline__notch,
+.mdc-notched-outline__trailing {
+  border-color: var(--line) !important;
+}
+
+// إصلاح عدم ظهور النص عند الكتابة في login/register - الحل الجذري (مُفعل)
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-input-text-color: var(--ink) !important;
+  --mdc-outlined-text-field-label-text-color: var(--ink-soft) !important;
+  --mdc-outlined-text-field-input-text-placeholder-color: var(--ink-soft) !important;
+  --mdc-outlined-text-field-caret-color: var(--ink) !important;
+  --mdc-outlined-text-field-focus-input-text-color: var(--ink) !important;
+  --mdc-outlined-text-field-focus-label-text-color: var(--ink-soft) !important;
+  --mdc-filled-text-field-input-text-color: var(--ink) !important;
+  --mdc-filled-text-field-label-text-color: var(--ink-soft) !important;
+  --mdc-filled-text-field-caret-color: var(--ink) !important;
+  --mat-form-field-input-text-color: var(--ink) !important;
+  --mat-form-field-input-text-placeholder-color: rgba(30, 43, 34, 0.6) !important;
+  --mat-select-trigger-text-color: var(--ink) !important;
+  --mat-form-field-leading-icon-color: var(--ink-soft) !important;
+  --mat-form-field-trailing-icon-color: var(--ink-soft) !important;
+}
+
+.mat-mdc-input-element,
+input.mat-mdc-input-element,
+textarea.mat-mdc-input-element,
+.mdc-text-field__input,
+.mat-mdc-select-value,
+.mat-mdc-select-value-text,
+.mat-mdc-form-field-input-control {
+  color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink) !important;
+  opacity: 1 !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--paper) inset !important;
+  caret-color: var(--ink) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+// لون الحقل المختار (input/select) بدل الأزرق
+.mat-focused .mdc-notched-outline__leading,
+.mat-focused .mdc-notched-outline__notch,
+.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--amber) !important;
+}
+
+.mat-focused .mat-mdc-floating-label,
+.mat-focused .mat-icon {
+  color: var(--amber) !important;
+}
+
+.mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  background: var(--paper) !important;
+}
+
+// الإطار فوق حقل الإدخال — خلفية معتمة تخفي النص المكتوب
+.mat-mdc-form-field .mdc-notched-outline {
+  background: transparent !important;
+}
+
+.mat-mdc-form-field-infix {
+  position: relative;
+  z-index: 1;
+}
+
+.mat-mdc-form-field-focus-overlay {
+  background-color: transparent !important;
+}
+
+.mdc-line-ripple::after {
+  border-bottom-color: var(--amber) !important;
+}
+
+// تلوين dropdown list
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled),
+.mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.mat-mdc-autocomplete-panel .mat-mdc-option.mat-mdc-option-active {
+  background-color: var(--amber-soft) !important;
+}
+
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel {
+  border: 1px solid var(--line);
+  background: var(--paper) !important;
+}
+
+.table-card,
+.panel,
+.mat-mdc-card-content,
+.mat-mdc-dialog-content,
+.mat-mdc-menu-content {
+  background: var(--paper) !important;
+}
+
+.mat-mdc-dialog-surface {
+  background: var(--paper) !important;
+}
+
+// تسجيل خروج بالاحمر مع الأيقونة - في الـ dropdown
+.mat-mdc-menu-item.logout-item,
+.mat-mdc-menu-item.logout-item .mat-icon,
+.mat-mdc-menu-item.logout-item .mdc-list-item__primary-text {
+  color: var(--out) !important;
+}
+
+.mat-mdc-menu-item.logout-item .mat-icon {
+  color: var(--out) !important;
+  --mdc-list-list-item-leading-icon-color: var(--out) !important;
+}
+
+// ألوان الأزرار والعناصر داخل الـ dialogs
+.mat-mdc-dialog-title {
+  font-family: 'Aref Ruqaa', serif !important;
+  color: var(--ink) !important;
+  background: var(--paper) !important;
+  padding-top: 20px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--line);
+  margin: 0 !important;
+}
+
+.mat-mdc-dialog-content {
+  padding-top: 16px !important;
+}
+
+.mat-mdc-dialog-actions {
+  background: var(--paper) !important;
+  border-top: 1px solid var(--line);
+  padding: 12px 24px !important;
+  gap: 8px;
+}
+
+.mat-mdc-dialog-actions .mdc-button--unelevated,
+.mat-mdc-dialog-actions .mat-mdc-unelevated-button,
+.mat-mdc-dialog-actions .mat-mdc-raised-button {
+  --mdc-filled-button-container-color: var(--deep-green) !important;
+  --mdc-filled-button-label-text-color: #F4EEDD !important;
+  --mdc-protected-button-container-color: var(--deep-green) !important;
+  --mdc-protected-button-label-text-color: #F4EEDD !important;
+  background-color: var(--deep-green) !important;
+  color: #F4EEDD !important;
+}
+
+.mat-mdc-dialog-actions .mat-mdc-button,
+.mat-mdc-dialog-actions .mdc-button--outlined {
+  --mdc-text-button-label-text-color: var(--ink-soft) !important;
+  --mdc-outlined-button-outline-color: var(--line) !important;
+  --mdc-outlined-button-label-text-color: var(--ink-soft) !important;
+  border-color: var(--line) !important;
+  color: var(--ink-soft) !important;
+}
+
+// تعميم ألوان جميع الأزرار (طباعة، تعديل، إضافة دواء وغيرها)
+.page-header__actions .mat-mdc-unelevated-button,
+.page-header__actions .mat-mdc-raised-button,
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  --mdc-filled-button-container-color: var(--deep-green) !important;
+  --mdc-filled-button-label-text-color: #F4EEDD !important;
+  background-color: var(--deep-green) !important;
+  color: #F4EEDD !important;
+}
+
+.mat-mdc-outlined-button,
+.mat-mdc-stroked-button,
+.page-header__actions .mat-mdc-outlined-button {
+  --mdc-outlined-button-outline-color: var(--line) !important;
+  --mdc-outlined-button-label-text-color: var(--ink) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+// عناصر القوائم داخل الـ dialogs (items, variant-row, item-row) - لون موحد
+.mat-mdc-dialog-content .items li,
+.mat-mdc-dialog-content .item-row,
+.mat-mdc-dialog-content .variant-row,
+.details .variant-block,
+.medicine-details-dialog .variants,
+.variants mat-expansion-panel {
+  border-color: var(--line) !important;
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+}
+
+.mat-mdc-dialog-content .item-name,
+.mat-mdc-dialog-content .variant-row,
+.mat-mdc-dialog-content .item-row,
+.cell-strong,
+.item-name,
+.drug-name,
+.variant-header,
+.mat-expansion-panel-header {
+  color: var(--ink) !important;
+}
+
+.mat-mdc-dialog-content .item-variant,
+.mat-mdc-dialog-content .cell-sub,
+.variant-meta,
+.cell-sub,
+.hint {
+  color: var(--ink-soft) !important;
+}
+
+// توحيد لون النصوص داخل البانلز والقوائم
+.mat-expansion-panel,
+.mat-expansion-panel .mat-expansion-panel-header,
+.mat-expansion-panel .mat-expansion-panel-content {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
 }
 
 body {
   color-scheme: light;
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
   font: var(--mat-sys-body-medium);
   margin: 0;
   height: 100%;
@@ -145,12 +483,25 @@ html[dir="rtl"] {
     text-align: right;
   }
 
-  // Keep numeric/phone inputs LTR inside RTL form
+  // Keep email/password and numeric inputs LTR inside RTL form - لمنع اختفاء النص
+  input[type="email"],
+  input[type="password"],
+  input[type="text"][autocomplete="username"],
+  input[type="text"][autocomplete="email"],
   input[type="number"],
   input[type="tel"],
   input[type="date"] {
-    direction: ltr;
-    text-align: left;
+    direction: ltr !important;
+    text-align: left !important;
+  }
+
+  // إصلاح جذري إضافي لضمان ظهور النص في كل الحقول
+  input,
+  textarea,
+  select {
+    color: var(--ink) !important;
+    -webkit-text-fill-color: var(--ink) !important;
+    caret-color: var(--ink) !important;
   }
 
   // Dialog content and table card

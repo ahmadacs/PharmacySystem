@@ -170,6 +170,90 @@
     </div>
   </mat-tab>
 
+  <mat-tab [label]="'inventory.tabs.adjustments' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.adjSearch' | translate }}</mat-label>
+        <input matInput [formControl]="adjSearchControl" [placeholder]="'inventory.filters.adjSearch' | translate" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'inventory.filters.adjType' | translate }}</mat-label>
+        <mat-select [value]="adjType()" (selectionChange)="adjType.set($event.value ?? null); adjPage.set(1)">
+          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
+          @for (type of adjustmentTypes; track type) {
+            <mat-option [value]="type">{{ type | enumTranslate:'InventoryAdjustmentType' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (adjustments.isLoading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-card mat-elevation-z2">
+      <table mat-table [dataSource]="adjustments.value().items" matSort (matSortChange)="onAdjSort($event)">
+        <ng-container matColumnDef="adjustedAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.adjustedAt' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.adjustedAt | riyadhDate: 'yyyy-MM-dd HH:mm' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="item">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.item' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="cell-strong">{{ displayMedicineBatchName(row) }}</span>
+            <span class="cell-sub">{{ row.variantName }} · {{ row.batchNumber }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.type' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.type | enumTranslate:'InventoryAdjustmentType' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="quantityChanged">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.quantityChanged' | translate }}</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class.delta-neg]="row.quantityChanged < 0" [class.delta-pos]="row.quantityChanged > 0">
+              {{ row.quantityChanged > 0 ? '+' : '' }}{{ row.quantityChanged }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="beforeAfter">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.beforeAfter' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.quantityBefore }} <span class="arrow">→</span> {{ row.quantityAfter }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.reason' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.reason }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="adjustedBy">
+          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.adjustedBy' | translate }}</th>
+          <td mat-cell *matCellDef="let row">{{ row.adjustedByName || ('common.system' | translate) }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="adjColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: adjColumns"></tr>
+      </table>
+
+      @if (!adjustments.isLoading() && adjustments.value().items.length === 0) {
+        <app-empty-state icon="tune" [message]="'inventory.empty.adjustments' | translate" />
+      }
+
+      <mat-paginator
+        [length]="adjCount()"
+        [pageSize]="adjPageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        [pageIndex]="adjPage() - 1"
+        (page)="onAdjPage($event)"
+      />
+    </div>
+  </mat-tab>
+
   <mat-tab>
     <ng-template mat-tab-label>
       {{ 'inventory.tabs.expiryAlerts' | translate }}
@@ -257,90 +341,6 @@
         [pageSizeOptions]="[10, 25, 50]"
         [pageIndex]="alertPage() - 1"
         (page)="onAlertPage($event)"
-      />
-    </div>
-  </mat-tab>
-
-  <mat-tab [label]="'inventory.tabs.adjustments' | translate">
-    <div class="filters">
-      <mat-form-field appearance="outline">
-        <mat-label>{{ 'inventory.filters.adjSearch' | translate }}</mat-label>
-        <input matInput [formControl]="adjSearchControl" [placeholder]="'inventory.filters.adjSearch' | translate" />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>{{ 'inventory.filters.adjType' | translate }}</mat-label>
-        <mat-select [value]="adjType()" (selectionChange)="adjType.set($event.value ?? null); adjPage.set(1)">
-          <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
-          @for (type of adjustmentTypes; track type) {
-            <mat-option [value]="type">{{ type | enumTranslate:'InventoryAdjustmentType' }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    </div>
-
-    @if (adjustments.isLoading()) {
-      <mat-progress-bar mode="indeterminate" />
-    }
-
-    <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="adjustments.value().items" matSort (matSortChange)="onAdjSort($event)">
-        <ng-container matColumnDef="adjustedAt">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.adjustedAt' | translate }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.adjustedAt | riyadhDate: 'yyyy-MM-dd HH:mm' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="item">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.item' | translate }}</th>
-          <td mat-cell *matCellDef="let row">
-            <span class="cell-strong">{{ displayMedicineBatchName(row) }}</span>
-            <span class="cell-sub">{{ row.variantName }} · {{ row.batchNumber }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.type' | translate }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.type | enumTranslate:'InventoryAdjustmentType' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="quantityChanged">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.quantityChanged' | translate }}</th>
-          <td mat-cell *matCellDef="let row">
-            <span [class.delta-neg]="row.quantityChanged < 0" [class.delta-pos]="row.quantityChanged > 0">
-              {{ row.quantityChanged > 0 ? '+' : '' }}{{ row.quantityChanged }}
-            </span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="beforeAfter">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.beforeAfter' | translate }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.quantityBefore }} <span class="arrow">→</span> {{ row.quantityAfter }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="reason">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.reason' | translate }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.reason }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="adjustedBy">
-          <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.adjustedBy' | translate }}</th>
-          <td mat-cell *matCellDef="let row">{{ row.adjustedByName || 'System' }}</td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="adjColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: adjColumns"></tr>
-      </table>
-
-      @if (!adjustments.isLoading() && adjustments.value().items.length === 0) {
-        <app-empty-state icon="tune" [message]="'inventory.empty.adjustments' | translate" />
-      }
-
-      <mat-paginator
-        [length]="adjCount()"
-        [pageSize]="adjPageSize()"
-        [pageSizeOptions]="[10, 25, 50]"
-        [pageIndex]="adjPage() - 1"
-        (page)="onAdjPage($event)"
       />
     </div>
   </mat-tab>

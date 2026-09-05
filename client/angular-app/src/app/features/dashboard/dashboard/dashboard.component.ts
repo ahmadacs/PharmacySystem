@@ -1,7 +1,6 @@
-import { HttpParams, httpResource } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
-import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import {
   MatTable,
@@ -16,19 +15,11 @@ import {
   MatRow
 } from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
-import { AuthStore } from '../../../core/auth/auth.store';
-import { Permissions } from '../../../core/constants/permissions';
-import {
-  LowStockDto,
-  MedicineListItemDto,
-  PagedResult,
-  PrescriptionListItemDto,
-  PrescriptionStatus
-} from '../../../core/models/api.models';
-import { emptyPage } from '../../../core/utils/empty-page';
+import { DashboardSummaryDto } from '../../../core/models/api.models';
+import { LocalizationService } from '../../../core/services/localization.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 
 @Component({
@@ -40,7 +31,6 @@ import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
     MatCardTitle,
     MatCardSubtitle,
     MatCardContent,
-    MatIcon,
     MatProgressBar,
     MatTable,
     MatColumnDef,
@@ -61,69 +51,51 @@ import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent {
-  private readonly authStore = inject(AuthStore);
+  private readonly localization = inject(LocalizationService);
+  private readonly translate = inject(TranslateService);
 
-  protected readonly canViewInventory = computed(() =>
-    this.authStore.hasPermission(Permissions.InventoryView)
+  // Single API call - GET /api/v1/dashboard/summary (one MediatR query, 6 parallel counts + 2 lists)
+  protected readonly summary = httpResource<DashboardSummaryDto>(
+    () => ({ url: `${environment.apiUrl}/dashboard/summary` }),
+    {
+      defaultValue: {
+        dispensedToday: 0,
+        pending: 0,
+        createdToday: 0,
+        lowStock: 0,
+        expiringSoon: 0,
+        fragmented: 0,
+        generatedAt: new Date().toISOString(),
+        latestPending: [],
+        latestFragmented: []
+      }
+    }
   );
 
-  protected readonly lowStock = httpResource<LowStockDto[]>(
-    () =>
-      this.authStore.hasPermission(Permissions.InventoryView)
-        ? { url: `${environment.apiUrl}/inventory/low-stock` }
-        : undefined,
-    { defaultValue: [] }
-  );
+  // Dynamic subtitle: "{weekday}، {day} {month} — {live update text}" from API GeneratedAt (Asia/Riyadh)
+  protected readonly dailySubtitle = computed(() => {
+    const raw = this.summary.value().generatedAt;
+    const date = raw ? new Date(raw) : new Date();
+    const locale = this.localization.currentLang() === 'ar' ? 'ar' : 'en';
+    const datePart = new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'Asia/Riyadh'
+    }).format(date);
+    return `${datePart} — ${this.translate.instant('dashboard.dailyLiveUpdate')}`;
+  });
 
-  protected readonly medicines = httpResource<PagedResult<MedicineListItemDto>>(
-    () =>
-      this.authStore.hasPermission(Permissions.MedicinesView)
-        ? {
-            url: `${environment.apiUrl}/medicines`,
-            params: new HttpParams().set('page', 1).set('pageSize', 1)
-          }
-        : undefined,
-    { defaultValue: emptyPage<MedicineListItemDto>() }
-  );
+  protected readonly dispensedTodayCount = computed(() => this.summary.value().dispensedToday);
+  protected readonly pendingCount = computed(() => this.summary.value().pending);
+  protected readonly createdTodayCount = computed(() => this.summary.value().createdToday);
+  protected readonly lowStockCount = computed(() => this.summary.value().lowStock);
+  protected readonly expiringCount = computed(() => this.summary.value().expiringSoon);
+  protected readonly fragmentedCount = computed(() => this.summary.value().fragmented);
 
-  protected readonly expiring = httpResource<PagedResult<MedicineListItemDto>>(
-    () =>
-      this.authStore.hasPermission(Permissions.InventoryView)
-        ? {
-            url: `${environment.apiUrl}/inventory/batches`,
-            params: new HttpParams()
-              .set('page', 1)
-              .set('pageSize', 1)
-              .set('expiryStatus', 'ExpiringSoon')
-              .set('withinDays', 30)
-          }
-        : undefined,
-    { defaultValue: emptyPage<MedicineListItemDto>() }
-  );
+  protected readonly latestPending = computed(() => this.summary.value().latestPending);
+  protected readonly latestFragmented = computed(() => this.summary.value().latestFragmented);
 
-  protected readonly pendingPrescriptions = httpResource<PagedResult<PrescriptionListItemDto>>(
-    () =>
-      this.authStore.hasPermission(Permissions.PrescriptionsView) ||
-      this.authStore.hasPermission(Permissions.PrescriptionsManageOwn)
-        ? {
-            url: `${environment.apiUrl}/prescriptions`,
-            params: new HttpParams()
-              .set('page', 1)
-              .set('pageSize', 5)
-              .set('status', 'Pending' satisfies PrescriptionStatus)
-              .set('sortBy', 'issuedDate')
-              .set('sortDir', 'desc')
-          }
-        : undefined,
-    { defaultValue: emptyPage<PrescriptionListItemDto>() }
-  );
-
-  protected readonly medicineCount = computed(() => this.medicines.value()?.totalCount ?? 0);
-  protected readonly lowStockCount = computed(() => this.lowStock.value()?.length ?? 0);
-  protected readonly expiringCount = computed(() => this.expiring.value()?.totalCount ?? 0);
-  protected readonly pendingCount = computed(() => this.pendingPrescriptions.value()?.totalCount ?? 0);
-
-  protected readonly lowStockColumns = ['medicine', 'variant', 'availableQuantity', 'reorderLevel'];
   protected readonly pendingColumns = ['patientName', 'issuedDate', 'status', 'itemCount'];
-
+  protected readonly fragmentedColumns = ['patientName', 'issuedDate', 'status', 'itemCount'];
 }

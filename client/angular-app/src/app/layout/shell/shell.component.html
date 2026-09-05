@@ -20,36 +20,38 @@
   </mat-sidenav>
 
   <mat-sidenav-content>
-    <mat-toolbar class="shell__toolbar">
-      <button mat-icon-button (click)="toggleSidenav()" aria-label="Toggle navigation">
+    <!-- Header تماماً كما في html.html -->
+    <div class="topbar">
+      <button class="icon-btn" (click)="toggleSidenav()" aria-label="Toggle navigation">
         <mat-icon>menu</mat-icon>
       </button>
-      <span class="shell__spacer"></span>
-      <app-notification-bell />
-      <button mat-icon-button (click)="localizationService.toggle()" [attr.aria-label]="localizationService.currentLang()">
-        <mat-icon>language</mat-icon>
-      </button>
-      <button mat-icon-button (click)="themeService.toggle()" [attr.aria-label]="themeService.dark() ? 'Switch to light theme' : 'Switch to dark theme'">
-        <mat-icon>{{ themeService.dark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-      </button>
-      <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="User menu">
-        <mat-icon>account_circle</mat-icon>
-      </button>
-      <mat-menu #userMenu="matMenu" xPosition="before">
-        <button mat-menu-item disabled>
-          <span>{{ displayName() }}</span>
-          <span class="shell__role">{{ authStore.role() }}</span>
+      <span class="topbar__spacer"></span>
+      <div class="top-actions">
+        <div class="lang-switch">
+          <button [class.active]="localizationService.currentLang() === 'ar'" (click)="localizationService.currentLang.set('ar')">AR</button>
+          <button [class.active]="localizationService.currentLang() === 'en'" (click)="localizationService.currentLang.set('en')">EN</button>
+        </div>
+        <app-notification-bell />
+        <button class="user-btn" [matMenuTriggerFor]="userMenu" aria-label="User menu">
+          <div class="avatar">{{ firstName()[0] || 'U' }}</div>
+          <div class="who">
+            <div class="name">{{ firstName() }}</div>
+            <div class="role">{{ authStore.role() }}</div>
+          </div>
+          <mat-icon class="chev">expand_more</mat-icon>
         </button>
-        <button mat-menu-item (click)="openChangePassword()">
-          <mat-icon>lock</mat-icon>
-          <span>{{ 'shell.changePassword' | translate }}</span>
-        </button>
-        <button mat-menu-item (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>{{ 'shell.logout' | translate }}</span>
-        </button>
-      </mat-menu>
-    </mat-toolbar>
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <button mat-menu-item (click)="openChangePassword()">
+            <mat-icon>lock</mat-icon>
+            <span>{{ 'shell.changePassword' | translate }}</span>
+          </button>
+          <button mat-menu-item (click)="logout()" class="logout-item">
+            <mat-icon>logout</mat-icon>
+            <span>{{ 'shell.logout' | translate }}</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
 
     <main class="shell__content">
       <router-outlet />

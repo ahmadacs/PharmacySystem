@@ -1,4 +1,4 @@
-.filters {
+﻿.filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
@@ -6,13 +6,27 @@
 }
 
 .table-card {
-  border-radius: 8px;
+  --line: #D9D8C8;
+  --paper: #FBFAF5;
+  border-radius: 4px;
   overflow-x: auto;
-  background: var(--mat-sys-surface-container-low);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: none !important;
 }
 
 table {
   width: 100%;
+  border-collapse: collapse;
+}
+
+th.mat-mdc-header-cell,
+td.mat-mdc-cell {
+  border-bottom: 1px solid var(--line);
+}
+
+.mat-mdc-header-row {
+  border-bottom: 1px solid var(--line);
 }
 
 .clickable-row {
@@ -20,7 +34,7 @@ table {
   transition: background 0.15s ease;
 
   &:hover {
-    background: var(--mat-sys-surface-container-highest);
+    background: var(--bg);
   }
 }
 
@@ -41,7 +55,7 @@ table {
   padding: 0.05rem 0.45rem;
   border-radius: 999px;
   font-size: 0.7rem;
-  background: var(--mat-sys-surface-variant);
+  background: var(--line);
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -52,8 +66,9 @@ table {
 
 .badge {
   padding: 0.2rem 0.6rem;
-  border-radius: 999px;
+  border-radius: 3px;
   font-size: 0.75rem;
+  font-weight: 600;
   background: var(--mat-sys-secondary-container);
   color: var(--mat-sys-on-secondary-container);
 
@@ -63,7 +78,7 @@ table {
   }
 
   &-muted {
-    background: var(--mat-sys-surface-variant);
+    background: var(--line);
     color: var(--mat-sys-on-surface-variant);
   }
 }
@@ -72,3 +87,4 @@ table {
   text-align: right;
   width: 150px;
 }
+

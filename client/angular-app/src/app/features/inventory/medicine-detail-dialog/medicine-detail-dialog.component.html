@@ -18,8 +18,8 @@
           <span class="cell-strong">{{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength ?? '' }} {{ variant.unit | enumTranslate:'MedicineUnit' }}</span>
           <span class="variant-meta">
             {{ 'dialogs.medicineDetailInventory.unit' | translate }}: {{ variant.unit | enumTranslate:'MedicineUnit' }} ·
-            {{ 'dialogs.medicineDetailInventory.pkg' | translate }}: {{ variant.packageUnitName }} of {{ variant.unitsPerPackage }} {{ variant.baseUnitName }}s ·
-            {{ 'dialogs.medicineDetailInventory.total' | translate }}: {{ variant.availableQuantity }} {{ variant.baseUnitName }}s ·
+            {{ 'dialogs.medicineDetailInventory.pkg' | translate }}: {{ 'dialogs.medicineDetailInventory.packageOf' | translate:{package: variant.packageUnitName, count: variant.unitsPerPackage, unit: variant.baseUnitName} }} ·
+            {{ 'dialogs.medicineDetailInventory.total' | translate }}: {{ 'dialogs.medicineDetailInventory.totalUnits' | translate:{count: variant.availableQuantity, unit: variant.baseUnitName} }} ·
             {{ 'dialogs.medicineDetailInventory.reorderLevel' | translate }}: {{ variant.reorderLevel }}
             @if (variant.availableQuantity === 0) {
               <span class="chip chip-out">{{ 'medicines.tables.outOfStock' | translate }}</span>

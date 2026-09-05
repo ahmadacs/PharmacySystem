@@ -5,13 +5,26 @@
 }
 
 .table-card {
-  border-radius: 8px;
+  --line: #D9D8C8;
+  --paper: #FBFAF5;
+  border-radius: 4px;
   overflow-x: auto;
-  background: var(--mat-sys-surface-container-low);
+  background: var(--paper);
+  border: 1px solid var(--line);
 }
 
 table {
   width: 100%;
+  border-collapse: collapse;
+}
+
+th.mat-mdc-header-cell,
+td.mat-mdc-cell {
+  border-bottom: 1px solid var(--line);
+}
+
+.mat-mdc-header-row {
+  border-bottom: 1px solid var(--line);
 }
 
 .cell-strong {

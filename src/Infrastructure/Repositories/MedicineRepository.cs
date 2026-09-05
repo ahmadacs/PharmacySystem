@@ -135,7 +135,9 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             // If this table grows very large consider replacing with Full-Text Search or trigram indexes.
             baseQuery = baseQuery.Where(m =>
                 m.Name.Contains(search) ||
+                (m.NameAr != null && m.NameAr.Contains(search)) ||
                 (m.GenericName != null && m.GenericName.Name.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)) ||
                 m.CategoryEnum.ToString().Contains(search));
         }
 
@@ -351,7 +353,9 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
             // NOTE: Uses SQL LIKE via Contains ("%search%"). Consider Full-Text Search or trigram indexes for large medicine catalogs.
             data = data.Where(m =>
                 m.Name.Contains(search) ||
-                (m.GenericName != null && m.GenericName.Name.Contains(search)));
+                (m.NameAr != null && m.NameAr.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.Name.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)));
         }
 
         var projected = data.Select(m => new

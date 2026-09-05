@@ -1,42 +1,294 @@
+// Local tokens from html.html - independent per component (حرفياً)
+:host {
+  --bg: #F1F3ED;
+  --paper: #FBFAF5;
+  --ink: #1E2B22;
+  --ink-soft: #4B5A50;
+  --line: #D9D8C8;
+  --deep-green: #28392F;
+  --deep-green-2: #324A3C;
+  --amber: #B8823C;
+  --amber-soft: #EFE0C4;
+  --good: #3F7A5C;
+  --good-soft: #DCEAE0;
+  --low: #B8823C;
+  --low-soft: #F3E6CB;
+  --out: #A63F32;
+  --out-soft: #F3DBD6;
+  --expiry: #6B5B7A;
+  --expiry-soft: #E7E1EE;
+  display: block;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+h1, h2, h3, .serif {
+  font-family: 'Aref Ruqaa', serif;
+}
+
+// ===== Ledger stat strip (حرفياً من html.html .ledger) =====
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat {
-  &__icon {
-    font-size: 1.75rem;
-    width: 1.75rem;
-    height: 1.75rem;
-    color: var(--mat-sys-primary);
-  }
-
-  &--warn .stat__icon {
-    color: var(--status-critical);
-  }
-
-  &--accent .stat__icon {
-    color: var(--mat-sys-tertiary);
-  }
-}
-
-.panels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 1rem;
-}
-
-.panel {
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  margin-bottom: 30px;
   overflow: hidden;
 }
 
+.stat {
+  padding: 18px 20px;
+  border-inline-start: 1px solid var(--line);
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  text-align: center;
+
+  &:first-child {
+    border-inline-start: none;
+  }
+
+  .mat-mdc-card-header {
+    position: relative;
+    padding: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .mat-mdc-card-title {
+    font-family: 'JetBrains Mono', 'IBM Plex Sans Arabic', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    order: 2;
+    color: var(--ink);
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: center;
+  }
+
+  .mat-mdc-card-subtitle {
+    order: 3;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    text-align: center;
+  }
+
+  &__icon {
+    position: absolute;
+    top: 0;
+    inset-inline-end: 0;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-soft);
+    opacity: 0.6;
+  }
+
+  &--warn .stat__icon {
+    color: var(--low);
+    opacity: 1;
+  }
+
+  &--warn .mat-mdc-card-title {
+    color: var(--low);
+  }
+
+  &--accent .stat__icon {
+    color: var(--expiry);
+    opacity: 1;
+  }
+
+  &--accent .mat-mdc-card-title {
+    color: var(--expiry);
+  }
+
+  &--primary .mat-mdc-card-title {
+    color: var(--ink);
+  }
+}
+
+// ===== Two-column layout (حرفياً من html.html .grid) =====
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--paper) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
+  overflow: hidden;
+  box-shadow: none !important;
+
+  .mat-mdc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mat-mdc-card-title {
+    font-family: 'Aref Ruqaa', serif;
+    font-size: 19px;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  .count {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+  }
+
+  .mat-mdc-card-content {
+    padding: 0 !important;
+  }
+}
+
 .stock-low {
-  color: var(--status-critical);
+  color: var(--out);
   font-weight: 600;
 }
 
+// ===== Filters / chips (حرفياً .filters/.chip) =====
+.filters {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px 0;
+}
+
+// ===== Inventory table (حرفياً من html.html) =====
 table {
   width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+thead th,
+.mat-mdc-header-cell {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  background: transparent !important;
+}
+
+thead th.num,
+td.num,
+.mat-mdc-cell.num {
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+tbody td,
+.mat-mdc-cell {
+  padding: 13px 20px;
+  font-size: 13.5px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+tbody tr:last-child td,
+.mat-mdc-row:last-child .mat-mdc-cell {
+  border-bottom: none;
+}
+
+tbody tr:hover,
+.mat-mdc-row:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.drug-name {
+  font-weight: 600;
+}
+
+.drug-form {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+.status-pill {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-pill.good {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.status-pill.low {
+  background: var(--low-soft);
+  color: #8A6224;
+}
+
+.status-pill.out {
+  background: var(--out-soft);
+  color: var(--out);
+}
+
+.exp-flag {
+  font-size: 11px;
+  color: var(--expiry);
+  margin-top: 3px;
+}
+
+// queue helpers if used elsewhere
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pill {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.pill.wait { background: var(--low-soft); color: #8A6224; }
+.pill.ready { background: var(--good-soft); color: var(--good); }
+.pill.done { background: var(--bg); color: var(--ink-soft); }
+
+@media (max-width: 1100px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
 }

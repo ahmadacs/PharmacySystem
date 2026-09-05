@@ -1,28 +1,47 @@
+// Header تماماً كما في html.html - .page-title + padding من الأطراف + أزرار جهة مقابلة
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding-top: 16px;
+  padding-inline: 4px;
+}
 
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
+.page-title {
+  --bg: #F1F3ED;
+  --paper: #FBFAF5;
+  --ink: #1E2B22;
+  --ink-soft: #4B5A50;
+  --line: #D9D8C8;
+  flex: 1 1 auto;
+  min-width: 240px;
 
-      &__title {
-        margin: 0;
-        font-size: 1.5rem;
-        font-weight: 500;
-      }
+  h1 {
+    margin: 0;
+    font-family: 'Aref Ruqaa', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.1;
+  }
 
-      &__subtitle {
-        margin: 0.25rem 0 0;
-        color: var(--mat-sys-on-surface-variant);
-        font-size: 0.875rem;
-      }
+  p {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    line-height: 1.5;
+  }
+}
 
-      &__actions {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-      }
-    }
-  
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}

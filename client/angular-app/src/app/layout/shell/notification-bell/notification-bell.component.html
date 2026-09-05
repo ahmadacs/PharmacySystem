@@ -13,31 +13,35 @@
 <!-- Suppress NG8113: TranslatePipe is used via translateMessage() method -->
 <span style="display:none">{{ 'notifications.title' | translate }}</span>
 
-<mat-menu #menu="matMenu" xPosition="before" class="notification-menu" panelClass="notification-menu-panel">
-  <div class="notification-menu__header">
-    <span class="notification-menu__title">{{ 'notifications.title' | translate }}</span>
-    @if (unreadCount() > 0) {
-      <button mat-button (click)="markAllRead()">{{ 'notifications.markAllRead' | translate }}</button>
-    }
+<mat-menu #menu="matMenu" xPosition="before" yPosition="below" class="notification-menu" panelClass="notification-menu-panel">
+  <div class="notification-dropdown" (click)="$event.stopPropagation()">
+    <div class="notification-dropdown__header">
+      <span class="notification-dropdown__title">{{ 'notifications.title' | translate }}</span>
+      @if (unreadCount() > 0) {
+        <button mat-button (click)="markAllRead()">{{ 'notifications.markAllRead' | translate }}</button>
+      }
+    </div>
+
+    <div class="notification-dropdown__list">
+      @if (notifications().length === 0) {
+        <div class="notification-dropdown__empty">{{ 'notifications.noNotifications' | translate }}</div>
+      }
+
+      @for (notification of notifications(); track notification.id) {
+        <button
+          mat-menu-item
+          class="notification-item"
+          [class.notification-item--unread]="!notification.isRead"
+          (click)="open(notification)"
+        >
+          <mat-icon class="notification-item__icon">{{ iconFor(notification.type) }}</mat-icon>
+          <div class="notification-item__body">
+            <span class="notification-item__title">{{ translateTitle(notification) }}</span>
+            <span class="notification-item__message">{{ translateMessage(notification) }}</span>
+            <span class="notification-item__time">{{ notification.createdAt | riyadhDate: 'short' }}</span>
+          </div>
+        </button>
+      }
+    </div>
   </div>
-
-  @if (notifications().length === 0) {
-    <div class="notification-menu__empty">{{ 'notifications.noNotifications' | translate }}</div>
-  }
-
-  @for (notification of notifications(); track notification.id) {
-    <button
-      mat-menu-item
-      class="notification-item"
-      [class.notification-item--unread]="!notification.isRead"
-      (click)="open(notification)"
-    >
-      <mat-icon class="notification-item__icon">{{ iconFor(notification.type) }}</mat-icon>
-      <div class="notification-item__body">
-        <span class="notification-item__title">{{ translateTitle(notification) }}</span>
-        <span class="notification-item__message">{{ translateMessage(notification) }}</span>
-        <span class="notification-item__time">{{ notification.createdAt | riyadhDate: 'short' }}</span>
-      </div>
-    </button>
-  }
 </mat-menu>

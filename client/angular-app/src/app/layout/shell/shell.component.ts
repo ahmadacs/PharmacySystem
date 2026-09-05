@@ -1,12 +1,10 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatListItem, MatNavList } from '@angular/material/list';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
-import { MatToolbar } from '@angular/material/toolbar';
 import { MatDialog } from '@angular/material/dialog';
 import { RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -48,8 +46,6 @@ const NAV_ITEMS: NavItem[] = [
     MatSidenav,
     MatSidenavContainer,
     MatSidenavContent,
-    MatToolbar,
-    MatIconButton,
     MatIcon,
     MatNavList,
     MatListItem,
@@ -88,6 +84,10 @@ export class ShellComponent {
   protected readonly displayName = computed(
     () => this.authStore.currentUser()?.fullName ?? this.authStore.currentUser()?.email ?? ''
   );
+  protected readonly firstName = computed(() => {
+    const name = this.displayName().trim();
+    return name.split(/\s+/)[0] ?? name;
+  });
 
   constructor() {
     effect(() => {
