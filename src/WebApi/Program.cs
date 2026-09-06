@@ -208,7 +208,7 @@ services.AddRateLimiter(options =>
 services.AddExceptionHandler<GlobalExceptionHandler>();
 services.AddProblemDetails();
 
-services.AddHealthChecks();
+services.AddHealthChecks().AddCheck<WebApi.HealthChecks.RedisHealthCheck>("redis");
 
 var app = builder.Build();
 

@@ -56,7 +56,7 @@ flowchart TB
 | CQRS | MediatR | 14.2.0 |
 | Auth | ASP.NET Core Identity | 10.0.11 |
 | API Docs | Scalar | 2.x |
-| Caching | Redis + OutputCache | 7-alpine |
+| Caching | Redis + OutputCache | 7.4-alpine |
 | Storage | FileSystem Blob | — |
 | Export | ClosedXML / QuestPDF | 0.105.0 / 2025.7.0 |
 | Logging | Serilog | 10.0.0 |
@@ -102,7 +102,7 @@ flowchart TB
 - **Services:** `Infrastructure/Services/ExportService.cs` (`ClosedXML` + `QuestPDF`).
 
 ### Docker
-- **Compose:** `docker-compose.yml` (services `api:8080` with curl health, `angular:80` with `/health` + proxy `/api→api:8080` and `/hubs→api:8080/hubs`, `db:1433` with `sqlcmd` health, `redis:6379` with `redis-cli ping`; volumes `mssql-data`, `redis-data`, `uploads-data`; network `pharmacy-network`).
+- **Compose:** `docker-compose.yml` (services `api:8080` with curl health, `angular:80` with `/health` + proxy `/api→api:8080` and `/hubs→api:8080/hubs`, `db:1433` with `sqlcmd` health, `redis:6379` hardened: `7.4-alpine`, `requirepass`, `maxmemory 256mb` + `allkeys-lru`, persistence off, dangerous commands disabled, authenticated `redis-cli ping`; volumes `mssql-data`, `redis-data`, `uploads-data`; network `pharmacy-network`).
 
 ## Database Schema (Current)
 

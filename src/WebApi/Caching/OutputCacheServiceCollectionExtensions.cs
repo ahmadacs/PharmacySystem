@@ -18,6 +18,8 @@ public static class OutputCacheServiceCollectionExtensions
             services.AddStackExchangeRedisOutputCache(options =>
             {
                 options.Configuration = redisConnection;
+                // Isolate our keys from any other app sharing the same Redis (databases = 2).
+                options.InstanceName = "pharmacy:";
             });
         }
 

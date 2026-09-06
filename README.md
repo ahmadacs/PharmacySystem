@@ -24,7 +24,7 @@ This is a production-shaped pharmacy backend and SPA:
 | Language | C# | 14 |
 | ORM | Entity Framework Core | 10.0.x |
 | Database | SQL Server | 2022 |
-| Caching | Redis + OutputCache | 7-alpine |
+| Caching | Redis + OutputCache | 7.4-alpine |
 | Frontend | Angular | 22.1.x |
 | UI Library | Angular Material | 22.1.x |
 | Language | TypeScript | 5.9+ |
@@ -83,7 +83,7 @@ docker compose up --build
 This starts:
 
 - `db` — SQL Server 2022 on `localhost:1433` (`ACCEPT_EULA=Y`, healthcheck via `sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -Q "SELECT 1" -b -C`)
-- `redis` — Redis 7-alpine on `localhost:6379` (`redis-cli ping`)
+- `redis` — Redis 7.4-alpine on `127.0.0.1:6379`, hardened as an ephemeral cache: `requirepass ${REDIS_PASSWORD}` (see `.env.example`), `maxmemory 256mb` + `allkeys-lru`, persistence off (`save ""`, `appendonly no`), `FLUSHALL/FLUSHDB/CONFIG` disabled, healthcheck via authenticated `redis-cli ping`
 - `api` — ASP.NET Core Web API built from `./src/WebApi/Dockerfile`, `ASPNETCORE_ENVIRONMENT=Docker`, `ASPNETCORE_URLS=http://+:8080`, exposed as `localhost:5066 -> 8080`
 - `angular` — Angular prod build served by nginx on `localhost:4200` (`4200:80`), proxying `/api` → `api:8080` and `/hubs` → `api:8080/hubs`
 

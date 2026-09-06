@@ -1,20 +1,51 @@
 services:
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: pharmacy-redis
+    # Hardened single-instance cache (ephemeral OutputCache only — data loss = cache miss).
+    # - maxmemory 256MB + allkeys-lru: cache must evict, never OOM (noeviction is for primary DBs).
+    # - Persistence explicitly disabled (save "" + appendonly no): faster restarts, no stale RDB.
+    # - requirepass + protected-mode yes + loopback-only published port (dev): no open Redis.
+    # - Dangerous commands disabled via rename-command; lazyfree avoids latency spikes.
+    # NOTE: single-$ ${REDIS_PASSWORD} below is intentional: compose interpolates
+    # it at startup (command is exec-form, no shell). The healthcheck uses
+    # double-$$ because CMD-SHELL expands it inside the container instead.
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass "${REDIS_PASSWORD}"
+      --protected-mode yes
+      --save ""
+      --appendonly no
+      --databases 2
+      --lazyfree-lazy-eviction yes
+      --lazyfree-lazy-expire yes
+      --lazyfree-lazy-server-del yes
+      --slowlog-log-slower-than 5000
+      --slowlog-max-len 256
+      --rename-command FLUSHALL ""
+      --rename-command FLUSHDB ""
+      --rename-command CONFIG ""
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     networks:
       - pharmacy-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 10s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 400M
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -44,7 +75,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=db;Database=PharmacySystem;User=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
-      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD},abortConnect=false
       - Storage__BasePath=/app/uploads
       - Jwt__SigningKey=${JWT_SIGNING_KEY}
       - Jwt__Issuer=http://localhost:5066
