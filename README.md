@@ -47,20 +47,22 @@ git clone https://github.com/ahmadacs/PharmacySystem.git
 cd PharmacySystem
 ```
 
-Create a local secrets file for Docker and local development. The compose file reads `SA_PASSWORD` and `JWT_SIGNING_KEY` from environment (`docker-compose.yml:24,49`):
+Create a local secrets file for Docker and local development. The compose file reads `SA_PASSWORD`, `JWT_SIGNING_KEY`, and `REDIS_PASSWORD` from environment (`docker-compose.yml`):
 
 ```bash
 # PowerShell (Windows)
-Copy-Item .env.example .env  # if .env.example exists; otherwise create .env with:
+Copy-Item .env.example .env  # otherwise create .env with:
 # SA_PASSWORD=YourStrong@Passw0rd123
 # JWT_SIGNING_KEY=your-very-long-secret-key-at-least-32-characters-for-jwt-signing
+# REDIS_PASSWORD=change-me-to-a-32-plus-char-random-redis-password
 ```
 
-An example `.env` is already present in the repository for local development:
+An example `.env.example` is committed in the repository — copy it to `.env` for local development (`.env` itself is git-ignored and never committed):
 
 ```ini
 SA_PASSWORD=YourStrong@Passw0rd123
 JWT_SIGNING_KEY=your-very-long-secret-key-at-least-32-characters-for-jwt-signing
+REDIS_PASSWORD=change-me-to-a-32-plus-char-random-redis-password
 ```
 
 For local runs without Docker, you can also use user-secrets:
