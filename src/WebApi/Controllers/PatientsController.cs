@@ -1,6 +1,5 @@
 using Application.Features.Patients.Dtos;
 using Application.Features.Patients.Queries.GetPatientByPhone;
-using Application.Features.Patients.Dtos;
 using Application.Features.Patients.Queries.GetPatientPrescriptions;
 using Asp.Versioning;
 using MediatR;
@@ -23,9 +22,9 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
 
         // Always return 200. Use a DTO response so the frontend can bind first/last name fields.
         if (patient is null)
-            return Ok(new PatientCheckDto(false, null, null, null));
+            return Ok(PatientMapping.ToNotFoundCheck());
 
-        return Ok(new PatientCheckDto(true, patient.FirstName, patient.LastName, patient.DateOfBirth));
+        return Ok(patient.ToCheckDto());
     }
 
     /// <summary>Lists prescriptions for a patient.</summary>

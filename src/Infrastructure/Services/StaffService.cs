@@ -60,6 +60,38 @@ public sealed class StaffService : IStaffService
             where ph.Id == pharmacistId
             select (u.FirstName + " " + u.LastName).Trim()).FirstOrDefaultAsync(cancellationToken);
 
+    /// <summary>All requested doctor names in one round trip (WHERE IN).</summary>
+    public async Task<IReadOnlyDictionary<Guid, string>> GetDoctorNamesAsync(
+        IEnumerable<Guid> doctorIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = doctorIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        return await (from d in _db.Set<Doctor>()
+                      join u in _db.Users on d.UserId equals u.Id
+                      where ids.Contains(d.Id)
+                      select new { d.Id, FullName = (u.FirstName + " " + u.LastName).Trim() })
+            .ToDictionaryAsync(x => x.Id, x => x.FullName, cancellationToken);
+    }
+
+    /// <summary>All requested pharmacist names in one round trip (WHERE IN).</summary>
+    public async Task<IReadOnlyDictionary<Guid, string>> GetPharmacistNamesAsync(
+        IEnumerable<Guid> pharmacistIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = pharmacistIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        return await (from ph in _db.Set<Pharmacist>()
+                      join u in _db.Users on ph.UserId equals u.Id
+                      where ids.Contains(ph.Id)
+                      select new { ph.Id, FullName = (u.FirstName + " " + u.LastName).Trim() })
+            .ToDictionaryAsync(x => x.Id, x => x.FullName, cancellationToken);
+    }
+
     public Task CreateDoctorProfileAsync(Guid userId, string licenseNumber, string? specialization, string? phoneNumber, CancellationToken cancellationToken = default)
     {
         _db.Set<Doctor>().Add(new Doctor(userId, licenseNumber, specialization, phoneNumber));

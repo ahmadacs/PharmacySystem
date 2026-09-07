@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Features.Patients.Dtos;
 using Application.Features.Prescriptions.Common;
 using Application.Features.Prescriptions.Dtos;
 using Domain.Entities.Medicines;
@@ -18,6 +19,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
+    private readonly IAsyncQueryExecutor _executor;
 
     public CreatePrescriptionCommandHandler(
         IPrescriptionRepository prescriptions,
@@ -25,7 +27,8 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         IPatientRepository patients,
         ICurrentUserService currentUser,
         IStaffService staff,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IAsyncQueryExecutor executor)
     {
         _prescriptions = prescriptions;
         _medicines = medicines;
@@ -33,6 +36,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         _currentUser = currentUser;
         _staff = staff;
         _uow = uow;
+        _executor = executor;
     }
 
     public async Task<Result<Guid>> Handle(CreatePrescriptionCommand request, CancellationToken cancellationToken)
@@ -94,5 +98,40 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     }
 
     private async Task<Patient> FindOrCreatePatientAsync(CreatePrescriptionRequest request, CancellationToken cancellationToken)
-        => await _patients.GetOrCreateAsync(request.PatientFirstName, request.PatientLastName, request.PatientDateOfBirth, request.PatientPhoneNumber, cancellationToken);
+    {
+        var firstName = request.PatientFirstName.Trim();
+        var lastName = request.PatientLastName.Trim();
+        var normalizedPhone = NormalizePhone(request.PatientPhoneNumber);
+
+        var patient = await _patients.FindByPhoneAsync(normalizedPhone, cancellationToken);
+        if (patient is not null)
+        {
+            // Verify identity: phone is unique, but if name/DOB mismatch, it's a different person trying to use same phone
+            if (!string.Equals(patient.FirstName, firstName, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(patient.LastName, lastName, StringComparison.OrdinalIgnoreCase) ||
+                patient.DateOfBirth != request.PatientDateOfBirth)
+            {
+                throw new ConflictingOperationException($"Phone number {normalizedPhone} is already registered to another patient.");
+            }
+            return patient;
+        }
+
+        // Fallback: check by name+DOB to prevent duplicate patient with different phone
+        var byNameDob = await _executor.FirstOrDefaultAsync(
+            _patients.Query().Where(p => p.FirstName == firstName && p.LastName == lastName && p.DateOfBirth == request.PatientDateOfBirth),
+            cancellationToken);
+        if (byNameDob is not null)
+        {
+            if (byNameDob.PhoneNumber != normalizedPhone)
+                byNameDob.UpdatePhone(normalizedPhone);
+            return byNameDob;
+        }
+
+        var newPatient = PatientMapping.ToEntity(firstName, lastName, request.PatientDateOfBirth, normalizedPhone);
+        _patients.Add(newPatient);
+        return newPatient;
+    }
+
+    private static string NormalizePhone(string phoneNumber)
+        => phoneNumber.Trim().Replace(" ", "").Replace("-", "");
 }

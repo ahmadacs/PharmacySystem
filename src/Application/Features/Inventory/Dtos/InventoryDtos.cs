@@ -1,5 +1,74 @@
 namespace Application.Features.Inventory.Dtos;
 
+/// <summary>
+/// EF projection row for the low-stock list.
+/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// </summary>
+public sealed record LowStockRow(
+    Guid MedicineId,
+    string MedicineName,
+    string? MedicineNameAr,
+    Guid MedicineVariantId,
+    int AvailableQuantity,
+    int ReorderLevel,
+    Domain.Enums.MedicineForm Form,
+    Domain.Enums.MedicineUnit Unit,
+    decimal Strength);
+
+/// <summary>
+/// EF projection row for the inventory summary list.
+/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// </summary>
+public sealed record MedicineInventorySummaryRow(
+    Guid Id,
+    string Name,
+    string? NameAr,
+    string GenericName,
+    string? GenericNameAr,
+    int VariantCount,
+    int TotalQuantity,
+    int ReorderLevel,
+    bool HasLowVariant,
+    DateOnly? NearestExpiryDate,
+    int ActiveBatchCount);
+
+/// <summary>
+/// EF projection row for the expiry-alerts list.
+/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// </summary>
+public sealed record ExpiryAlertRow(
+    Guid BatchId,
+    string MedicineName,
+    string? MedicineNameAr,
+    Domain.Enums.MedicineForm? Form,
+    Domain.Enums.MedicineUnit? Unit,
+    decimal? Strength,
+    string BatchNumber,
+    DateOnly ExpiryDate,
+    int DaysToExpiry,
+    int RemainingQuantity);
+
+/// <summary>
+/// EF projection row for the adjustments list.
+/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// </summary>
+public sealed record InventoryAdjustmentRow(
+    Guid Id,
+    Guid MedicineBatchId,
+    string MedicineName,
+    string? MedicineNameAr,
+    Domain.Enums.MedicineForm? Form,
+    Domain.Enums.MedicineUnit? Unit,
+    decimal? Strength,
+    string BatchNumber,
+    Domain.Enums.InventoryAdjustmentType Type,
+    int QuantityChanged,
+    int QuantityBefore,
+    int QuantityAfter,
+    string Reason,
+    Guid? AdjustedBy,
+    DateTime AdjustedAt);
+
 public sealed record LowStockDto(
     Guid MedicineId,
     string MedicineName,

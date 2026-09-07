@@ -21,6 +21,59 @@ public sealed record MedicineVariantSummaryDto(
     int UnitsPerPackage,
     bool IsDivisible);
 
+/// <summary>
+/// EF projection row for one variant in the medicines list.
+/// Never constructed outside queries; maps via <c>MedicineMapping.ToDto</c>.
+/// </summary>
+public sealed record MedicineVariantRow(
+    Guid Id,
+    MedicineForm Form,
+    MedicineUnit Unit,
+    decimal Strength,
+    int AvailableQuantity,
+    int ReorderLevel,
+    string BaseUnitName,
+    string PackageUnitName,
+    int UnitsPerPackage,
+    bool IsDivisible);
+
+/// <summary>
+/// EF projection row for one medicine in the medicines list.
+/// Never constructed outside queries; maps via <c>MedicineMapping.ToDto</c>.
+/// </summary>
+public sealed record MedicineRow(
+    Guid Id,
+    string Name,
+    string? NameAr,
+    string GenericName,
+    string? GenericNameAr,
+    CategoryEnum Category,
+    bool IsControlled,
+    bool IsActive,
+    IReadOnlyList<MedicineVariantRow> Variants,
+    int VariantCount);
+
+/// <summary>
+/// EF projection row for one batch in the batches list.
+/// Never constructed outside queries; maps via <c>MedicineMapping.ToDto</c>.
+/// Note: <c>MedicineId</c> is the parent medicine id (as the list screen shows).
+/// </summary>
+public sealed record MedicineBatchRow(
+    Guid Id,
+    Guid MedicineId,
+    string MedicineName,
+    string? MedicineNameAr,
+    string VariantName,
+    string BatchNumber,
+    DateOnly ManufactureDate,
+    DateOnly ExpiryDate,
+    int QuantityReceived,
+    int QuantityAvailable,
+    decimal UnitCostAmount,
+    string? SupplierName,
+    DateTime CreatedAt,
+    int DispensedQuantity);
+
 public sealed record MedicineListItemDto(
     Guid Id,
     string Name,

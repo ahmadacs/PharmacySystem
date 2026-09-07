@@ -12,6 +12,22 @@ public sealed record PrescriptionItemDto(
 
 public sealed record VariantInfo(string MedicineName, string VariantName);
 
+/// <summary>
+/// EF projection row for the prescriptions list.
+/// Never constructed outside queries; maps via <c>PrescriptionMapping.ToDto</c>.
+/// </summary>
+public sealed record PrescriptionListRow(
+    Guid Id,
+    Guid DoctorId,
+    string PatientName,
+    DateOnly PatientDateOfBirth,
+    int PatientAge,
+    string? PatientPhone,
+    DateOnly IssuedDate,
+    string Status,
+    bool IsRefillable,
+    int ItemCount);
+
 public sealed record PrescriptionListItemDto(
     Guid Id,
     Guid DoctorId,

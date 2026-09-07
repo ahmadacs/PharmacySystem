@@ -1,8 +1,8 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
+using Application.Features.Inventory.Dtos;
 using Application.Features.Medicines.Dtos;
-using Domain.Entities.Inventory;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using Domain.Exceptions;
@@ -68,15 +68,13 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
             or InventoryAdjustmentType.Returned or InventoryAdjustmentType.TransferIn;
         var quantityChanged = isIncrease ? totalUnits : -totalUnits;
 
-        var adjustment = new InventoryAdjustment(
+        var adjustment = req.ToEntity(
             batch.Id,
-            adjustmentType,
             quantityChanged,
-            request.Reason ?? AddBatchCommand.DefaultCreationReason,
             _currentUser.UserId,
             0,
             totalUnits,
-            DateTime.UtcNow);
+            request.Reason ?? AddBatchCommand.DefaultCreationReason);
 
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);

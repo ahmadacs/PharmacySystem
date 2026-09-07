@@ -14,6 +14,15 @@ public sealed record FileAttachmentDto(
 
 public static class FileAttachmentMapping
 {
+    public static Domain.Entities.Files.FileAttachment ToEntity(
+        Domain.Entities.Files.FileEntityType entityType,
+        Guid entityId,
+        string fileName,
+        string contentType,
+        long sizeBytes,
+        string blobPath)
+        => new(entityType, entityId, fileName, contentType, sizeBytes, blobPath);
+
     public static FileAttachmentDto ToDto(this Domain.Entities.Files.FileAttachment e, string? baseUrl = null) => new(
         e.Id,
         e.EntityType.ToString(),

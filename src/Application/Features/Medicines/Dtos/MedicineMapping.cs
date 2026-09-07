@@ -1,3 +1,4 @@
+using Application.Common.Interfaces;
 using Domain.Common;
 using Domain.Entities.Medicines;
 using Domain.Enums;
@@ -11,38 +12,96 @@ public static class MedicineMapping
     public static string ToDisplayValue(this MedicineUnit unit) => unit.ToString();
     public static string ToDisplayValue(this CategoryEnum category) => category.ToString();
 
+    public static CategoryDto ToDto(this CategoryEnum category)
+        => new((int)category, category.ToDisplayValue(), null);
+
+    /// <summary>
+    /// Finds the tracked scientific name or creates and tracks a new one, updating
+    /// the Arabic name when it changed. Shared by the create/update medicine flows.
+    /// </summary>
+    public static async Task<GenericName> ResolveGenericNameAsync(
+        IMedicineRepository repo,
+        string name,
+        string? nameAr,
+        CancellationToken cancellationToken)
+    {
+        var trimmed = name.Trim();
+        var trimmedAr = nameAr?.Trim();
+        var genericName = await repo.FindGenericNameAsync(trimmed, cancellationToken);
+        if (genericName is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(trimmedAr) && genericName.NameAr != trimmedAr)
+                genericName.Rename(trimmed, trimmedAr);
+            return genericName;
+        }
+
+        genericName = new GenericName(trimmed, trimmedAr);
+        repo.AddGenericName(genericName);
+        return genericName;
+    }
+
+    /// <summary>Maps a list-screen projection row (server-computed sums included).</summary>
+    public static MedicineVariantSummaryDto ToDto(this MedicineVariantRow v)
+        => new(
+            v.Id,
+            v.Form,
+            v.Unit,
+            v.Strength,
+            $"{v.Form} {v.Strength} {v.Unit}",
+            v.AvailableQuantity,
+            v.ReorderLevel,
+            v.AvailableQuantity <= v.ReorderLevel,
+            v.BaseUnitName,
+            v.PackageUnitName,
+            v.UnitsPerPackage,
+            v.IsDivisible);
+
+    /// <summary>Maps a list-screen projection row (server-computed sums included).</summary>
+    public static MedicineListItemDto ToDto(this MedicineRow r)
+    {
+        var variants = r.Variants.Select(v => v.ToDto()).ToList();
+
+        return new(
+            r.Id,
+            r.Name,
+            r.NameAr,
+            r.GenericName,
+            r.GenericNameAr,
+            r.Category,
+            variants,
+            r.IsControlled,
+            r.IsActive,
+            variants.Sum(v => v.AvailableQuantity),
+            r.VariantCount,
+            variants.Any(v => v.IsLowStock));
+    }
+
     public static MedicineListItemDto ToListItemDto(this Medicine medicine, DateOnly asOf)
     {
-        var available = medicine.GetAvailableStock(asOf).Value;
         var activeVariants = medicine.Variants.NotDeleted().Where(v => v.IsActive).ToList();
-        var variantDtos = activeVariants.Select(v => new MedicineVariantSummaryDto(
-                v.Id,
-                v.Form,
-                v.Unit,
-                v.Strength,
-                $"{v.Form} {v.Strength} {v.Unit}",
-                v.GetAvailableStock(asOf).Value,
-                v.ReorderLevel.Value,
-                v.IsLowStock(asOf),
-                v.UnitOfMeasure.BaseUnitName,
-                v.UnitOfMeasure.PackageUnitName,
-                v.UnitOfMeasure.UnitsPerPackage,
-                v.UnitOfMeasure.IsDivisible)).ToList();
-        var isLowStock = variantDtos.Any(v => v.IsLowStock);
-
-        return new MedicineListItemDto(
+        var row = new MedicineRow(
             medicine.Id,
             medicine.Name,
             medicine.NameAr,
             medicine.GenericName.Name,
             medicine.GenericName.NameAr,
             medicine.CategoryEnum,
-            variantDtos,
             medicine.IsControlled,
             medicine.IsActive,
-            available,
-            activeVariants.Count,
-            isLowStock);
+            activeVariants.Select(v => new MedicineVariantRow(
+                v.Id,
+                v.Form,
+                v.Unit,
+                v.Strength,
+                v.GetAvailableStock(asOf).Value,
+                v.ReorderLevel.Value,
+                v.UnitOfMeasure.BaseUnitName,
+                v.UnitOfMeasure.PackageUnitName,
+                v.UnitOfMeasure.UnitsPerPackage,
+                v.UnitOfMeasure.IsDivisible)).ToList(),
+            activeVariants.Count);
+
+        return row.ToDto();
     }
 
     public static MedicineDetailsDto ToDetailsDto(this Medicine medicine, DateOnly asOf)
@@ -118,6 +177,40 @@ public static class MedicineMapping
             daysToExpiry,
             batchStatus,
             batch.CreatedAt);
+    }
+
+    /// <summary>
+    /// Maps a batches-list projection row (server-computed dispensed included).
+    /// Same field semantics as the list screen: days-to-expiry is always the
+    /// day difference (negative when expired), status is Expired/Depleted/Active.
+    /// </summary>
+    public static MedicineBatchDto ToDto(this MedicineBatchRow r, DateOnly asOf)
+    {
+        var isExpired = r.ExpiryDate <= asOf;
+        var status = isExpired
+            ? "Expired"
+            : r.QuantityAvailable <= 0
+                ? "Depleted"
+                : "Active";
+
+        return new(
+            r.Id,
+            r.MedicineId,
+            r.MedicineName,
+            r.MedicineNameAr,
+            r.VariantName,
+            r.BatchNumber,
+            r.ManufactureDate,
+            r.ExpiryDate,
+            r.QuantityReceived,
+            r.QuantityAvailable,
+            r.DispensedQuantity,
+            r.UnitCostAmount,
+            r.SupplierName,
+            isExpired,
+            r.ExpiryDate.DayNumber - asOf.DayNumber,
+            status,
+            r.CreatedAt);
     }
 
     public static Medicine ToEntity(this CreateMedicineRequest request, CategoryEnum categoryEnum, GenericName genericName)

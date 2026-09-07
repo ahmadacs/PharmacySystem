@@ -26,14 +26,8 @@ public sealed class ListUsersQueryHandler : IRequestHandler<ListUsersQuery, Page
             request.PageSize,
             cancellationToken);
 
-        return new PagedList<UserDto>
-        {
-            Items = result.Items
-                .Select(u => new UserDto(u.Id, u.Email, u.FullName, u.IsActive, u.Roles))
-                .ToList(),
-            Page = result.Page,
-            PageSize = result.PageSize,
-            TotalCount = result.TotalCount
-        };
+        return result.Items
+            .Select(u => u.ToDto())
+            .ToPagedList(result.Page, result.PageSize, result.TotalCount);
     }
 }

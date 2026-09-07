@@ -25,11 +25,6 @@ public sealed class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQ
         if (account is null)
             return Result<CurrentUserDto>.Failure("The email or password is incorrect.", 401);
 
-        return Result<CurrentUserDto>.Success(new CurrentUserDto(
-            account.Id,
-            account.Email,
-            account.FullName,
-            account.Roles.FirstOrDefault(),
-            account.Permissions));
+        return Result<CurrentUserDto>.Success(account.ToDto());
     }
 }

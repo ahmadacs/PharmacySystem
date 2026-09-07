@@ -73,19 +73,15 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         }
         else if (entityType == FileEntityType.Prescription)
         {
-            var exists = await _files.PrescriptionExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'Prescription' with id '{request.EntityId}' was not found.", 404);
             var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
-            if (prescription is not null)
+            if (prescription is null) return Result<FileAttachmentDto>.Failure($"Resource 'Prescription' with id '{request.EntityId}' was not found.", 404);
+            try
             {
-                try
-                {
-                    await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
-                }
-                catch (ForbiddenResourceException ex)
-                {
-                    return Result<FileAttachmentDto>.Failure(ex.Message, 403);
-                }
+                await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
+            }
+            catch (ForbiddenResourceException ex)
+            {
+                return Result<FileAttachmentDto>.Failure(ex.Message, 403);
             }
         }
         else if (entityType == FileEntityType.Batch)
@@ -130,7 +126,7 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
 
         try
         {
-            var attachment = new FileAttachment(entityType, request.EntityId, request.FileName, request.ContentType, request.SizeBytes, blobPath);
+            var attachment = FileAttachmentMapping.ToEntity(entityType, request.EntityId, request.FileName, request.ContentType, request.SizeBytes, blobPath);
             _files.Add(attachment);
             await _uow.SaveChangesAsync(cancellationToken);
             return Result<FileAttachmentDto>.Success(attachment.ToDto());

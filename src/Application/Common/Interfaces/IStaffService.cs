@@ -15,6 +15,24 @@ public interface IStaffService
     Task<string?> GetDoctorNameAsync(Guid doctorId, CancellationToken cancellationToken = default);
     Task<string?> GetPharmacistNameAsync(Guid pharmacistId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Resolves many doctor names with ONE query (WHERE IN). Pure data access:
+    /// no filtering, no rules. Use this instead of calling
+    /// <see cref="GetDoctorNameAsync"/> in a loop (N+1).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetDoctorNamesAsync(
+        IEnumerable<Guid> doctorIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves many pharmacist names with ONE query (WHERE IN). Pure data
+    /// access: no filtering, no rules. Use this instead of calling
+    /// <see cref="GetPharmacistNameAsync"/> in a loop (N+1).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetPharmacistNamesAsync(
+        IEnumerable<Guid> pharmacistIds,
+        CancellationToken cancellationToken = default);
+
     Task CreateDoctorProfileAsync(Guid userId, string licenseNumber, string? specialization, string? phoneNumber, CancellationToken cancellationToken = default);
     Task CreatePharmacistProfileAsync(Guid userId, string licenseNumber, CancellationToken cancellationToken = default);
 }

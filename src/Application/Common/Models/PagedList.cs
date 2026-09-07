@@ -31,3 +31,13 @@ public sealed class PagedList<T>
 
     public static PagedList<T> Empty(int page = 1, int pageSize = 10) => new([], page, pageSize, 0);
 }
+
+/// <summary>
+/// Single canonical way to wrap a materialized page: handlers map items via
+/// ToDto() first, then call this. No inline <c>new PagedList&lt;T&gt;</c> in handlers.
+/// </summary>
+public static class PagedListMapping
+{
+    public static PagedList<T> ToPagedList<T>(this IEnumerable<T> items, int page, int pageSize, int totalCount)
+        => new(items.ToList(), page, pageSize, totalCount);
+}

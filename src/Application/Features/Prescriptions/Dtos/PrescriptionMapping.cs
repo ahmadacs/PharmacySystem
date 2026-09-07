@@ -17,6 +17,21 @@ public static class PrescriptionMapping
             item.RemainingQuantity.Value,
             item.DosageInstructions);
 
+    /// <summary>Maps a list-screen projection row (doctor name resolved separately).</summary>
+    public static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
+        => new(
+            row.Id,
+            row.DoctorId,
+            doctorName,
+            row.PatientName,
+            row.PatientDateOfBirth,
+            row.PatientAge,
+            row.PatientPhone,
+            row.IssuedDate,
+            row.Status,
+            row.IsRefillable,
+            row.ItemCount);
+
     public static PrescriptionListItemDto ToListItemDto(this Prescription prescription, string doctorName)
         => new(
             prescription.Id,

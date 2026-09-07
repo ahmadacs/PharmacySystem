@@ -1,9 +1,7 @@
-using System.Text.Json;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Features.AuditLog.Dtos;
-using Application.Features.AuditLog.Queries;
 using Domain.Entities.Audit;
+using Domain.Enums;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -12,11 +10,6 @@ namespace Infrastructure.Repositories;
 
 public sealed class AuditRepository : IAuditRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     private readonly ApplicationDbContext _db;
 
     public AuditRepository(ApplicationDbContext db)
@@ -24,92 +17,66 @@ public sealed class AuditRepository : IAuditRepository
         _db = db;
     }
 
-    public async Task<PagedList<AuditEntryDto>> ListAsync(
-        ListAuditEntriesQuery query,
+    public async Task<PagedList<AuditEntry>> ListAsync(
+        PagedQuery paging,
+        AuditAction? action,
+        string? entity,
+        DateTime? from,
+        DateTime? to,
         CancellationToken cancellationToken = default)
     {
         var users = _db.Set<ApplicationUser>().AsNoTracking();
 
+        // The author join stays here because Identity tables are invisible from
+        // the Application layer; only the author name is used for searching/sorting.
         var data =
             from a in _db.Set<AuditEntry>().AsNoTracking()
             join u in users on a.ChangedBy equals u.Id into gj
             from u in gj.DefaultIfEmpty()
-            select new { Entry = a, User = u };
+            select new { Entry = a, AuthorName = u != null ? (u.FirstName + " " + u.LastName).Trim() : (string?)null };
 
-        if (!string.IsNullOrWhiteSpace(query.Search))
+        if (!string.IsNullOrWhiteSpace(paging.Search))
         {
-            var search = query.Search.Trim();
+            var trimmed = paging.Search.Trim();
             // NOTE: Uses SQL LIKE via Contains ("%search%"). For very large audit tables consider Full-Text Search or trigram indexes
             // to avoid slow sequential scans.
             data = data.Where(x =>
-                x.Entry.EntityName.Contains(search) ||
-                (x.User != null && (x.User.FirstName + " " + x.User.LastName).Contains(search)));
+                x.Entry.EntityName.Contains(trimmed) ||
+                (x.AuthorName != null && x.AuthorName.Contains(trimmed)));
         }
 
-        if (query.Action.HasValue)
-            data = data.Where(x => x.Entry.Action == query.Action.Value);
+        if (action.HasValue)
+            data = data.Where(x => x.Entry.Action == action.Value);
 
-        if (!string.IsNullOrWhiteSpace(query.Entity))
-            data = data.Where(x => x.Entry.EntityName == query.Entity);
+        if (!string.IsNullOrWhiteSpace(entity))
+            data = data.Where(x => x.Entry.EntityName == entity);
 
-        if (query.From.HasValue)
-            data = data.Where(x => x.Entry.ChangedAt >= query.From.Value);
+        if (from.HasValue)
+            data = data.Where(x => x.Entry.ChangedAt >= from.Value);
 
-        if (query.To.HasValue)
-            data = data.Where(x => x.Entry.ChangedAt <= query.To.Value);
+        if (to.HasValue)
+            data = data.Where(x => x.Entry.ChangedAt <= to.Value);
 
         var totalCount = await data.CountAsync(cancellationToken);
 
-        data = query.SortBy?.ToLowerInvariant() switch
+        data = paging.SortBy?.ToLowerInvariant() switch
         {
-            "entity" => SortDir(data, x => x.Entry.EntityName, query.SortDir),
-            "action" => SortDir(data, x => x.Entry.Action, query.SortDir),
-            "user" => SortDir(data, x => x.User!.FirstName + " " + x.User.LastName, query.SortDir),
-            _ => SortDir(data, x => x.Entry.ChangedAt, query.SortDir)
+            "entity" => SortDir(data, x => x.Entry.EntityName, paging.SortDir),
+            "action" => SortDir(data, x => x.Entry.Action, paging.SortDir),
+            "user" => SortDir(data, x => x.AuthorName, paging.SortDir),
+            _ => SortDir(data, x => x.Entry.ChangedAt, paging.SortDir)
         };
 
-        var page = Math.Max(1, query.Page);
-        var pageSize = Math.Clamp(query.PageSize, 1, 200);
+        var page = Math.Max(1, paging.Page);
+        var pageSize = Math.Clamp(paging.PageSize, 1, 200);
 
-        var rows = await data
+        var items = await data
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(x => x.Entry)
             .ToListAsync(cancellationToken);
 
-        var items = rows
-            .Select(r => new AuditEntryDto(
-                r.Entry.Id,
-                r.Entry.EntityName,
-                r.Entry.EntityId,
-                r.Entry.Action,
-                r.Entry.ChangedBy,
-                r.User != null ? (r.User.FirstName + " " + r.User.LastName).Trim() : null,
-                r.Entry.ChangedAt,
-                DeserializeChanges(r.Entry.ChangesJson)))
-            .ToList();
-
-        return new PagedList<AuditEntryDto>
-        {
-            Items = items,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
-    }
-
-    private static IReadOnlyList<AuditChangeDto> DeserializeChanges(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-            return [];
-
-        try
-        {
-            return JsonSerializer.Deserialize<List<AuditChangeDto>>(json, JsonOptions) ?? [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
+        return items.ToPagedList(page, pageSize, totalCount);
     }
 
     private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(

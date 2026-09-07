@@ -233,13 +233,7 @@ public sealed class UserManagerService : IUserManager
             })
             .ToList();
 
-        return new PagedList<UserAccount>
-        {
-            Items = accounts,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
+        return accounts.ToPagedList(page, pageSize, totalCount);
     }
 
     private async Task<UserAccount> ToAccountAsync(ApplicationUser user, CancellationToken cancellationToken)

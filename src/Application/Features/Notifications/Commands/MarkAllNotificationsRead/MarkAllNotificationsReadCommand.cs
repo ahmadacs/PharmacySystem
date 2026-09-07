@@ -13,25 +13,35 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
     private readonly INotificationRepository _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
+    private readonly IAsyncQueryExecutor _executor;
 
     public MarkAllNotificationsReadCommandHandler(
         INotificationRepository notifications,
         ICurrentUserService currentUser,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IAsyncQueryExecutor executor)
     {
         _notifications = notifications;
         _currentUser = currentUser;
         _uow = uow;
+        _executor = executor;
     }
 
-    public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
     {
         var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
         if (authResult.IsSuccess)
         {
             var userId = authResult.Value;
 
-            await _notifications.MarkAllReadAsync(userId, cancellationToken);
+            var unread = await _executor.ToListAsync(
+                _notifications.Query().Where(n => n.UserId == userId && !n.IsRead),
+                cancellationToken);
+
+            var now = DateTime.UtcNow;
+            foreach (var notification in unread)
+                notification.MarkRead(now);
+
             await _uow.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }

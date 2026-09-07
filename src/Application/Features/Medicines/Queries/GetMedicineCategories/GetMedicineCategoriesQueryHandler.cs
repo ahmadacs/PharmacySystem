@@ -10,7 +10,7 @@ public sealed class GetMedicineCategoriesQueryHandler : IRequestHandler<GetMedic
     public Task<Result<IReadOnlyList<CategoryDto>>> Handle(GetMedicineCategoriesQuery request, CancellationToken cancellationToken)
     {
         var categories = Enum.GetValues<CategoryEnum>()
-            .Select(c => new CategoryDto((int)c, c.ToDisplayValue(), null))
+            .Select(c => c.ToDto())
             .ToList();
         return Task.FromResult(Result<IReadOnlyList<CategoryDto>>.Success(categories));
     }
