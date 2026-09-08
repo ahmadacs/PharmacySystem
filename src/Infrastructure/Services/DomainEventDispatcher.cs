@@ -28,7 +28,7 @@ public sealed class DomainEventDispatcher : IDomainEventDispatcher
     {
         PrescriptionCreatedEvent e => new PrescriptionCreatedNotification(e.PrescriptionId, e.OccurredAtUtc),
         PrescriptionCancelledEvent e => new PrescriptionCancelledNotification(e.PrescriptionId, e.OccurredAtUtc),
-        PrescriptionRefilledEvent e => new PrescriptionRefilledNotification(e.PrescriptionId, e.OccurredAtUtc),
+        PrescriptionRefilledEvent e => new PrescriptionRefilledNotification(e.PrescriptionId, e.PrescriptionItemIds, e.OccurredAtUtc),
         PrescriptionDispensedEvent e => new PrescriptionDispensedNotification(
             e.PrescriptionId, e.OccurredAtUtc, e.TotalDispensedQuantity),
         MedicineLowStockEvent e => new MedicineLowStockNotification(

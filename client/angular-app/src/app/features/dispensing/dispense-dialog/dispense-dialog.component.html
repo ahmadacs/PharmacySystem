@@ -1,6 +1,30 @@
 
     <h2 mat-dialog-title>{{ 'dialogs.dispense.title' | translate }}</h2>
 
+    @if (dispenseResult(); as r) {
+      <mat-dialog-content class="dispense-result">
+        @if (isPartialResult(r)) {
+          <p class="result-title partial">
+            <mat-icon>warning</mat-icon>
+            {{ 'dialogs.dispense.partialTitle' | translate }}
+          </p>
+          <p class="result-counts">{{ 'dialogs.dispense.partialCounts' | translate:{dispensed: r.dispensedQuantity, requested: r.requestedQuantity} }}</p>
+        } @else {
+          <p class="result-title success">
+            <mat-icon>check_circle</mat-icon>
+            {{ 'dialogs.dispense.successWithWarnings' | translate }}
+          </p>
+        }
+        <ul class="warnings">
+          @for (w of r.warnings; track w) {
+            <li>{{ w }}</li>
+          }
+        </ul>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-flat-button color="primary" [mat-dialog-close]="true">{{ 'dialogs.dispense.close' | translate }}</button>
+      </mat-dialog-actions>
+    } @else {
     @if (error()) {
       <mat-dialog-content class="error-state">
         <p class="error-title">{{ 'dialogs.dispense.errorTitle' | translate }}</p>
@@ -31,6 +55,9 @@
                 </span>
                 <span class="item-qty">
                   {{ 'dialogs.dispense.remaining' | translate }} <strong>{{ item.remainingQuantity }}</strong>
+                  @if (dueInDays(item); as due) {
+                    <span class="item-due">{{ 'dialogs.dispense.dueInDays' | translate:{count: due} }}</span>
+                  }
                 </span>
               </li>
             }
@@ -54,5 +81,6 @@
           }
         </button>
       </mat-dialog-actions>
+    }
     }
   

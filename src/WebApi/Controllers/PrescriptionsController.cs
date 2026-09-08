@@ -1,4 +1,4 @@
-using Application.Common.Security;
+﻿using Application.Common.Security;
 using Application.Features.Prescriptions.Commands;
 using Application.Features.Prescriptions.Dtos;
 using Application.Features.Prescriptions.Queries;
@@ -63,8 +63,22 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
     public Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
         => NoContent(new CancelPrescriptionCommand(id), cancellationToken);
 
-    /// <summary>Registers a refill if the prescription is eligible (refills allowed and not yet exhausted).</summary>
+    /// <summary>Refills one item of a prescription (the item must be fully dispensed with refills remaining).</summary>
     /// <param name="id">Prescription id.</param>
+    /// <param name="itemId">Prescription item id.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/items/{itemId:guid}/refill")]
+    [Authorize(Policy = Permissions.Prescriptions.ManageOwn)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public Task<IActionResult> RefillItem(Guid id, Guid itemId, CancellationToken cancellationToken)
+        => NoContent(new RefillPrescriptionCommand(id, [itemId]), cancellationToken);
+
+    /// <summary>Refills several items of a prescription atomically (all-or-nothing).</summary>
+    /// <param name="id">Prescription id.</param>
+    /// <param name="request">Item ids to refill.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/refill")]
     [Authorize(Policy = Permissions.Prescriptions.ManageOwn)]
@@ -72,6 +86,7 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public Task<IActionResult> Refill(Guid id, CancellationToken cancellationToken)
-        => NoContent(new RefillPrescriptionCommand(id), cancellationToken);
+    public Task<IActionResult> Refill(Guid id, [FromBody] RefillPrescriptionRequest request, CancellationToken cancellationToken)
+        => NoContent(new RefillPrescriptionCommand(id, request.ItemIds), cancellationToken);
 }
+

@@ -5,12 +5,22 @@
       <mat-dialog-content class="dialog-body">
         <div class="row">
           <mat-form-field appearance="outline" class="grow">
-            <mat-label>{{ 'dialogs.prescriptionForm.phoneNumber' | translate }} *</mat-label>
+            <mat-label>{{ 'dialogs.prescriptionForm.phoneNumber' | translate }}</mat-label>
             <input matInput formControlName="patientPhoneNumber" [placeholder]="'dialogs.prescriptionForm.phonePlaceholder' | translate" />
             <mat-error>{{ 'dialogs.prescriptionForm.phoneRequired' | translate }}</mat-error>
+            @if (phoneHintKey(); as hintKey) {
+              @if (form.controls.patientPhoneNumber.untouched) {
+                <mat-hint>{{ hintKey | translate }}</mat-hint>
+              }
+            }
             @if (phoneSearching()) { <mat-icon matSuffix>hourglass_empty</mat-icon> }
           </mat-form-field>
         </div>
+        @if (!showRest() && !phoneSearching()) {
+          <div class="phone-hint">{{ 'dialogs.prescriptionForm.phoneFirstHint' | translate }}</div>
+        }
+        @if (showRest()) {
+          <div #restAnchor class="rest-section">
         @if (foundPatient()) {
           <div class="found-banner">{{ 'dialogs.prescriptionForm.existingPatient' | translate:{firstName: foundPatient()!.firstName, lastName: foundPatient()!.lastName, dateOfBirth: foundPatient()!.dateOfBirth} }}</div>
         }
@@ -66,56 +76,80 @@
           </mat-form-field>
         </div>
 
-        <div class="row controls">
-          <mat-checkbox formControlName="isRefillable">{{ 'dialogs.prescriptionForm.refillable' | translate }}</mat-checkbox>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'dialogs.prescriptionForm.refillsAllowed' | translate }}</mat-label>
-            <input matInput formControlName="refillsAllowed" type="number" min="0" max="99" />
-          </mat-form-field>
-        </div>
-
         <div formArrayName="items" class="items">
           <h3>{{ 'dialogs.prescriptionForm.items' | translate }}</h3>
           @for (item of items.controls; track item; let i = $index) {
-            <div class="item-row" [formGroupName]="i">
-              <mat-form-field appearance="outline" class="item-medicine">
-                <mat-label>{{ 'dialogs.prescriptionForm.medicine' | translate }}</mat-label>
-                <input matInput 
-                    [formControl]="medicineSearchControls[i]" 
-                       [placeholder]="'dialogs.prescriptionForm.medicineSearchPlaceholder' | translate" 
-                       [matAutocomplete]="medicineAuto" />
-                <mat-icon matSuffix>search</mat-icon>
-                <mat-autocomplete #medicineAuto="matAutocomplete" [displayWith]="displayMedicineName" (optionSelected)="onMedicineSelected($event, i)">
-                  @for (medicine of filteredMedicines(i); track medicine.id) {
-                    <mat-option [value]="medicine">
-                      {{ isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name }} ({{ isArabic() && medicine.genericNameAr ? medicine.genericNameAr : medicine.genericName }})
-                    </mat-option>
-                  }
-                </mat-autocomplete>
-                <mat-error>{{ 'dialogs.prescriptionForm.medicineRequired' | translate }}</mat-error>
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="item-variant">
-                <mat-label>{{ 'dialogs.prescriptionForm.variant' | translate }}</mat-label>
-                <mat-select formControlName="medicineVariantId" [compareWith]="compareVariant">
-                  @for (variant of variantsFor(i); track variant.id) {
-                    <mat-option [value]="variant.id">{{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength }} {{ variant.unit | enumTranslate:'MedicineUnit' }}</mat-option>
-                  }
-                </mat-select>
-                <mat-error>{{ 'dialogs.prescriptionForm.variantRequired' | translate }}</mat-error>
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="item-qty">
-                <mat-label>{{ 'dialogs.prescriptionForm.qty' | translate }}</mat-label>
-                <input matInput formControlName="quantity" type="number" min="1" />
-                <mat-error>{{ 'dialogs.prescriptionForm.qtyError' | translate }}</mat-error>
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="item-dose">
-                <mat-label>{{ 'dialogs.prescriptionForm.dosage' | translate }}</mat-label>
-                <input matInput formControlName="dosageInstructions" [placeholder]="'dialogs.prescriptionForm.dosagePlaceholder' | translate" />
-              </mat-form-field>
+            <div class="item-card" [formGroupName]="i">
+              <div class="item-main">
+                <span class="item-index">{{ i + 1 }}</span>
+                <mat-form-field appearance="outline" class="item-medicine">
+                  <mat-label>{{ 'dialogs.prescriptionForm.medicine' | translate }}</mat-label>
+                  <input matInput
+                      [formControl]="medicineSearchControls[i]"
+                         [placeholder]="'dialogs.prescriptionForm.medicineSearchPlaceholder' | translate"
+                         [matAutocomplete]="medicineAuto" />
+                  <mat-icon matSuffix>search</mat-icon>
+                  <mat-autocomplete #medicineAuto="matAutocomplete" [displayWith]="displayMedicineName" (optionSelected)="onMedicineSelected($event, i)">
+                    @for (medicine of filteredMedicines(i); track medicine.id) {
+                      <mat-option [value]="medicine">
+                        {{ isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name }} ({{ isArabic() && medicine.genericNameAr ? medicine.genericNameAr : medicine.genericName }})
+                      </mat-option>
+                    }
+                  </mat-autocomplete>
+                  <mat-error>{{ 'dialogs.prescriptionForm.medicineRequired' | translate }}</mat-error>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="item-variant">
+                  <mat-label>{{ 'dialogs.prescriptionForm.variant' | translate }}</mat-label>
+                  <mat-select formControlName="medicineVariantId" [compareWith]="compareVariant">
+                    @for (variant of variantsFor(i); track variant.id) {
+                      <mat-option [value]="variant.id">{{ variant.form | enumTranslate:'MedicineForm' }} {{ variant.strength }} {{ variant.unit | enumTranslate:'MedicineUnit' }}</mat-option>
+                    }
+                  </mat-select>
+                  <mat-error>{{ 'dialogs.prescriptionForm.variantRequired' | translate }}</mat-error>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="item-qty">
+                  <mat-label>{{ 'dialogs.prescriptionForm.qty' | translate }}</mat-label>
+                  <input matInput formControlName="quantity" type="number" min="1" />
+                  <mat-error>{{ 'dialogs.prescriptionForm.qtyError' | translate }}</mat-error>
+                </mat-form-field>
+              </div>
+              <div class="item-sub">
+                <mat-form-field appearance="outline" class="item-dose">
+                  <mat-label>{{ 'dialogs.prescriptionForm.dosage' | translate }}</mat-label>
+                  <input matInput formControlName="dosageInstructions" [placeholder]="'dialogs.prescriptionForm.dosagePlaceholder' | translate" />
+                </mat-form-field>
+                <div class="refill-group">
+                  <mat-checkbox formControlName="isRefillable">{{ 'dialogs.prescriptionForm.refillable' | translate }}</mat-checkbox>
+                @if (item.get('isRefillable')?.value) {
+                  <mat-form-field appearance="outline" class="refill-count">
+                    <mat-label>{{ 'dialogs.prescriptionForm.refillsAllowed' | translate }}</mat-label>
+                    <input matInput formControlName="refillsAllowed" type="number" min="1" max="99" />
+                    <mat-error>{{ 'dialogs.prescriptionForm.refillsAllowedError' | translate }}</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="refill-count">
+                    <mat-label>{{ 'dialogs.prescriptionForm.refillIntervalDays' | translate }}</mat-label>
+                    <input matInput formControlName="refillIntervalDays" inputmode="numeric"
+                        [matAutocomplete]="intervalAuto"
+                        [placeholder]="'dialogs.prescriptionForm.refillIntervalNoLimit' | translate" />
+                    <mat-autocomplete #intervalAuto="matAutocomplete">
+                      @for (days of refillIntervalOptions; track days) {
+                        <mat-option [value]="days">
+                          {{ days === 0 ? ('dialogs.prescriptionForm.refillIntervalNoLimit' | translate) : ('dialogs.prescriptionForm.refillIntervalDaysOption' | translate:{count: days}) }}
+                        </mat-option>
+                      }
+                    </mat-autocomplete>
+                    <mat-hint>{{ 'dialogs.prescriptionForm.refillIntervalHint' | translate }}</mat-hint>
+                    <mat-error>{{ 'dialogs.prescriptionForm.refillIntervalError' | translate }}</mat-error>
+                  </mat-form-field>
+                }
+                </div>
+              </div>
               @if (items.length > 1) {
-                <button mat-icon-button type="button" (click)="removeItem(i)" [aria-label]="'dialogs.prescriptionForm.removeItem' | translate">
-                  <mat-icon>close</mat-icon>
-                </button>
+                <div class="item-footer">
+                  <button mat-icon-button type="button" (click)="removeItem(i)" [aria-label]="'dialogs.prescriptionForm.removeItem' | translate">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
               }
             </div>
           }
@@ -127,11 +161,15 @@
             <p class="form-error">{{ 'dialogs.prescriptionForm.itemRequired' | translate }}</p>
           }
         </div>
+          </div>
+        }
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
         <button mat-button type="button" [mat-dialog-close]="false">{{ 'dialogs.prescriptionForm.cancel' | translate }}</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">{{ 'dialogs.prescriptionForm.create' | translate }}</button>
+        @if (showRest()) {
+          <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">{{ 'dialogs.prescriptionForm.create' | translate }}</button>
+        }
       </mat-dialog-actions>
     </form>
   

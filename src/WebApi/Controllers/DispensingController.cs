@@ -31,7 +31,7 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
-    /// <summary>Dispenses a prescription: validates stock and expiry, reduces batches atomically, records the transaction.</summary>
+    /// <summary>Dispenses a prescription: validates stock and expiry, reduces batches atomically, records the transaction. Returns the record id plus non-blocking near-expiry warnings for used batches.</summary>
     /// <param name="request">Prescription id and optional notes.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
@@ -42,6 +42,11 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public Task<IActionResult> Dispense([FromBody] DispensePrescriptionRequest request, CancellationToken cancellationToken)
-        => Created(nameof(List), new { id = Guid.Empty }, new DispensePrescriptionCommand(request), cancellationToken);
+    public async Task<IActionResult> Dispense([FromBody] DispensePrescriptionRequest request, CancellationToken cancellationToken)
+    {
+        var result = await Sender.Send(new DispensePrescriptionCommand(request), cancellationToken);
+        return result.IsSuccess
+            ? StatusCode(StatusCodes.Status201Created, result.Value)
+            : FailureResponse(result);
+    }
 }

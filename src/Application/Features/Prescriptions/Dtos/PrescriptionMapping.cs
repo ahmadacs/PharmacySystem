@@ -15,7 +15,12 @@ public static class PrescriptionMapping
             item.PrescribedQuantity.Value,
             item.DispensedQuantity.Value,
             item.RemainingQuantity.Value,
-            item.DosageInstructions);
+            item.DosageInstructions,
+            item.IsRefillable,
+            item.RefillsAllowed,
+            item.RefillsUsed,
+            item.RefillIntervalDays,
+            item.LastDispensedAt);
 
     /// <summary>Maps a list-screen projection row (doctor name resolved separately).</summary>
     public static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
@@ -29,7 +34,6 @@ public static class PrescriptionMapping
             row.PatientPhone,
             row.IssuedDate,
             row.Status,
-            row.IsRefillable,
             row.ItemCount);
 
     public static PrescriptionListItemDto ToListItemDto(this Prescription prescription, string doctorName)
@@ -43,7 +47,6 @@ public static class PrescriptionMapping
             prescription.Patient?.PhoneNumber,
             prescription.IssuedDate,
             prescription.Status.ToDisplayValue(),
-            prescription.IsRefillable,
             prescription.Items.Count);
 
     public static PrescriptionDetailsDto ToDetailsDto(
@@ -73,9 +76,6 @@ public static class PrescriptionMapping
             prescription.Diagnosis,
             prescription.IssuedDate,
             prescription.Status.ToDisplayValue(),
-            prescription.IsRefillable,
-            prescription.RefillsAllowed,
-            prescription.RefillsUsed,
             prescription.CreatedBy,
             prescription.CreatedAt,
             items);
@@ -86,9 +86,7 @@ public static class PrescriptionMapping
             doctorId,
             patientId,
             request.IssuedDate,
-            request.Diagnosis,
-            request.IsRefillable,
-            request.RefillsAllowed);
+            request.Diagnosis);
 
     public static Patient ToPatient(this CreatePrescriptionRequest request)
         => new(

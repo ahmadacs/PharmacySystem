@@ -20,6 +20,12 @@ public sealed class DispensingDomainService
 
         prescription.EnsureCanBeDispensed(asOf);
 
+        // Interval gate first: no stock moves unless every item to dispense
+        // is time-eligible (same transaction, so concurrent dispenses cannot
+        // both pass — the second loses on the RowVersion conflict at save).
+        foreach (var item in prescription.Items.Where(i => !i.IsFullyDispensed))
+            item.EnsureRefillIntervalSatisfied(asOf);
+
         var record = new DispensingRecord(prescription.Id, pharmacistId, dispensedAt);
 
         foreach (var item in prescription.Items.Where(i => !i.IsFullyDispensed))
@@ -37,7 +43,7 @@ public sealed class DispensingDomainService
             }
         }
 
-        prescription.ApplyDispensedQuantities(record.GetQuantitiesByPrescriptionItem());
+        prescription.ApplyDispensedQuantities(record.GetQuantitiesByPrescriptionItem(), asOf);
 
         return record;
     }

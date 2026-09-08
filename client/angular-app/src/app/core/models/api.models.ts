@@ -292,6 +292,9 @@ export interface PrescriptionItemRequest {
   medicineVariantId: string;
   quantity: number;
   dosageInstructions?: string;
+  isRefillable: boolean;
+  refillsAllowed: number;
+  refillIntervalDays: number;
 }
 
 export interface CreatePrescriptionRequest {
@@ -301,8 +304,6 @@ export interface CreatePrescriptionRequest {
   patientPhoneNumber?: string;
   diagnosis?: string;
   issuedDate: string;
-  isRefillable: boolean;
-  refillsAllowed: number;
   items: PrescriptionItemRequest[];
 }
 
@@ -316,6 +317,15 @@ export interface PrescriptionItemDto {
   dispensedQuantity: number;
   remainingQuantity: number;
   dosageInstructions: string;
+  isRefillable: boolean;
+  refillsAllowed: number;
+  refillsUsed: number;
+  refillIntervalDays: number;
+  lastDispensedAt: string | null;
+}
+
+export interface RefillPrescriptionRequest {
+  itemIds: string[];
 }
 
 export interface PrescriptionListItemDto {
@@ -328,7 +338,6 @@ export interface PrescriptionListItemDto {
   patientPhoneNumber: string | null;
   issuedDate: string;
   status: PrescriptionStatus;
-  isRefillable: boolean;
   itemCount: number;
 }
 
@@ -343,9 +352,6 @@ export interface PrescriptionDetailsDto {
   diagnosis: string | null;
   issuedDate: string;
   status: PrescriptionStatus;
-  isRefillable: boolean;
-  refillsAllowed: number;
-  refillsUsed: number;
   createdBy: string | null;
   createdAt: string;
   items: PrescriptionItemDto[];
@@ -354,6 +360,13 @@ export interface PrescriptionDetailsDto {
 export interface DispenseRequest {
   prescriptionId: string;
   notes: string;
+}
+
+export interface DispensePrescriptionResponse {
+  id: string;
+  requestedQuantity: number;
+  dispensedQuantity: number;
+  warnings: string[];
 }
 
 export interface DispensingRecordItemDto {

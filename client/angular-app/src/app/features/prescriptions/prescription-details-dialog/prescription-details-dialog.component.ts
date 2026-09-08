@@ -1,6 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import {
@@ -17,7 +19,7 @@ import {
 } from '@angular/material/table';
 import { firstValueFrom } from 'rxjs';
 import { Permissions } from '../../../core/constants/permissions';
-import { PrescriptionDetailsDto } from '../../../core/models/api.models';
+import { PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
@@ -31,6 +33,9 @@ import { ExportService } from '../../../core/services/export.service';
   standalone: true,
   imports: [
     MatButton,
+    MatIconButton,
+    MatIcon,
+    MatTooltip,
     MatProgressBar,
     MatTable,
     TranslatePipe,
@@ -63,7 +68,7 @@ export class PrescriptionDetailsDialogComponent {
 
   readonly prescriptionId = inject<string>(MAT_DIALOG_DATA);
   protected readonly prescription = signal<PrescriptionDetailsDto | null>(null);
-  readonly columns = ['medicineName', 'prescribedQuantity', 'dispensedQuantity', 'remainingQuantity', 'dosageInstructions'];
+  readonly columns = ['medicineName', 'prescribedQuantity', 'dispensedQuantity', 'remainingQuantity', 'dosageInstructions', 'refill'];
 
   constructor() {
     void this.load();
@@ -88,13 +93,21 @@ export class PrescriptionDetailsDialogComponent {
     );
   }
 
-  protected canRefill(p: PrescriptionDetailsDto): boolean {
+  protected canManage(): boolean {
+    return this.authStore.hasPermission(Permissions.PrescriptionsManageOwn);
+  }
+
+  protected canRefillItem(item: PrescriptionItemDto): boolean {
     return (
-      this.authStore.hasPermission(Permissions.PrescriptionsManageOwn) &&
-      p.status === 'FullyDispensed' &&
-      p.isRefillable &&
-      p.refillsUsed < p.refillsAllowed
+      this.canManage() &&
+      item.isRefillable &&
+      item.dispensedQuantity >= item.prescribedQuantity &&
+      item.refillsUsed < item.refillsAllowed
     );
+  }
+
+  protected eligibleItems(p: PrescriptionDetailsDto): PrescriptionItemDto[] {
+    return p.items.filter((item) => this.canRefillItem(item));
   }
 
   async cancel(id: string): Promise<void> {
@@ -129,11 +142,23 @@ export class PrescriptionDetailsDialogComponent {
     }
   }
 
-  async refill(id: string): Promise<void> {
+  async refillItem(prescriptionId: string, itemId: string): Promise<void> {
     try {
-      await this.prescriptionsService.refill(id);
-      this.toast.show('Prescription refilled.', 'success');
-      this.dialogRef.close(true);
+      await this.prescriptionsService.refillItem(prescriptionId, itemId);
+      this.toast.show('Item refilled.', 'success');
+      this.prescription.set(await this.prescriptionsService.get(prescriptionId));
+    } catch {
+      // error toast already shown by the error interceptor
+    }
+  }
+
+  async refillAllEligible(p: PrescriptionDetailsDto): Promise<void> {
+    const ids = this.eligibleItems(p).map((item) => item.id);
+    if (ids.length === 0) return;
+    try {
+      await this.prescriptionsService.refillItems(p.id, ids);
+      this.toast.show('Eligible items refilled.', 'success');
+      this.prescription.set(await this.prescriptionsService.get(p.id));
     } catch {
       // error toast already shown by the error interceptor
     }

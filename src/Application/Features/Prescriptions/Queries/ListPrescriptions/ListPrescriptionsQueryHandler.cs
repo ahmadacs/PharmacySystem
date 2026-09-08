@@ -93,7 +93,6 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
                     p.Patient != null ? p.Patient.PhoneNumber : null,
                     p.IssuedDate,
                     p.Status.ToString(),
-                    p.IsRefillable,
                     p.Items.Count())),
             cancellationToken);
 

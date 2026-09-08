@@ -17,6 +17,23 @@
     .controls {
       align-items: center;
     }
+    .phone-hint {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+      padding: 0.5rem 0.25rem 1rem;
+    }
+    .rest-section {
+      animation: fadeSlideIn 0.35s ease-out;
+    }
+    // Banners must not stick to the field below them
+    .found-banner,
+    .new-patient-banner,
+    .prev-list {
+      margin-bottom: 0.75rem;
+    }
     .items {
       overflow-x: auto;
       padding-bottom: 0.25rem;
@@ -26,25 +43,108 @@
       font-size: 0.9rem;
       font-weight: 500;
     }
-    .item-row {
+    .item-card {
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 12px;
+      padding: 0.75rem 0.75rem 0.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .item-main,
+    .item-sub {
       display: flex;
       gap: 0.75rem;
       align-items: baseline;
-      margin-bottom: 0.5rem;
-      flex-wrap: nowrap;
-      min-width: 700px;
+      flex-wrap: wrap;
+    }
+    .item-main {
+      margin-bottom: 0.25rem;
+    }
+    .item-sub {
+      align-items: flex-start;
+    }
+    .item-index {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface-variant);
+      flex: 0 0 auto;
     }
     .item-medicine {
-      flex: 2 1 200px;
+      flex: 2 1 220px;
     }
     .item-variant {
-      flex: 1 1 160px;
+      flex: 1 1 170px;
     }
     .item-qty {
       flex: 0 1 90px;
     }
     .item-dose {
-      flex: 1 1 180px;
+      flex: 1 1 240px;
+    }
+    .refill-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      flex: 0 1 auto;
+      white-space: nowrap;
+    }
+    .refill-group mat-checkbox {
+      // Same height as the outline input box (56px): box+label stay centered
+      // on the neighboring field regardless of error space below the inputs.
+      height: 56px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .refill-group .refill-count {
+      width: 150px;
+      flex: 0 0 auto;
+      animation: fadeSlideIn 0.25s ease-out;
+    }
+    .item-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding-bottom: 0.5rem;
+    }
+    @media (max-width: 600px) {
+      .dialog-body,
+      .items {
+        overflow-x: hidden;
+      }
+      .item-card {
+        min-width: 0;
+      }
+      .item-main,
+      .item-sub {
+        flex-direction: column;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        min-width: 0;
+      }
+      .item-medicine,
+      .item-variant,
+      .item-qty,
+      .item-dose {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+      }
+      mat-form-field {
+        min-width: 0;
+        max-width: 100%;
+      }
+      .refill-group {
+        flex-wrap: wrap;
+        align-items: center;
+        white-space: normal;
+        padding-bottom: 1rem;
+      }
+      .refill-group mat-checkbox {
+        height: auto;
+      }
+      .refill-group .refill-count {
+        width: 100%;
+        flex: 1 1 auto;
+      }
     }
     .new-patient-banner {
       display: flex;

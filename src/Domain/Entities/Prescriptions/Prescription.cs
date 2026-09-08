@@ -18,9 +18,6 @@ public class Prescription : BaseEntity
     public DateOnly IssuedDate { get; private set; }
     public PrescriptionStatus Status { get; private set; }
 
-    public bool IsRefillable { get; private set; }
-    public int RefillsAllowed { get; private set; }
-    public int RefillsUsed { get; private set; }
     public byte[] RowVersion { get; set; } = [];
 
     private readonly List<PrescriptionItem> _items = new();
@@ -29,33 +26,34 @@ public class Prescription : BaseEntity
     private Prescription() { }
 
     public Prescription(Guid doctorId, Guid patientId, DateOnly issuedDate,
-        string? diagnosis = null, bool isRefillable = false, int refillsAllowed = 0)
+        string? diagnosis = null)
     {
         if (doctorId == Guid.Empty)
             throw new ArgumentException("DoctorId is required.", nameof(doctorId));
         if (patientId == Guid.Empty)
             throw new ArgumentException("PatientId is required.", nameof(patientId));
-        if (isRefillable && refillsAllowed <= 0)
-            throw new ArgumentException("A refillable prescription must allow at least one refill.", nameof(refillsAllowed));
 
         DoctorId = doctorId;
         PatientId = patientId;
         Diagnosis = diagnosis?.Trim();
         IssuedDate = issuedDate;
         Status = PrescriptionStatus.Pending;
-        IsRefillable = isRefillable;
-        RefillsAllowed = refillsAllowed;
-        RefillsUsed = 0;
 
         RaiseDomainEvent(new PrescriptionCreatedEvent(Id, DateTime.UtcNow));
     }
 
-    public void AddItem(Guid medicineVariantId, int prescribedQuantity, string? dosageInstructions = null)
+    public void AddItem(
+        Guid medicineVariantId,
+        int prescribedQuantity,
+        string? dosageInstructions = null,
+        bool isRefillable = false,
+        int refillsAllowed = 0,
+        int refillIntervalDays = 0)
     {
         if (Status is PrescriptionStatus.Cancelled or PrescriptionStatus.Expired)
             throw new InvalidPrescriptionStatusException($"Cannot add items to a prescription in '{Status}' status.");
 
-        _items.Add(new PrescriptionItem(Id, medicineVariantId, prescribedQuantity, dosageInstructions));
+        _items.Add(new PrescriptionItem(Id, medicineVariantId, prescribedQuantity, dosageInstructions, isRefillable, refillsAllowed, refillIntervalDays));
     }
 
     public void Cancel()
@@ -87,7 +85,9 @@ public class Prescription : BaseEntity
             throw new InvalidPrescriptionStatusException($"Prescription '{Id}' has no items to dispense.");
     }
 
-    public void ApplyDispensedQuantities(IReadOnlyDictionary<Guid, int> quantitiesByPrescriptionItemId)
+    public void ApplyDispensedQuantities(
+        IReadOnlyDictionary<Guid, int> quantitiesByPrescriptionItemId,
+        DateOnly dispensedOn)
     {
         foreach (var (itemId, quantity) in quantitiesByPrescriptionItemId)
         {
@@ -96,6 +96,7 @@ public class Prescription : BaseEntity
                     $"Prescription item '{itemId}' does not belong to prescription '{Id}'.");
 
             item.RecordDispensed(quantity);
+            item.SetLastDispensedAt(dispensedOn);
         }
 
         Status = _items.All(i => i.IsFullyDispensed)
@@ -108,26 +109,55 @@ public class Prescription : BaseEntity
             quantitiesByPrescriptionItemId.Sum(kv => kv.Value)));
     }
 
-    public void EnsureEligibleForRefill()
+    /// <summary>
+    /// Refills a single item. Only that item must be fully dispensed; the rest
+    /// of the prescription may be in any dispensed state. Cancelled/expired
+    /// prescriptions can never be refilled.
+    /// </summary>
+    public void RegisterItemRefill(Guid prescriptionItemId)
+        => RegisterItemsRefill([prescriptionItemId]);
+
+    /// <summary>
+    /// Refills several items atomically: every id is validated first so a
+    /// partially-eligible batch never applies half a refill.
+    /// </summary>
+    public void RegisterItemsRefill(IReadOnlyCollection<Guid> prescriptionItemIds)
     {
-        if (!IsRefillable)
-            throw new RefillNotEligibleException($"Prescription '{Id}' is not marked as refillable.");
-        if (Status != PrescriptionStatus.FullyDispensed)
-            throw new RefillNotEligibleException($"Prescription '{Id}' must be fully dispensed before it can be refilled.");
-        if (RefillsUsed >= RefillsAllowed)
-            throw new RefillNotEligibleException(
-                $"Prescription '{Id}' has no refills remaining ({RefillsUsed}/{RefillsAllowed} used).");
+        if (Status is PrescriptionStatus.Cancelled or PrescriptionStatus.Expired)
+            throw new InvalidPrescriptionStatusException($"Prescription '{Id}' cannot be refilled while in '{Status}' status.");
+
+        if (prescriptionItemIds.Count == 0)
+            throw new ArgumentException("At least one prescription item is required.", nameof(prescriptionItemIds));
+
+        var distinctIds = prescriptionItemIds.Distinct().ToList();
+        var targets = new List<PrescriptionItem>(distinctIds.Count);
+        foreach (var itemId in distinctIds)
+        {
+            var item = _items.SingleOrDefault(i => i.Id == itemId)
+                ?? throw new InvalidPrescriptionStatusException(
+                    $"Prescription item '{itemId}' does not belong to prescription '{Id}'.");
+            // Validate all before mutating any (atomic batch semantics).
+            item.EnsureEligibleForRefill();
+            targets.Add(item);
+        }
+
+        foreach (var item in targets)
+            item.RegisterRefill();
+
+        RefreshStatusAfterRefill();
+        RaiseDomainEvent(new PrescriptionRefilledEvent(Id, distinctIds.AsReadOnly(), DateTime.UtcNow));
     }
 
-    public void RegisterRefill()
+    private void RefreshStatusAfterRefill()
     {
-        EnsureEligibleForRefill();
-        RefillsUsed++;
+        if (_items.All(i => i.IsFullyDispensed))
+        {
+            Status = PrescriptionStatus.FullyDispensed;
+            return;
+        }
 
-        foreach (var item in _items)
-            item.ResetForRefill();
-
-        Status = PrescriptionStatus.Pending;
-        RaiseDomainEvent(new PrescriptionRefilledEvent(Id, DateTime.UtcNow));
+        Status = _items.Any(i => i.DispensedQuantity.Value > 0)
+            ? PrescriptionStatus.PartiallyDispensed
+            : PrescriptionStatus.Pending;
     }
 }

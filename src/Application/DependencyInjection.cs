@@ -20,6 +20,9 @@ public static class DependencyInjection
 
         services.AddScoped<DispensingDomainService>();
 
+        // Required for IStringLocalizer<T> (backend localizable messages).
+        services.AddLocalization();
+
         return services;
     }
 }

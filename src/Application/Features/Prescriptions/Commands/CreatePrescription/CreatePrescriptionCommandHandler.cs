@@ -65,7 +65,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
 
                 try
                 {
-                    prescription.AddItem(item.MedicineVariantId, item.Quantity, item.DosageInstructions);
+                    prescription.AddItem(item.MedicineVariantId, item.Quantity, item.DosageInstructions, item.IsRefillable, item.RefillsAllowed, item.RefillIntervalDays);
                 }
                 catch (DomainException ex) when (ex is InvalidPrescriptionStatusException)
                 {

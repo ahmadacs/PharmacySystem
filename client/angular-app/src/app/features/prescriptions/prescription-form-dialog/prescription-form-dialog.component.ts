@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import {
@@ -14,7 +14,7 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
-import { MatError, MatFormField, MatLabel, MatSuffix } from '@angular/material/form-field';
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
@@ -53,6 +53,8 @@ function notInFuture(control: FormControl<Date | null>): Record<string, boolean>
   return startOfDay(value) <= startOfDay(new Date()) ? null : { futureDate: true };
 }
 
+const SAUDI_PHONE_PATTERN = /^(?:\+9665\d{8}|05\d{8}|5\d{8})$/;
+
 type PatientPhoneCheckPayload = {
   id?: string;
   firstName?: string | null;
@@ -80,6 +82,7 @@ interface PatientPhoneCheckResponse {
     MatInput,
     MatLabel,
     MatError,
+    MatHint,
     MatSuffix,
     MatSelect,
     MatOption,
@@ -115,9 +118,20 @@ export class PrescriptionFormDialogComponent {
   protected readonly phoneSearching = signal(false);
   protected readonly previousPrescriptions = signal<{ id: string; issuedDate: string; status: string; itemCount: number }[]>([]);
   protected readonly isReadOnlyPatient = computed(() => this.foundPatient() !== null);
+  // Live hint key while typing the phone (null = no hint)
+  protected readonly phoneHintKey = signal<string | null>(null);
+
+  // Phone-first flow: the rest of the form appears only after a phone is entered and looked up
+  protected readonly showRest = computed(
+    () => this.phoneSearching() || this.foundPatient() !== null || this.isNewPatient()
+  );
+  private readonly restAnchor = viewChild<ElementRef<HTMLElement>>('restAnchor');
 
   // Helper for template
   protected readonly isArabic = computed(() => this.translate.currentLang() === 'ar');
+
+  // Preset refill intervals (days) the doctor picks from. 0 = no time limit.
+  protected readonly refillIntervalOptions = [0, 7, 14, 15, 30, 60, 90];
 
   // Medicine search
   protected readonly medicineSearchControls: FormControl<string | MedicineListItemDto>[] = [];
@@ -140,8 +154,6 @@ export class PrescriptionFormDialogComponent {
     patientPhoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(30), Validators.pattern(/^(?:\+9665\d{8}|05\d{8}|5\d{8})$/)] }),
     issuedDate: new FormControl<Date | null>(startOfDay(new Date()), { validators: [Validators.required, notInFuture] }),
     diagnosis: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
-    isRefillable: new FormControl(false, { nonNullable: true }),
-    refillsAllowed: new FormControl(0, { nonNullable: true, validators: [Validators.min(0), Validators.max(99)] }),
     items: new FormArray<FormGroup>([])
   });
 
@@ -160,17 +172,42 @@ export class PrescriptionFormDialogComponent {
     this.form.controls.patientPhoneNumber.valueChanges.subscribe((val) => {
       if (phoneTimer) clearTimeout(phoneTimer);
       const phone = (val ?? '').trim();
-      const saudiPattern = /^(?:\+9665\d{8}|05\d{8}|5\d{8})$/;
-      if (!saudiPattern.test(phone)) {
+      if (!SAUDI_PHONE_PATTERN.test(phone)) {
         this.foundPatient.set(null);
         this.isNewPatient.set(false);
         this.previousPrescriptions.set([]);
         this.setPatientReadonly(false);
+        this.phoneHintKey.set(this.computePhoneHintKey(phone));
         return;
       }
+      this.phoneHintKey.set(null);
       phoneTimer = setTimeout(() => void this.searchPatient(phone), 400);
     });
 
+    // Gentle reveal: scroll the least amount needed when the rest appears
+    let restWasShown = false;
+    effect(() => {
+      const shown = this.showRest();
+      if (shown && !restWasShown) {
+        restWasShown = true;
+        setTimeout(() => {
+          this.restAnchor()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+      } else if (!shown) {
+        restWasShown = false;
+      }
+    });
+  }
+
+  private computePhoneHintKey(phone: string): string | null {
+    if (!phone || SAUDI_PHONE_PATTERN.test(phone)) return null;
+    const normalized = phone.replace(/[\s-]/g, '');
+    const digits = normalized.replace(/\D/g, '');
+    const fullLength = normalized.startsWith('+') ? 12 : 10;
+    if (/^\+?\d+$/.test(normalized) && digits.length < fullLength) {
+      return 'dialogs.prescriptionForm.phoneIncompleteHint';
+    }
+    return 'dialogs.prescriptionForm.phoneInvalidHint';
   }
 
   private setPatientReadonly(readonly: boolean): void {
@@ -258,14 +295,27 @@ export class PrescriptionFormDialogComponent {
         return next;
       });
     });
-    this.items.push(
-      new FormGroup({
-        medicineId: new FormControl<string | null>(null, { validators: [Validators.required] }),
-        medicineVariantId: new FormControl<string | null>(null, { validators: [Validators.required] }),
-        quantity: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
-        dosageInstructions: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(300)] })
-      })
-    );
+    const group = new FormGroup({
+      medicineId: new FormControl<string | null>(null, { validators: [Validators.required] }),
+      medicineVariantId: new FormControl<string | null>(null, { validators: [Validators.required] }),
+      quantity: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
+      dosageInstructions: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(300)] }),
+        isRefillable: new FormControl(false, { nonNullable: true }),
+        refillsAllowed: new FormControl(0, { nonNullable: true, validators: [Validators.min(0), Validators.max(99)] }),
+        refillIntervalDays: new FormControl(0, { nonNullable: true, validators: [Validators.pattern(/^\d+$/), Validators.min(0), Validators.max(365)] })
+    });
+    // Refill UX: the count field is only shown while refillable is on.
+    // Unchecking resets it to 0; checking pre-fills 1 so the user rarely types.
+    group.get('isRefillable')?.valueChanges.subscribe((refillable) => {
+      const allowed = group.get('refillsAllowed');
+      if (!refillable) {
+        allowed?.setValue(0);
+        allowed?.setErrors(null);
+      } else if (Number(allowed?.value ?? 0) < 1) {
+        allowed?.setValue(1);
+      }
+    });
+    this.items.push(group);
   }
 
   removeItem(index: number): void {
@@ -325,7 +375,16 @@ export class PrescriptionFormDialogComponent {
   };
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
+    let refillInvalid = false;
+    for (const group of this.items.controls) {
+      const refillable = group.get('isRefillable')?.value === true;
+      const allowed = Number(group.get('refillsAllowed')?.value ?? 0);
+      if (refillable && (!Number.isInteger(allowed) || allowed < 1)) {
+        group.get('refillsAllowed')?.setErrors({ refillRequired: true });
+        refillInvalid = true;
+      }
+    }
+    if (this.form.invalid || refillInvalid || this.submitting()) {
       this.form.markAllAsTouched();
       this.items.markAllAsTouched();
       return;
@@ -341,12 +400,13 @@ export class PrescriptionFormDialogComponent {
         patientPhoneNumber: value.patientPhoneNumber || undefined,
         diagnosis: value.diagnosis || undefined,
         issuedDate: toDateString(value.issuedDate)!,
-        isRefillable: value.isRefillable,
-        refillsAllowed: value.refillsAllowed,
         items: value.items.map((item) => ({
           medicineVariantId: item['medicineVariantId'] as string,
           quantity: item['quantity'],
-          dosageInstructions: item['dosageInstructions'] || undefined
+          dosageInstructions: item['dosageInstructions'] || undefined,
+          isRefillable: item['isRefillable'] as boolean,
+          refillsAllowed: item['refillsAllowed'] as number,
+          refillIntervalDays: Number(item['refillIntervalDays']) || 0
         }))
       });
       this.toast.show('Prescription created.', 'success');

@@ -93,7 +93,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
                                     p.Patient != null ? p.Patient.PhoneNumber : null,
                                     p.IssuedDate,
                                     p.Status,
-                                    p.IsRefillable,
                                     p.Items.Count))
                     .Take(5)
                     .ToList(),
@@ -109,7 +108,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
                                        p.Patient != null ? p.Patient.PhoneNumber : null,
                                        p.IssuedDate,
                                        p.Status,
-                                       p.IsRefillable,
                                        p.Items.Count))
                     .Take(5)
                     .ToList()),

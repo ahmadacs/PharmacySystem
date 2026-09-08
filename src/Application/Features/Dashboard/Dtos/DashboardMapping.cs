@@ -16,7 +16,6 @@ public static class DashboardMapping
             row.PatientPhoneNumber,
             row.IssuedDate,
             row.Status.ToString(),
-            row.IsRefillable,
             row.ItemCount);
 
     public static DashboardSummaryDto ToDto(

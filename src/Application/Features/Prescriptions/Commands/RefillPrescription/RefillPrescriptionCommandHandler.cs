@@ -19,13 +19,16 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
 
     public async Task<Result> Handle(RefillPrescriptionCommand request, CancellationToken cancellationToken)
     {
+        if (request.ItemIds.Count == 0)
+            return Result.Failure("At least one prescription item is required.", 400);
+
         var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken);
         if (prescription is null)
             return Result.Failure($"Resource '{nameof(Prescription)}' with id '{request.Id}' was not found.", 404);
 
         try
         {
-            prescription.RegisterRefill();
+            prescription.RegisterItemsRefill(request.ItemIds);
         }
         catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
         {

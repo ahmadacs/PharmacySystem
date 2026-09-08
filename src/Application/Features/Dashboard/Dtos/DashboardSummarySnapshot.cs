@@ -15,7 +15,6 @@ public sealed record DashboardPrescriptionRow(
     string? PatientPhoneNumber,
     DateOnly IssuedDate,
     PrescriptionStatus Status,
-    bool IsRefillable,
     int ItemCount);
 
 /// <summary>

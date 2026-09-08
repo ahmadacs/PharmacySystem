@@ -7,8 +7,26 @@
     }
     .subtitle {
       margin: -0.5rem 0 0.5rem;
+      // Outside mat-dialog-content, so it needs the same side gutter or its
+      // text clips at the dialog edge (as seen on small screens).
+      padding: 16px 24px;
       color: var(--mat-sys-on-surface-variant);
       font-size: 0.875rem;
+    }
+    .file-upload-section {
+      padding: 0.25rem 0 0.75rem;
+    }
+    .file-upload-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+    .file-upload-label .file-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .row {
       display: flex;

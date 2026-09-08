@@ -8,7 +8,10 @@ public record PrescriptionCreatedEvent(Guid PrescriptionId, DateTime OccurredAtU
 public record PrescriptionCancelledEvent(Guid PrescriptionId, DateTime OccurredAtUtc)
     : DomainEvent(OccurredAtUtc);
 
-public record PrescriptionRefilledEvent(Guid PrescriptionId, DateTime OccurredAtUtc)
+public record PrescriptionRefilledEvent(
+    Guid PrescriptionId,
+    IReadOnlyList<Guid> PrescriptionItemIds,
+    DateTime OccurredAtUtc)
     : DomainEvent(OccurredAtUtc);
 
 public record PrescriptionDispensedEvent(Guid PrescriptionId, DateTime OccurredAtUtc, int TotalDispensedQuantity)

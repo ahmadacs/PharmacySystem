@@ -8,7 +8,12 @@ public sealed record PrescriptionItemDto(
     int PrescribedQuantity,
     int DispensedQuantity,
     int RemainingQuantity,
-    string? DosageInstructions);
+    string? DosageInstructions,
+    bool IsRefillable,
+    int RefillsAllowed,
+    int RefillsUsed,
+    int RefillIntervalDays,
+    DateOnly? LastDispensedAt);
 
 public sealed record VariantInfo(string MedicineName, string VariantName);
 
@@ -25,7 +30,6 @@ public sealed record PrescriptionListRow(
     string? PatientPhone,
     DateOnly IssuedDate,
     string Status,
-    bool IsRefillable,
     int ItemCount);
 
 public sealed record PrescriptionListItemDto(
@@ -38,7 +42,6 @@ public sealed record PrescriptionListItemDto(
     string? PatientPhoneNumber,
     DateOnly IssuedDate,
     string Status,
-    bool IsRefillable,
     int ItemCount);
 
 public sealed record PrescriptionDetailsDto(
@@ -52,9 +55,6 @@ public sealed record PrescriptionDetailsDto(
     string? Diagnosis,
     DateOnly IssuedDate,
     string Status,
-    bool IsRefillable,
-    int RefillsAllowed,
-    int RefillsUsed,
     Guid? CreatedBy,
     DateTime CreatedAt,
     IReadOnlyList<PrescriptionItemDto> Items);

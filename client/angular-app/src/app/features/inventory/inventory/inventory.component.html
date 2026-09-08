@@ -305,7 +305,7 @@
         <ng-container matColumnDef="daysToExpiry">
           <th mat-header-cell *matHeaderCellDef mat-sort-header="daysToExpiry">{{ 'inventory.tables.daysToExpiry' | translate }}</th>
           <td mat-cell *matCellDef="let row">
-            <span [class.expired]="row.daysRemaining < 0">{{ row.daysRemaining }}</span>
+            <span [class.expired]="row.daysRemaining < 0">{{ row.daysRemaining < 0 ? ('inventory.chips.expired' | translate) : row.daysRemaining + ' ' + ('inventory.days' | translate) }}</span>
           </td>
         </ng-container>
 

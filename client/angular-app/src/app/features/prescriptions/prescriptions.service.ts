@@ -45,7 +45,11 @@ export class PrescriptionsService {
     return firstValueFrom(this.http.post<void>(`${this.baseUrl}/${id}/cancel`, null));
   }
 
-  refill(id: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`${this.baseUrl}/${id}/refill`, null));
+  refillItem(prescriptionId: string, itemId: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.baseUrl}/${prescriptionId}/items/${itemId}/refill`, null));
+  }
+
+  refillItems(prescriptionId: string, itemIds: string[]): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.baseUrl}/${prescriptionId}/refill`, { itemIds }));
   }
 }

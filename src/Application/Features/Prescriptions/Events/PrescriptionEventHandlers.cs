@@ -20,8 +20,11 @@ public sealed record PrescriptionCreatedNotification(Guid PrescriptionId, DateTi
 public sealed record PrescriptionCancelledNotification(Guid PrescriptionId, DateTime OccurredAtUtc)
     : PrescriptionCancelledEvent(PrescriptionId, OccurredAtUtc), INotification;
 
-public sealed record PrescriptionRefilledNotification(Guid PrescriptionId, DateTime OccurredAtUtc)
-    : PrescriptionRefilledEvent(PrescriptionId, OccurredAtUtc), INotification;
+public sealed record PrescriptionRefilledNotification(
+    Guid PrescriptionId,
+    IReadOnlyList<Guid> PrescriptionItemIds,
+    DateTime OccurredAtUtc)
+    : PrescriptionRefilledEvent(PrescriptionId, PrescriptionItemIds, OccurredAtUtc), INotification;
 
 public sealed record PrescriptionDispensedNotification(
     Guid PrescriptionId,
@@ -100,8 +103,8 @@ public sealed class PrescriptionRefilledNotificationHandler : INotificationHandl
 
     public Task Handle(PrescriptionRefilledNotification notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Prescription {PrescriptionId} refilled at {OccurredAtUtc}",
-            notification.PrescriptionId, notification.OccurredAtUtc);
+        _logger.LogInformation("Prescription {PrescriptionId} refilled ({ItemCount} item(s)) at {OccurredAtUtc}",
+            notification.PrescriptionId, notification.PrescriptionItemIds.Count, notification.OccurredAtUtc);
         return Task.CompletedTask;
     }
 }

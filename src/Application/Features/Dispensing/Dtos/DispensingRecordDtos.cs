@@ -44,6 +44,17 @@ public sealed record DispensingRecordDto(
     string? Notes,
     IReadOnlyList<DispensingRecordItemDto> Items);
 
+/// <summary>
+/// Dispense result: the created record id, prominent totals, and non-blocking
+/// messages already localized for the request culture (partial shortfall
+/// first, then near-expiry batches). Displayed as-is by the frontend.
+/// </summary>
+public sealed record DispensePrescriptionResponse(
+    Guid Id,
+    int RequestedQuantity,
+    int DispensedQuantity,
+    IReadOnlyList<string> Warnings);
+
 public static class DispensingMapping
 {
     public static string GetVariantDisplayName(MedicineForm form, MedicineUnit unit, decimal strength)

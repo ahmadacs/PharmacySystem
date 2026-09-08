@@ -195,11 +195,11 @@ public static class DbSeeder
 
         var prescriptions = new List<Prescription>
         {
-            new(doctorProfile.Id, john.Id, DateOnly.FromDateTime(DateTime.UtcNow), "Headache", false, 3),
-            new(doctorProfile.Id, jane.Id, DateOnly.FromDateTime(DateTime.UtcNow), "Cold symptoms", false, 2),
+            new(doctorProfile.Id, john.Id, DateOnly.FromDateTime(DateTime.UtcNow), "Headache"),
+            new(doctorProfile.Id, jane.Id, DateOnly.FromDateTime(DateTime.UtcNow), "Cold symptoms"),
         };
 
-        prescriptions[0].AddItem(variants[0].Id, 10, "One tablet every 6 hours");
+        prescriptions[0].AddItem(variants[0].Id, 10, "One tablet every 6 hours", isRefillable: true, refillsAllowed: 3, refillIntervalDays: 30);
         prescriptions[1].AddItem(variants.Count > 1 ? variants[1].Id : variants[0].Id, 5, "One tablet at bedtime");
 
         foreach (var prescription in prescriptions)

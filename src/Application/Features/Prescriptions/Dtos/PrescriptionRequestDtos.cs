@@ -13,6 +13,15 @@ public sealed record PrescriptionItemRequest
 
     [StringLength(300)]
     public string? DosageInstructions { get; init; }
+
+    public bool IsRefillable { get; init; }
+
+    [Range(0, 99)]
+    public int RefillsAllowed { get; init; }
+
+    /// <summary>Minimum days between dispenses. 0 = no time constraint.</summary>
+    [Range(0, 365)]
+    public int RefillIntervalDays { get; init; }
 }
 
 public sealed record CreatePrescriptionRequest
@@ -37,11 +46,6 @@ public sealed record CreatePrescriptionRequest
 
     [NotInTheFuture]
     public DateOnly IssuedDate { get; init; }
-
-    public bool IsRefillable { get; init; }
-
-    [Range(0, 99)]
-    public int RefillsAllowed { get; init; }
 
     [MinLength(1)]
     public List<PrescriptionItemRequest> Items { get; init; } = [];

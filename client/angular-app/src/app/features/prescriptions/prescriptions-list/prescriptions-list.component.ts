@@ -159,7 +159,11 @@ export class PrescriptionsListComponent {
   }
 
   openCreate(): void {
-    const ref = this.dialog.open(PrescriptionFormDialogComponent, { width: '980px', maxWidth: '96vw' });
+    const ref = this.dialog.open(PrescriptionFormDialogComponent, {
+      width: '980px',
+      maxWidth: '96vw',
+      panelClass: 'sidenav-aware-dialog'
+    });
     ref.afterClosed().subscribe((created: boolean) => {
       if (created) {
         this.refreshPrescriptions();
