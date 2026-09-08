@@ -3,10 +3,12 @@ using Application.Common.Models;
 using Application.Common.Options;
 using Application.Features.Inventory.Dtos;
 using Application.Features.Medicines.Dtos;
+using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Medicines.Commands;
 
@@ -16,14 +18,17 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     private readonly IUnitOfWork _uow;
     private readonly ICurrentUserService _currentUser;
     private readonly NotificationOptions _notificationOptions;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public AddBatchCommandHandler(IMedicineRepository repo, IUnitOfWork uow,
-        ICurrentUserService currentUser, NotificationOptions notificationOptions)
+        ICurrentUserService currentUser, NotificationOptions notificationOptions,
+        IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
         _currentUser = currentUser;
         _notificationOptions = notificationOptions;
+        _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(AddBatchCommand request, CancellationToken cancellationToken)
@@ -36,22 +41,22 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
             // Fallback to single fetch if not found via batch method (e.g., no batches yet)
             variant = await _repo.GetVariantByIdAsync(req.MedicineVariantId, cancellationToken);
             if (variant is null)
-                return Result<Guid>.Failure($"Resource 'MedicineVariant' with id '{req.MedicineVariantId}' was not found.", 404);
+                return Result<Guid>.Failure(_localizer["ResourceNotFound", "MedicineVariant", req.MedicineVariantId].Value, 404);
         }
 
         // Get the parent medicine to generate batch number
         var medicineInfo = await _repo.GetByIdWithVariantsAsync(variant.MedicineId, cancellationToken);
         if (medicineInfo is null)
-            return Result<Guid>.Failure($"Resource 'Medicine' with id '{variant.MedicineId}' was not found.", 404);
+            return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", variant.MedicineId].Value, 404);
 
         // Generate batch number: First 3 letters of medicine name + variant abbreviation + date
         var batchNumber = GenerateBatchNumber(medicineInfo.Name, variant);
 
         if (await _repo.BatchNumberExistsAsync(batchNumber, null, cancellationToken))
-            return Result<Guid>.Failure($"A batch with number '{batchNumber}' already exists.", 409);
+            return Result<Guid>.Failure(_localizer["BatchNumberExists", batchNumber].Value, 409);
 
         if (req.ExpiryDate <= req.ManufactureDate)
-            return Result<Guid>.Failure("The expiry date must be after the manufacture date.", 409);
+            return Result<Guid>.Failure(_localizer["ExpiryAfterManufacture"].Value, 409);
 
         // Packages are converted to base units via the variant's UnitOfMeasure
         // (e.g. 5 boxes of 30 tablets => 150 tablets), so stored quantities are

@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using Application.Resources;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using WebApi.Common;
 
 namespace WebApi.Exceptions;
@@ -10,15 +12,17 @@ namespace WebApi.Exceptions;
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IStringLocalizer<SharedResource> localizer)
     {
         _logger = logger;
+        _localizer = localizer;
     }
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        var (statusCode, response) = Map(exception);
+        var (statusCode, response) = Map(exception, _localizer);
 
         if (statusCode == StatusCodes.Status500InternalServerError)
             _logger.LogError(exception, "Unhandled exception for {Path}", httpContext.Request.Path);
@@ -31,14 +35,15 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         return true;
     }
 
-    private static (int StatusCode, ErrorResponse Response) Map(Exception exception)
+    private static (int StatusCode, ErrorResponse Response) Map(Exception exception, IStringLocalizer<SharedResource> localizer)
     {
         switch (exception)
         {
-            case EntityNotFoundException:
-                return (StatusCodes.Status404NotFound, S(exception.Message));
+            case EntityNotFoundException e:
+                return (StatusCodes.Status404NotFound,
+                    S(localizer["ResourceNotFound", e.EntityType.Name, e.EntityId].Value));
             case ForbiddenResourceException:
-                return (StatusCodes.Status403Forbidden, S(exception.Message));
+                return (StatusCodes.Status403Forbidden, S(localizer["Forbidden"].Value));
             case InvalidCredentialsException:
             case AccountLockedOutException:
             case AccountDisabledException:
@@ -49,8 +54,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             case InvalidPrescriptionStatusException:
                 return (StatusCodes.Status409Conflict, S(exception.Message));
             case DbUpdateConcurrencyException:
-                return (StatusCodes.Status409Conflict,
-                    S("The record was modified by another request. Refresh and try again."));
+                return (StatusCodes.Status409Conflict, S(localizer["ConcurrencyConflict"].Value));
             case MissingMedicineVariantException:
                 return (StatusCodes.Status400BadRequest, S(exception.Message));
             case InsufficientStockException:
@@ -59,7 +63,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             case DomainException:
                 return (StatusCodes.Status422UnprocessableEntity, S(exception.Message));
             default:
-                return (StatusCodes.Status500InternalServerError, S("An unexpected error occurred."));
+                return (StatusCodes.Status500InternalServerError, S(localizer["UnexpectedError"].Value));
         }
     }
 

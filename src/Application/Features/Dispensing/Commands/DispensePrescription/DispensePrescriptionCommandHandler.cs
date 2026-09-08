@@ -49,7 +49,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         var req = request.Request;
         var prescription = await _prescriptions.GetByIdWithItemsAsync(req.PrescriptionId, cancellationToken);
         if (prescription is null)
-            return Result<DispensePrescriptionResponse>.Failure($"Resource '{nameof(Prescription)}' with id '{req.PrescriptionId}' was not found.", 404);
+            return Result<DispensePrescriptionResponse>.Failure(_localizer["ResourceNotFound", nameof(Prescription), req.PrescriptionId].Value, 404);
 
         var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
         if (authResult.IsSuccess)
@@ -58,7 +58,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
 
             var pharmacist = await _staff.GetPharmacistAsync(userId, cancellationToken);
             if (pharmacist is null)
-                return Result<DispensePrescriptionResponse>.Failure("Only a Pharmacist can dispense prescriptions.", 403);
+                return Result<DispensePrescriptionResponse>.Failure(_localizer["OnlyPharmacistDispense"].Value, 403);
             var pharmacistId = pharmacist.Value.Id;
 
             var variantIds = prescription.Items.Select(i => i.MedicineVariantId).Distinct().ToList();

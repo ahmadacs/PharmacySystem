@@ -217,15 +217,16 @@ app.UseSerilogRequestLogging();
 // Request timing middleware: logs slow requests (threshold configurable).
 app.UseMiddleware<RequestTimingMiddleware>();
 
-app.UseExceptionHandler();
-
 // Request culture from Accept-Language (frontend sends the UI language):
-// drives IStringLocalizer messages (dispense warnings/errors) per request.
+// drives IStringLocalizer messages per request. Must run BEFORE
+// UseExceptionHandler so localized error handling also sees the culture.
 var supportedCultures = new[] { "en", "ar" };
 app.UseRequestLocalization(new RequestLocalizationOptions()
     .SetDefaultCulture(supportedCultures[0])
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures));
+
+app.UseExceptionHandler();
 
 app.UseRouting();
 

@@ -1,8 +1,10 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
+using Application.Resources;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Users.Commands;
 
@@ -10,11 +12,13 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
 {
     private readonly IUserManager _users;
     private readonly IStaffService _staff;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateUserCommandHandler(IUserManager users, IStaffService staff)
+    public CreateUserCommandHandler(IUserManager users, IStaffService staff, IStringLocalizer<SharedResource> localizer)
     {
         _users = users;
         _staff = staff;
+        _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
@@ -22,7 +26,7 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
         var req = request.Request;
         var role = req.Role.Trim();
         if (!Roles.All.Contains(role))
-            return Result<Guid>.Failure($"Unknown role '{role}'.", 409);
+            return Result<Guid>.Failure(_localizer["UnknownRole", role].Value, 409);
 
         var result = await _users.TryCreateUserAsync(
             req.Email,
@@ -33,7 +37,7 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
             cancellationToken);
 
         if (result.UserId is null)
-            return Result<Guid>.Failure($"Unable to create the user: {string.Join("; ", result.Errors)}", 409);
+            return Result<Guid>.Failure(_localizer["CreateUserFailed", string.Join("; ", result.Errors)].Value, 409);
 
         var userId = result.UserId.Value;
 

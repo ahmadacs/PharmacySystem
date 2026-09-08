@@ -2,10 +2,12 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
 using Application.Features.Prescriptions.Common;
+using Application.Resources;
 using Domain.Entities.Files;
 using Domain.Exceptions;
 using Application.Features.Files.Dtos;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Files.Queries.ListFiles;
 
@@ -15,25 +17,27 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
     private readonly ICurrentUserService _currentUser;
     private readonly IPrescriptionRepository _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public ListFilesQueryHandler(IFileAttachmentRepository files, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth)
+    public ListFilesQueryHandler(IFileAttachmentRepository files, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
     {
         _files = files;
         _currentUser = currentUser;
         _prescriptions = prescriptions;
         _resourceAuth = resourceAuth;
+        _localizer = localizer;
     }
 
     public async Task<Result<IReadOnlyList<FileAttachmentDto>>> Handle(ListFilesQuery request, CancellationToken cancellationToken)
     {
-        if (request.EntityId == Guid.Empty) return Result<IReadOnlyList<FileAttachmentDto>>.Failure("EntityId is required.", 422);
+        if (request.EntityId == Guid.Empty) return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["EntityIdRequired"].Value, 422);
         if (!Enum.TryParse<Domain.Entities.Files.FileEntityType>(request.EntityType, true, out var entityType))
-            return Result<IReadOnlyList<FileAttachmentDto>>.Failure($"Invalid entity type '{request.EntityType}'. Use Medicine or Prescription.", 422);
+            return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription"].Value, 422);
 
         if (entityType == FileEntityType.Medicine)
         {
             if (!_currentUser.Permissions.Contains(Permissions.Medicines.View))
-                return Result<IReadOnlyList<FileAttachmentDto>>.Failure("Missing permission to view medicine files.", 403);
+                return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["FileViewMedicine"].Value, 403);
         }
         else
         {
@@ -50,7 +54,7 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
                 }
             }
             else
-                return Result<IReadOnlyList<FileAttachmentDto>>.Failure($"Resource 'Prescription' with id '{request.EntityId}' was not found.", 404);
+                return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "Prescription", request.EntityId].Value, 404);
         }
 
         var list = await _files.ListByEntityAsync(entityType, request.EntityId, cancellationToken);

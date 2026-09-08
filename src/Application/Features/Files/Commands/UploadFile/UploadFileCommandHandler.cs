@@ -1,14 +1,17 @@
+using System.Globalization;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
 using Application.Common.Security;
 using Application.Features.Files.Dtos;
 using Application.Features.Prescriptions.Common;
+using Application.Resources;
 using Domain.Entities.Files;
 using Domain.Entities.Inventory;
 using Domain.Entities.Medicines;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 
 namespace Application.Features.Files.Commands.UploadFile;
@@ -36,8 +39,9 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
     private readonly ICurrentUserService _currentUser;
     private readonly IPrescriptionRepository _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public UploadFileCommandHandler(IFileAttachmentRepository files, IFileStorageService storage, IUnitOfWork uow, IOptions<FileStorageOptions> options, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth)
+    public UploadFileCommandHandler(IFileAttachmentRepository files, IFileStorageService storage, IUnitOfWork uow, IOptions<FileStorageOptions> options, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
     {
         _files = files;
         _storage = storage;
@@ -46,35 +50,38 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         _currentUser = currentUser;
         _prescriptions = prescriptions;
         _resourceAuth = resourceAuth;
+        _localizer = localizer;
     }
 
     public async Task<Result<FileAttachmentDto>> Handle(UploadFileCommand request, CancellationToken cancellationToken)
     {
         if (!AllowedContentTypes.Contains(request.ContentType))
-            return Result<FileAttachmentDto>.Failure($"File type '{request.ContentType}' is not allowed. Allowed: jpeg, png, pdf.", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["FileTypeNotAllowed", request.ContentType].Value, 422);
 
         var maxSize = _options.MaxFileSizeBytes > 0 ? _options.MaxFileSizeBytes : DefaultMaxSize;
         if (request.SizeBytes > maxSize)
-            return Result<FileAttachmentDto>.Failure($"File size {request.SizeBytes} exceeds limit {maxSize} bytes (5MB).", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["FileSizeExceeds",
+                request.SizeBytes.ToString(CultureInfo.InvariantCulture),
+                maxSize.ToString(CultureInfo.InvariantCulture)].Value, 422);
 
         if (request.SizeBytes <= 0)
-            return Result<FileAttachmentDto>.Failure("File is empty.", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["FileEmpty"].Value, 422);
 
         if (!Enum.TryParse<FileEntityType>(request.EntityType, true, out var entityType))
-            return Result<FileAttachmentDto>.Failure($"Invalid entity type '{request.EntityType}'. Use Medicine, Prescription, Batch, or InventoryAdjustment.", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription, Batch, InventoryAdjustment"].Value, 422);
 
         // Authorization per entity type
         if (entityType == FileEntityType.Medicine)
         {
             var hasPerm = _currentUser.Permissions.Contains(Permissions.Medicines.Create) || _currentUser.Permissions.Contains(Permissions.Medicines.Update);
-            if (!hasPerm) return Result<FileAttachmentDto>.Failure("Missing permission to upload medicine files.", 403);
+            if (!hasPerm) return Result<FileAttachmentDto>.Failure(_localizer["FileUploadMedicine"].Value, 403);
             var exists = await _files.MedicineExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'Medicine' with id '{request.EntityId}' was not found.", 404);
+            if (!exists) return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", "Medicine", request.EntityId].Value, 404);
         }
         else if (entityType == FileEntityType.Prescription)
         {
             var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
-            if (prescription is null) return Result<FileAttachmentDto>.Failure($"Resource 'Prescription' with id '{request.EntityId}' was not found.", 404);
+            if (prescription is null) return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", "Prescription", request.EntityId].Value, 404);
             try
             {
                 await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
@@ -87,20 +94,20 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         else if (entityType == FileEntityType.Batch)
         {
             var hasPerm = _currentUser.Permissions.Contains(Permissions.Inventory.View) || _currentUser.Permissions.Contains(Permissions.Inventory.Adjust);
-            if (!hasPerm) return Result<FileAttachmentDto>.Failure("Missing permission to upload batch files.", 403);
+            if (!hasPerm) return Result<FileAttachmentDto>.Failure(_localizer["FileUploadBatch"].Value, 403);
             var exists = await _files.BatchExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'MedicineBatch' with id '{request.EntityId}' was not found.", 404);
+            if (!exists) return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", "MedicineBatch", request.EntityId].Value, 404);
         }
         else if (entityType == FileEntityType.InventoryAdjustment)
         {
             var hasPerm = _currentUser.Permissions.Contains(Permissions.Inventory.Adjust);
-            if (!hasPerm) return Result<FileAttachmentDto>.Failure("Missing permission to upload inventory adjustment files.", 403);
+            if (!hasPerm) return Result<FileAttachmentDto>.Failure(_localizer["FileUploadInventory"].Value, 403);
             var exists = await _files.InventoryAdjustmentExistsAsync(request.EntityId, cancellationToken);
-            if (!exists) return Result<FileAttachmentDto>.Failure($"Resource 'InventoryAdjustment' with id '{request.EntityId}' was not found.", 404);
+            if (!exists) return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", "InventoryAdjustment", request.EntityId].Value, 404);
         }
         else
         {
-            return Result<FileAttachmentDto>.Failure($"Unsupported entity type '{entityType}'.", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["InvalidEntityType", entityType, "Medicine, Prescription, Batch, InventoryAdjustment"].Value, 422);
         }
 
         // Validate extension matches content type
@@ -113,14 +120,14 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
             _ => Array.Empty<string>()
         };
         if (!allowedExt.Contains(ext))
-            return Result<FileAttachmentDto>.Failure($"File extension '{ext}' does not match content type '{request.ContentType}'.", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["ExtensionMismatch", ext, request.ContentType].Value, 422);
 
         var header = new byte[8];
         request.Content.Position = 0;
         var read = await request.Content.ReadAsync(header, 0, 8, cancellationToken);
         request.Content.Position = 0;
         if (!HasValidSignature(request.ContentType, header, read))
-            return Result<FileAttachmentDto>.Failure("File content does not match its declared type.", 422);
+            return Result<FileAttachmentDto>.Failure(_localizer["ContentMismatch"].Value, 422);
 
         var blobPath = await _storage.SaveAsync(request.Content, request.FileName, request.ContentType, cancellationToken);
 

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InsufficientStockBatch" xml:space="preserve">
+    <value>Insufficient stock in batch '{0}' ({1}). Requested {2}, available {3}.</value>
+  </data>
+  <data name="InsufficientStockVariant" xml:space="preserve">
+    <value>Insufficient valid stock of {0}. Requested {1}, available {2}.</value>
+  </data>
+  <data name="PartialShortfall" xml:space="preserve">
+    <value>Only {0} of {1} units were available in valid stock — the remainder was not dispensed. Please secure the remaining quantity for the patient.</value>
+  </data>
+  <data name="BatchNearExpiry" xml:space="preserve">
+    <value>Batch {0} expires on {1} ({2} days remaining) — please counsel the patient to complete it in time.</value>
+  </data>
+  <data name="ResourceNotFound" xml:space="preserve">
+    <value>Resource '{0}' with id '{1}' was not found.</value>
+  </data>
+  <data name="Forbidden" xml:space="preserve">
+    <value>You are not allowed to access this resource.</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Invalid credentials.</value>
+  </data>
+  <data name="EmailOrPasswordIncorrect" xml:space="preserve">
+    <value>The email or password is incorrect.</value>
+  </data>
+  <data name="RefreshTokenInvalid" xml:space="preserve">
+    <value>The refresh token is invalid, expired or has been revoked.</value>
+  </data>
+  <data name="AccountDisabled" xml:space="preserve">
+    <value>This account has been disabled. Contact an administrator.</value>
+  </data>
+  <data name="SelfRegistration" xml:space="preserve">
+    <value>Self-registration is only available for Doctor and Pharmacist accounts.</value>
+  </data>
+  <data name="UnknownRole" xml:space="preserve">
+    <value>Unknown role '{0}'.</value>
+  </data>
+  <data name="CreateUserFailed" xml:space="preserve">
+    <value>Unable to create the user: {0}</value>
+  </data>
+  <data name="RegisterFailed" xml:space="preserve">
+    <value>Unable to register the account: {0}</value>
+  </data>
+  <data name="OnlyDoctorCreate" xml:space="preserve">
+    <value>Only a Doctor can create prescriptions.</value>
+  </data>
+  <data name="OnlyPharmacistDispense" xml:space="preserve">
+    <value>Only a Pharmacist can dispense prescriptions.</value>
+  </data>
+  <data name="PhoneRegistered" xml:space="preserve">
+    <value>Phone number {0} is already registered to another patient.</value>
+  </data>
+  <data name="OwnNotifications" xml:space="preserve">
+    <value>You can only manage your own notifications.</value>
+  </data>
+  <data name="ExpiryAfterManufacture" xml:space="preserve">
+    <value>The expiry date must be after the manufacture date.</value>
+  </data>
+  <data name="MedicineAlreadyExists" xml:space="preserve">
+    <value>A medicine named '{0}' already exists.</value>
+  </data>
+  <data name="VariantAlreadyExists" xml:space="preserve">
+    <value>A variant '{0}' already exists for this medicine.</value>
+  </data>
+  <data name="BatchNumberExists" xml:space="preserve">
+    <value>A batch with number '{0}' already exists.</value>
+  </data>
+  <data name="EntityIdRequired" xml:space="preserve">
+    <value>EntityId is required.</value>
+  </data>
+  <data name="InvalidEntityType" xml:space="preserve">
+    <value>Invalid entity type '{0}'. Allowed: {1}.</value>
+  </data>
+  <data name="FileTypeNotAllowed" xml:space="preserve">
+    <value>File type '{0}' is not allowed. Allowed: jpeg, png, pdf.</value>
+  </data>
+  <data name="FileSizeExceeds" xml:space="preserve">
+    <value>File size {0} exceeds limit {1} bytes (5MB).</value>
+  </data>
+  <data name="FileEmpty" xml:space="preserve">
+    <value>File is empty.</value>
+  </data>
+  <data name="ExtensionMismatch" xml:space="preserve">
+    <value>File extension '{0}' does not match content type '{1}'.</value>
+  </data>
+  <data name="ContentMismatch" xml:space="preserve">
+    <value>File content does not match its declared type.</value>
+  </data>
+  <data name="FileViewMedicine" xml:space="preserve">
+    <value>Missing permission to view medicine files.</value>
+  </data>
+  <data name="FileUploadMedicine" xml:space="preserve">
+    <value>Missing permission to upload medicine files.</value>
+  </data>
+  <data name="FileUploadBatch" xml:space="preserve">
+    <value>Missing permission to upload batch files.</value>
+  </data>
+  <data name="FileUploadInventory" xml:space="preserve">
+    <value>Missing permission to upload inventory adjustment files.</value>
+  </data>
+  <data name="ExportFormatRequired" xml:space="preserve">
+    <value>Format is required (excel/pdf).</value>
+  </data>
+  <data name="ExportEntityRequired" xml:space="preserve">
+    <value>EntityType is required.</value>
+  </data>
+  <data name="ExportInvalidFormat" xml:space="preserve">
+    <value>Invalid format '{0}'. Use excel or pdf.</value>
+  </data>
+  <data name="ExportPermission" xml:space="preserve">
+    <value>Missing required permission: {0}</value>
+  </data>
+  <data name="RefillItemRequired" xml:space="preserve">
+    <value>At least one prescription item is required.</value>
+  </data>
+  <data name="RefillItemNotRefillable" xml:space="preserve">
+    <value>Prescription item '{0}' is not marked as refillable.</value>
+  </data>
+  <data name="RefillItemNotDispensed" xml:space="preserve">
+    <value>Prescription item '{0}' must be fully dispensed before it can be refilled.</value>
+  </data>
+  <data name="RefillItemExhausted" xml:space="preserve">
+    <value>Prescription item '{0}' has no refills remaining ({1}/{2} used).</value>
+  </data>
+  <data name="RefillItemNotInPrescription" xml:space="preserve">
+    <value>Prescription item '{0}' does not belong to prescription '{1}'.</value>
+  </data>
+  <data name="RefillPrescriptionStatus" xml:space="preserve">
+    <value>Prescription '{0}' cannot be refilled while in '{1}' status.</value>
+  </data>
+  <data name="AlreadyCancelled" xml:space="preserve">
+    <value>The prescription is already cancelled.</value>
+  </data>
+  <data name="CannotCancelDispensed" xml:space="preserve">
+    <value>A fully dispensed prescription cannot be cancelled.</value>
+  </data>
+  <data name="ConcurrencyConflict" xml:space="preserve">
+    <value>The record was modified by another request. Refresh and try again.</value>
+  </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>An unexpected error occurred.</value>
+  </data>
+  <data name="IdentityPasswordMismatch" xml:space="preserve">
+    <value>The password is incorrect.</value>
+  </data>
+  <data name="IdentityPasswordTooShort" xml:space="preserve">
+    <value>The password is too short.</value>
+  </data>
+  <data name="IdentityPasswordRequiresDigit" xml:space="preserve">
+    <value>The password must contain at least one digit.</value>
+  </data>
+  <data name="IdentityPasswordRequiresLower" xml:space="preserve">
+    <value>The password must contain at least one lowercase letter.</value>
+  </data>
+  <data name="IdentityPasswordRequiresUpper" xml:space="preserve">
+    <value>The password must contain at least one uppercase letter.</value>
+  </data>
+  <data name="IdentityPasswordRequiresNonAlphanumeric" xml:space="preserve">
+    <value>The password must contain at least one special character.</value>
+  </data>
+  <data name="IdentityDuplicateUser" xml:space="preserve">
+    <value>This email is already registered.</value>
+  </data>
+  <data name="IdentityInvalidToken" xml:space="preserve">
+    <value>The reset token is invalid or has expired.</value>
+  </data>
+  <data name="IdentityPasswordRequiresUniqueChars" xml:space="preserve">
+    <value>The password must contain more unique characters.</value>
+  </data>
+</root>

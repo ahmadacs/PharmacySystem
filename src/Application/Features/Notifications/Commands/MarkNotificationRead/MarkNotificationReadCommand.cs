@@ -1,9 +1,11 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Prescriptions.Common;
+using Application.Resources;
 using Domain.Entities.Notifications;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Notifications.Commands;
 
@@ -14,15 +16,18 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
     private readonly INotificationRepository _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public MarkNotificationReadCommandHandler(
         INotificationRepository notifications,
         ICurrentUserService currentUser,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IStringLocalizer<SharedResource> localizer)
     {
         _notifications = notifications;
         _currentUser = currentUser;
         _uow = uow;
+        _localizer = localizer;
     }
 
     public async Task<Result> Handle(MarkNotificationReadCommand request, CancellationToken cancellationToken)
@@ -34,10 +39,10 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
 
             var notification = await _notifications.GetByIdAsync(request.NotificationId, cancellationToken);
             if (notification is null)
-                return Result.Failure($"Resource 'Notification' with id '{request.NotificationId}' was not found.", 404);
+                return Result.Failure(_localizer["ResourceNotFound", "Notification", request.NotificationId].Value, 404);
 
             if (notification.UserId != userId)
-                return Result.Failure("You can only manage your own notifications.", 403);
+                return Result.Failure(_localizer["OwnNotifications"].Value, 403);
 
             try
             {

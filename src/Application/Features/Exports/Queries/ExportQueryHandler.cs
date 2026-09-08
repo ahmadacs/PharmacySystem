@@ -1,8 +1,10 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
+using Application.Resources;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Exports.Queries;
 
@@ -11,12 +13,14 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, Result<Exp
     private readonly IExportDataProvider _provider;
     private readonly IExportService _export;
     private readonly ICurrentUserService _currentUser;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public ExportQueryHandler(IExportDataProvider provider, IExportService export, ICurrentUserService currentUser)
+    public ExportQueryHandler(IExportDataProvider provider, IExportService export, ICurrentUserService currentUser, IStringLocalizer<SharedResource> localizer)
     {
         _provider = provider;
         _export = export;
         _currentUser = currentUser;
+        _localizer = localizer;
     }
 
     private bool HasPermission(string required, params string[] alternatives)
@@ -27,30 +31,30 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, Result<Exp
 
     public async Task<Result<ExportFileResult>> Handle(ExportQuery request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Format)) return Result<ExportFileResult>.Failure("Format is required (excel/pdf).", 422);
-        if (string.IsNullOrWhiteSpace(request.EntityType)) return Result<ExportFileResult>.Failure("EntityType is required.", 422);
+        if (string.IsNullOrWhiteSpace(request.Format)) return Result<ExportFileResult>.Failure(_localizer["ExportFormatRequired"].Value, 422);
+        if (string.IsNullOrWhiteSpace(request.EntityType)) return Result<ExportFileResult>.Failure(_localizer["ExportEntityRequired"].Value, 422);
         var format = request.Format.ToLowerInvariant();
-        if (format != "excel" && format != "xlsx" && format != "pdf") return Result<ExportFileResult>.Failure($"Invalid format '{request.Format}'. Use excel or pdf.", 422);
+        if (format != "excel" && format != "xlsx" && format != "pdf") return Result<ExportFileResult>.Failure(_localizer["ExportInvalidFormat", request.Format].Value, 422);
         var isExcel = format == "excel" || format == "xlsx";
 
         var entity = request.EntityType.ToLowerInvariant();
         if (entity == "medicines")
         {
-            if (!HasPermission(Permissions.Medicines.View)) return Result<ExportFileResult>.Failure($"Missing required permission: {Permissions.Medicines.View}", 403);
+            if (!HasPermission(Permissions.Medicines.View)) return Result<ExportFileResult>.Failure(_localizer["ExportPermission", Permissions.Medicines.View].Value, 403);
         }
         else if (entity == "inventory")
         {
-            if (!HasPermission(Permissions.Inventory.View)) return Result<ExportFileResult>.Failure($"Missing required permission: {Permissions.Inventory.View}", 403);
+            if (!HasPermission(Permissions.Inventory.View)) return Result<ExportFileResult>.Failure(_localizer["ExportPermission", Permissions.Inventory.View].Value, 403);
         }
         else if (entity == "prescriptions")
         {
-            if (!HasPermission(Permissions.Prescriptions.View, Permissions.Prescriptions.ManageOwn)) return Result<ExportFileResult>.Failure($"Missing required permission: {Permissions.Prescriptions.View}", 403);
+            if (!HasPermission(Permissions.Prescriptions.View, Permissions.Prescriptions.ManageOwn)) return Result<ExportFileResult>.Failure(_localizer["ExportPermission", Permissions.Prescriptions.View].Value, 403);
         }
         else if (entity == "dispensing")
         {
-            if (!HasPermission(Permissions.Dispensing.View)) return Result<ExportFileResult>.Failure($"Missing required permission: {Permissions.Dispensing.View}", 403);
+            if (!HasPermission(Permissions.Dispensing.View)) return Result<ExportFileResult>.Failure(_localizer["ExportPermission", Permissions.Dispensing.View].Value, 403);
         }
-        else return Result<ExportFileResult>.Failure($"Unknown entity type '{request.EntityType}'. Use medicines/inventory/prescriptions/dispensing.", 422);
+        else return Result<ExportFileResult>.Failure(_localizer["InvalidEntityType", request.EntityType, "medicines, inventory, prescriptions, dispensing"].Value, 422);
 
         ExportFileResult result;
         try
@@ -59,7 +63,7 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, Result<Exp
             else if (entity == "inventory") result = await ExportInventory(isExcel, cancellationToken);
             else if (entity == "prescriptions") result = await ExportPrescriptions(isExcel, request.Id, cancellationToken);
             else if (entity == "dispensing") result = await ExportDispensing(isExcel, cancellationToken);
-            else return Result<ExportFileResult>.Failure($"Unknown entity type '{request.EntityType}'.", 422);
+            else return Result<ExportFileResult>.Failure(_localizer["InvalidEntityType", request.EntityType, "medicines, inventory, prescriptions, dispensing"].Value, 422);
         }
         catch (FileValidationException ex)
         {

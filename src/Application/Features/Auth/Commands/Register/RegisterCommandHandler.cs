@@ -2,7 +2,9 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
 using Application.Features.Auth.Dtos;
+using Application.Resources;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Auth.Commands;
 
@@ -11,12 +13,14 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
     private readonly IUserManager _users;
     private readonly IStaffService _staff;
     private readonly ITokenService _tokens;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public RegisterCommandHandler(IUserManager users, IStaffService staff, ITokenService tokens)
+    public RegisterCommandHandler(IUserManager users, IStaffService staff, ITokenService tokens, IStringLocalizer<SharedResource> localizer)
     {
         _users = users;
         _staff = staff;
         _tokens = tokens;
+        _localizer = localizer;
     }
 
     public async Task<Result<AuthResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -24,7 +28,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         var req = request.Request;
         var role = req.Role.Trim();
         if (role != Roles.Doctor && role != Roles.Pharmacist)
-            return Result<AuthResponse>.Failure("Self-registration is only available for Doctor and Pharmacist accounts.", 409);
+            return Result<AuthResponse>.Failure(_localizer["SelfRegistration"].Value, 409);
 
         var result = await _users.TryCreateUserAsync(
             req.Email,
@@ -35,7 +39,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
             cancellationToken);
 
         if (result.UserId is null)
-            return Result<AuthResponse>.Failure($"Unable to register the account: {string.Join("; ", result.Errors)}", 409);
+            return Result<AuthResponse>.Failure(_localizer["RegisterFailed", string.Join("; ", result.Errors)].Value, 409);
 
         var userId = result.UserId.Value;
 
@@ -51,7 +55,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         var tokens = await _tokens.CreateAsync(userId, cancellationToken);
         var account = await _users.FindAsync(userId, cancellationToken);
         if (account is null)
-            return Result<AuthResponse>.Failure("The email or password is incorrect.", 401);
+            return Result<AuthResponse>.Failure(_localizer["EmailOrPasswordIncorrect"].Value, 401);
 
         return Result<AuthResponse>.Success(AuthMapping.ToResponse(tokens, account));
     }

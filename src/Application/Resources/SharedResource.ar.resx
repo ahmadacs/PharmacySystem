@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InsufficientStockBatch" xml:space="preserve">
+    <value>المخزون غير كافٍ في الدفعة '{0}' ({1}). المطلوب {2}، المتاح {3}.</value>
+  </data>
+  <data name="InsufficientStockVariant" xml:space="preserve">
+    <value>المخزون الصالح غير كافٍ للصنف {0}. المطلوب {1}، المتاح {2}.</value>
+  </data>
+  <data name="PartialShortfall" xml:space="preserve">
+    <value>توفر من المخزون الصالح {0} من {1} فقط — لم يُصرف الباقي. يُرجى تأمين الكمية المتبقية للمريض.</value>
+  </data>
+  <data name="BatchNearExpiry" xml:space="preserve">
+    <value>الدفعة {0} تنتهي بتاريخ {1} (المتبقي {2} يوم) — يُرجى تنبيه المريض لإتمامها في وقتها.</value>
+  </data>
+  <data name="ResourceNotFound" xml:space="preserve">
+    <value>المورد '{0}' بالمعرف '{1}' غير موجود.</value>
+  </data>
+  <data name="Forbidden" xml:space="preserve">
+    <value>غير مسموح لك بالوصول إلى هذا المورد.</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>بيانات الدخول غير صالحة.</value>
+  </data>
+  <data name="EmailOrPasswordIncorrect" xml:space="preserve">
+    <value>البريد الإلكتروني أو كلمة المرور غير صحيحة.</value>
+  </data>
+  <data name="RefreshTokenInvalid" xml:space="preserve">
+    <value>رمز التحديث غير صالح أو منتهٍ أو تم إلغاؤه.</value>
+  </data>
+  <data name="AccountDisabled" xml:space="preserve">
+    <value>تم تعطيل هذا الحساب. تواصل مع الإدارة.</value>
+  </data>
+  <data name="SelfRegistration" xml:space="preserve">
+    <value>التسجيل الذاتي متاح لحسابات الأطباء والصيادلة فقط.</value>
+  </data>
+  <data name="UnknownRole" xml:space="preserve">
+    <value>دور غير معروف '{0}'.</value>
+  </data>
+  <data name="CreateUserFailed" xml:space="preserve">
+    <value>تعذر إنشاء المستخدم: {0}</value>
+  </data>
+  <data name="RegisterFailed" xml:space="preserve">
+    <value>تعذر تسجيل الحساب: {0}</value>
+  </data>
+  <data name="OnlyDoctorCreate" xml:space="preserve">
+    <value>فقط الطبيب يمكنه إنشاء الوصفات.</value>
+  </data>
+  <data name="OnlyPharmacistDispense" xml:space="preserve">
+    <value>فقط الصيدلي يمكنه صرف الوصفات.</value>
+  </data>
+  <data name="PhoneRegistered" xml:space="preserve">
+    <value>رقم الهاتف {0} مسجل لمريض آخر.</value>
+  </data>
+  <data name="OwnNotifications" xml:space="preserve">
+    <value>يمكنك إدارة تنبيهاتك الخاصة فقط.</value>
+  </data>
+  <data name="ExpiryAfterManufacture" xml:space="preserve">
+    <value>يجب أن يكون تاريخ الانتهاء بعد تاريخ التصنيع.</value>
+  </data>
+  <data name="MedicineAlreadyExists" xml:space="preserve">
+    <value>يوجد دواء بالاسم '{0}' مسبقاً.</value>
+  </data>
+  <data name="VariantAlreadyExists" xml:space="preserve">
+    <value>يوجد نوع '{0}' لهذا الدواء مسبقاً.</value>
+  </data>
+  <data name="BatchNumberExists" xml:space="preserve">
+    <value>توجد دفعة بالرقم '{0}' مسبقاً.</value>
+  </data>
+  <data name="EntityIdRequired" xml:space="preserve">
+    <value>معرف الكيان مطلوب.</value>
+  </data>
+  <data name="InvalidEntityType" xml:space="preserve">
+    <value>نوع كيان غير صالح '{0}'. المسموح: {1}.</value>
+  </data>
+  <data name="FileTypeNotAllowed" xml:space="preserve">
+    <value>نوع الملف '{0}' غير مسموح. المسموح: jpeg، png، pdf.</value>
+  </data>
+  <data name="FileSizeExceeds" xml:space="preserve">
+    <value>حجم الملف {0} يتجاوز الحد {1} بايت (5MB).</value>
+  </data>
+  <data name="FileEmpty" xml:space="preserve">
+    <value>الملف فارغ.</value>
+  </data>
+  <data name="ExtensionMismatch" xml:space="preserve">
+    <value>امتداد الملف '{0}' لا يطابق نوع المحتوى '{1}'.</value>
+  </data>
+  <data name="ContentMismatch" xml:space="preserve">
+    <value>محتوى الملف لا يطابق نوعه المعلن.</value>
+  </data>
+  <data name="FileViewMedicine" xml:space="preserve">
+    <value>لا صلاحية لعرض ملفات الأدوية.</value>
+  </data>
+  <data name="FileUploadMedicine" xml:space="preserve">
+    <value>لا صلاحية لرفع ملفات الأدوية.</value>
+  </data>
+  <data name="FileUploadBatch" xml:space="preserve">
+    <value>لا صلاحية لرفع ملفات الدفعات.</value>
+  </data>
+  <data name="FileUploadInventory" xml:space="preserve">
+    <value>لا صلاحية لرفع ملفات تعديلات المخزون.</value>
+  </data>
+  <data name="ExportFormatRequired" xml:space="preserve">
+    <value>الصيغة مطلوبة (excel/pdf).</value>
+  </data>
+  <data name="ExportEntityRequired" xml:space="preserve">
+    <value>نوع الكيان مطلوب.</value>
+  </data>
+  <data name="ExportInvalidFormat" xml:space="preserve">
+    <value>صيغة غير صالحة '{0}'. استخدم excel أو pdf.</value>
+  </data>
+  <data name="ExportPermission" xml:space="preserve">
+    <value>الصلاحية المطلوبة مفقودة: {0}</value>
+  </data>
+  <data name="RefillItemRequired" xml:space="preserve">
+    <value>مطلوب صنف واحد على الأقل من الوصفة.</value>
+  </data>
+  <data name="RefillItemNotRefillable" xml:space="preserve">
+    <value>الصنف '{0}' في الوصفة غير قابل لإعادة الصرف.</value>
+  </data>
+  <data name="RefillItemNotDispensed" xml:space="preserve">
+    <value>يجب صرف الصنف '{0}' بالكامل قبل إعادة صرفه.</value>
+  </data>
+  <data name="RefillItemExhausted" xml:space="preserve">
+    <value>لا توجد إعادة صرف متبقية للصنف '{0}' ({1}/{2} مستخدمة).</value>
+  </data>
+  <data name="RefillItemNotInPrescription" xml:space="preserve">
+    <value>الصنف '{0}' لا ينتمي للوصفة '{1}'.</value>
+  </data>
+  <data name="RefillPrescriptionStatus" xml:space="preserve">
+    <value>لا يمكن إعادة صرف الوصفة '{0}' وهي بحالة '{1}'.</value>
+  </data>
+  <data name="AlreadyCancelled" xml:space="preserve">
+    <value>الوصفة ملغاة مسبقاً.</value>
+  </data>
+  <data name="CannotCancelDispensed" xml:space="preserve">
+    <value>لا يمكن إلغاء وصفة مصروفة بالكامل.</value>
+  </data>
+  <data name="ConcurrencyConflict" xml:space="preserve">
+    <value>تم تعديل السجل من طلب آخر. حدّث الصفحة وحاول مجدداً.</value>
+  </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>حدث خطأ غير متوقع.</value>
+  </data>
+  <data name="IdentityPasswordMismatch" xml:space="preserve">
+    <value>كلمة المرور غير صحيحة.</value>
+  </data>
+  <data name="IdentityPasswordTooShort" xml:space="preserve">
+    <value>كلمة المرور قصيرة جداً.</value>
+  </data>
+  <data name="IdentityPasswordRequiresDigit" xml:space="preserve">
+    <value>يجب أن تحتوي كلمة المرور على رقم واحد على الأقل.</value>
+  </data>
+  <data name="IdentityPasswordRequiresLower" xml:space="preserve">
+    <value>يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل.</value>
+  </data>
+  <data name="IdentityPasswordRequiresUpper" xml:space="preserve">
+    <value>يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل.</value>
+  </data>
+  <data name="IdentityPasswordRequiresNonAlphanumeric" xml:space="preserve">
+    <value>يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل.</value>
+  </data>
+  <data name="IdentityDuplicateUser" xml:space="preserve">
+    <value>هذا البريد مسجل مسبقاً.</value>
+  </data>
+  <data name="IdentityInvalidToken" xml:space="preserve">
+    <value>رمز الاستعادة غير صالح أو منتهٍ.</value>
+  </data>
+  <data name="IdentityPasswordRequiresUniqueChars" xml:space="preserve">
+    <value>يجب أن تحتوي كلمة المرور على أحرف مميزة أكثر.</value>
+  </data>
+</root>

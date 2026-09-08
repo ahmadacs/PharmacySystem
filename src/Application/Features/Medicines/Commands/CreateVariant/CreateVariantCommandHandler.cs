@@ -1,9 +1,11 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Medicines.Dtos;
+using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Medicines.Commands;
 
@@ -11,11 +13,13 @@ public sealed class CreateVariantCommandHandler : IRequestHandler<CreateVariantC
 {
     private readonly IMedicineRepository _repo;
     private readonly IUnitOfWork _uow;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateVariantCommandHandler(IMedicineRepository repo, IUnitOfWork uow)
+    public CreateVariantCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
+        _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(CreateVariantCommand request, CancellationToken cancellationToken)
@@ -23,12 +27,12 @@ public sealed class CreateVariantCommandHandler : IRequestHandler<CreateVariantC
         var req = request.Request;
         var medicine = await _repo.GetByIdAsync(req.MedicineId, cancellationToken);
         if (medicine is null)
-            return Result<Guid>.Failure($"Resource 'Medicine' with id '{req.MedicineId}' was not found.", 404);
+            return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", req.MedicineId].Value, 404);
 
         var existing = await _repo.FindVariantAsync(req.MedicineId, req.Form, req.Unit, req.Strength, cancellationToken);
         if (existing is not null)
             return Result<Guid>.Failure(
-                $"A variant '{req.Form} {req.Strength} {req.Unit}' already exists for this medicine.", 409);
+                _localizer["VariantAlreadyExists", $"{req.Form} {req.Strength} {req.Unit}"].Value, 409);
 
         var variant = req.ToEntity();
         _repo.AddVariant(variant);

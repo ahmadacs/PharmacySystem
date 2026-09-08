@@ -3,9 +3,11 @@ using Application.Common.Models;
 using Application.Common.Options;
 using Application.Features.Files.Commands.UploadFile;
 using Application.Features.Inventory.Dtos;
+using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Inventory.Commands;
 
@@ -16,15 +18,18 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
     private readonly ICurrentUserService _currentUser;
     private readonly NotificationOptions _notificationOptions;
     private readonly ISender _sender;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public AdjustInventoryCommandHandler(IMedicineRepository repo, IUnitOfWork uow,
-        ICurrentUserService currentUser, NotificationOptions notificationOptions, ISender sender)
+        ICurrentUserService currentUser, NotificationOptions notificationOptions, ISender sender,
+        IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
         _currentUser = currentUser;
         _notificationOptions = notificationOptions;
         _sender = sender;
+        _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(AdjustInventoryCommand request, CancellationToken cancellationToken)
@@ -32,7 +37,7 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
         var req = request.Request;
         var batch = await _repo.GetBatchByIdAsync(req.MedicineBatchId, cancellationToken);
         if (batch is null)
-            return Result<Guid>.Failure($"MedicineBatch not found with id '{req.MedicineBatchId}'.", 404);
+            return Result<Guid>.Failure(_localizer["ResourceNotFound", "MedicineBatch", req.MedicineBatchId].Value, 404);
 
         var quantityBefore = batch.QuantityAvailable.Value;
         var delta = req.Type is InventoryAdjustmentType.Increase

@@ -3,11 +3,13 @@ using Application.Common.Models;
 using Application.Features.Patients.Dtos;
 using Application.Features.Prescriptions.Common;
 using Application.Features.Prescriptions.Dtos;
+using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Entities.Patients;
 using Domain.Entities.Prescriptions;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Prescriptions.Commands;
 
@@ -20,6 +22,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
     private readonly IAsyncQueryExecutor _executor;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CreatePrescriptionCommandHandler(
         IPrescriptionRepository prescriptions,
@@ -28,7 +31,8 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         ICurrentUserService currentUser,
         IStaffService staff,
         IUnitOfWork uow,
-        IAsyncQueryExecutor executor)
+        IAsyncQueryExecutor executor,
+        IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
         _medicines = medicines;
@@ -37,6 +41,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         _staff = staff;
         _uow = uow;
         _executor = executor;
+        _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(CreatePrescriptionCommand request, CancellationToken cancellationToken)
@@ -49,9 +54,17 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
 
             var doctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
             if (doctorId is null)
-                return Result<Guid>.Failure("Only a Doctor can create prescriptions.", 403);
+                return Result<Guid>.Failure(_localizer["OnlyDoctorCreate"].Value, 403);
 
-            var patient = await FindOrCreatePatientAsync(req, cancellationToken);
+            Patient patient;
+            try
+            {
+                patient = await FindOrCreatePatientAsync(req, cancellationToken);
+            }
+            catch (ConflictingOperationException)
+            {
+                return Result<Guid>.Failure(_localizer["PhoneRegistered", NormalizePhone(req.PatientPhoneNumber)].Value, 409);
+            }
             var prescription = req.ToEntity(doctorId.Value, patient.Id);
 
             var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
@@ -61,7 +74,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             foreach (var item in req.Items)
             {
                 if (!existingVariantIds.Contains(item.MedicineVariantId))
-                    return Result<Guid>.Failure($"Resource '{nameof(MedicineVariant)}' with id '{item.MedicineVariantId}' was not found.", 404);
+                    return Result<Guid>.Failure(_localizer["ResourceNotFound", nameof(MedicineVariant), item.MedicineVariantId].Value, 404);
 
                 try
                 {

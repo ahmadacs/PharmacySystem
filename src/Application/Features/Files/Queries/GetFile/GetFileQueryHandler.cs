@@ -2,8 +2,10 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
 using Application.Features.Prescriptions.Common;
+using Application.Resources;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Files.Queries.GetFile;
 
@@ -14,25 +16,27 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
     private readonly ICurrentUserService _currentUser;
     private readonly IPrescriptionRepository _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public GetFileQueryHandler(IFileAttachmentRepository files, IFileStorageService storage, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth)
+    public GetFileQueryHandler(IFileAttachmentRepository files, IFileStorageService storage, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
     {
         _files = files;
         _storage = storage;
         _currentUser = currentUser;
         _prescriptions = prescriptions;
         _resourceAuth = resourceAuth;
+        _localizer = localizer;
     }
 
     public async Task<Result<(Stream Content, string ContentType, string FileName)>> Handle(GetFileQuery request, CancellationToken cancellationToken)
     {
         var attachment = await _files.GetByIdAsync(request.FileId, cancellationToken);
-        if (attachment is null) return Result<(Stream Content, string ContentType, string FileName)>.Failure($"Resource 'FileAttachment' with id '{request.FileId}' was not found.", 404);
+        if (attachment is null) return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["ResourceNotFound", "FileAttachment", request.FileId].Value, 404);
 
         if (attachment.EntityType == Domain.Entities.Files.FileEntityType.Medicine)
         {
             if (!_currentUser.Permissions.Contains(Permissions.Medicines.View))
-                return Result<(Stream Content, string ContentType, string FileName)>.Failure("Missing permission to view medicine files.", 403);
+                return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["FileViewMedicine"].Value, 403);
         }
         else
         {

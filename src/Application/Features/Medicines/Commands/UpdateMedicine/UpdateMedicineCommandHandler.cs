@@ -1,10 +1,12 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Medicines.Dtos;
+using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Medicines.Commands;
 
@@ -12,11 +14,13 @@ public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicin
 {
     private readonly IMedicineRepository _repo;
     private readonly IUnitOfWork _uow;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public UpdateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow)
+    public UpdateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
+        _localizer = localizer;
     }
 
     public async Task<Result> Handle(UpdateMedicineCommand request, CancellationToken cancellationToken)
@@ -24,10 +28,10 @@ public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicin
         var req = request.Request;
         var medicine = await _repo.GetByIdAsync(req.Id, cancellationToken);
         if (medicine is null)
-            return Result.Failure($"Resource 'Medicine' with id '{req.Id}' was not found.", 404);
+            return Result.Failure(_localizer["ResourceNotFound", "Medicine", req.Id].Value, 404);
 
         if (await _repo.MedicineNameExistsAsync(req.Name, req.Id, cancellationToken))
-            return Result.Failure($"A medicine named '{req.Name}' already exists.", 409);
+            return Result.Failure(_localizer["MedicineAlreadyExists", req.Name].Value, 409);
 
         var genericName = await MedicineMapping.ResolveGenericNameAsync(_repo, req.GenericName, req.GenericNameAr, cancellationToken);
 
