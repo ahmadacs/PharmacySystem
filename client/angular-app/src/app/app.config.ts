@@ -9,6 +9,7 @@ import { MatPaginatorIntl } from '@angular/material/paginator';
 
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
+import { languageInterceptor } from './core/interceptors/language.interceptor';
 import { routes } from './app.routes';
 import { CustomPaginatorIntl } from './core/interceptors/paginator-intl.service';
 
@@ -19,7 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
-    provideHttpClient(withInterceptors([errorInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([languageInterceptor, errorInterceptor, authInterceptor])),
     provideTranslateService({ fallbackLang: 'en', lang: 'en' }),
     provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
     { provide: MatPaginatorIntl, useClass: CustomPaginatorIntl }

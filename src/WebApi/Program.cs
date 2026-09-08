@@ -219,6 +219,14 @@ app.UseMiddleware<RequestTimingMiddleware>();
 
 app.UseExceptionHandler();
 
+// Request culture from Accept-Language (frontend sends the UI language):
+// drives IStringLocalizer messages (dispense warnings/errors) per request.
+var supportedCultures = new[] { "en", "ar" };
+app.UseRequestLocalization(new RequestLocalizationOptions()
+    .SetDefaultCulture(supportedCultures[0])
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures));
+
 app.UseRouting();
 
 app.UseCors("Angular");
