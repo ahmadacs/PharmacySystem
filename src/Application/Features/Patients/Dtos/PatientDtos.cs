@@ -12,7 +12,7 @@ public static class PatientMapping
         => new(firstName, lastName, dateOfBirth, phoneNumber);
 
     public static PatientCheckDto ToCheckDto(this PatientDto patient)
-        => new(true, patient.FirstName, patient.LastName, patient.DateOfBirth);
+        => new(true, patient.Id, patient.FirstName, patient.LastName, patient.DateOfBirth, patient.PhoneNumber);
 
-    public static PatientCheckDto ToNotFoundCheck() => new(false, null, null, null);
+    public static PatientCheckDto ToNotFoundCheck() => new(false, null, null, null, null, null);
 }

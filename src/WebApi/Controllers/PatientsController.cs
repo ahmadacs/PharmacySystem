@@ -27,10 +27,10 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
         return Ok(patient.ToCheckDto());
     }
 
-    /// <summary>Lists prescriptions for a patient.</summary>
+    /// <summary>Lists prescriptions for a patient within a lookback window (Cancelled/Expired excluded, newest first).</summary>
     [HttpGet("{id:guid}/prescriptions")]
     [Authorize(Policy = Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public Task<IActionResult> GetPrescriptions(Guid id, CancellationToken cancellationToken)
-        => OkResponse(new GetPatientPrescriptionsQuery(id), cancellationToken);
+    public Task<IActionResult> GetPrescriptions(Guid id, [FromQuery] int lookbackDays = 180, CancellationToken cancellationToken = default)
+        => OkResponse(new GetPatientPrescriptionsQuery(id, lookbackDays), cancellationToken);
 }

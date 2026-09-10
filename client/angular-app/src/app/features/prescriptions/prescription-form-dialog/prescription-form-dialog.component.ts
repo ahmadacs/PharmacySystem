@@ -12,6 +12,8 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from '@angular/material/form-field';
@@ -25,7 +27,9 @@ import {
   MedicineDetailsDto,
   MedicineListItemDto,
   MedicineVariantDto,
-  PagedResult
+  PagedResult,
+  PatientMedicationItemDto,
+  PatientPrescriptionHistoryDto
 } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { PrescriptionsService } from '../prescriptions.service';
@@ -87,6 +91,8 @@ interface PatientPhoneCheckResponse {
     MatSelect,
     MatOption,
     MatCheckbox,
+    MatChipsModule,
+    MatProgressBar,
     MatDatepickerModule,
     MatAutocompleteModule,
     MatDialogTitle,
@@ -116,7 +122,26 @@ export class PrescriptionFormDialogComponent {
   protected readonly foundPatient = signal<{ id: string; firstName: string; lastName: string; dateOfBirth: string; phoneNumber: string } | null>(null);
   protected readonly isNewPatient = signal(false);
   protected readonly phoneSearching = signal(false);
-  protected readonly previousPrescriptions = signal<{ id: string; issuedDate: string; status: string; itemCount: number }[]>([]);
+  // Medication history (two sections: currently-active + previous, server-computed IsCurrentlyActive)
+  protected readonly medsHistory = signal<PatientPrescriptionHistoryDto[]>([]);
+  protected readonly medsLoading = signal(false);
+  protected readonly medsExpanded = signal(false);
+  protected readonly medsLookback = signal<90 | 180 | 365>(180);
+  protected readonly lookbackOptions: (90 | 180 | 365)[] = [90, 180, 365];
+  protected readonly activeMeds = computed(() =>
+    this.medsHistory().flatMap((p) =>
+      p.items
+        .filter((i) => i.isCurrentlyActive)
+        .map((i) => ({ ...i, issuedDate: p.issuedDate, prescriptionId: p.id, prescriptionStatus: p.status }))
+    )
+  );
+  protected readonly pastMeds = computed(() =>
+    this.medsHistory().flatMap((p) =>
+      p.items
+        .filter((i) => !i.isCurrentlyActive)
+        .map((i) => ({ ...i, issuedDate: p.issuedDate, prescriptionId: p.id, prescriptionStatus: p.status }))
+    )
+  );
   protected readonly isReadOnlyPatient = computed(() => this.foundPatient() !== null);
   // Live hint key while typing the phone (null = no hint)
   protected readonly phoneHintKey = signal<string | null>(null);
@@ -167,20 +192,37 @@ export class PrescriptionFormDialogComponent {
 
     this.addItem();
 
-    // Auto search by phone (debounce 400ms) - Saudi pattern
+    // Auto search by phone (debounce 400ms) - Saudi pattern.
+    // Any phone edit invalidates the previous lookup (fixes typo'd numbers):
+    // stale names/DOB/meds are cleared so they can never stick to a new number.
     let phoneTimer: ReturnType<typeof setTimeout> | null = null;
     this.form.controls.patientPhoneNumber.valueChanges.subscribe((val) => {
       if (phoneTimer) clearTimeout(phoneTimer);
       const phone = (val ?? '').trim();
+      const wasLocked = this.form.controls.patientFirstName.disabled;
+      const hadContext = this.foundPatient() !== null || this.isNewPatient();
+      this.foundPatient.set(null);
+      this.isNewPatient.set(false);
+      this.medsHistory.set([]);
+      this.medsExpanded.set(false);
+      // Medicines picked for the previous number must not stick to the new one.
+      if (hadContext) {
+        this.resetItems();
+      }
+      if (wasLocked) {
+        this.form.controls.patientFirstName.setValue('');
+        this.form.controls.patientLastName.setValue('');
+        this.form.controls.patientDateOfBirth.setValue(null);
+      }
+      this.setPatientReadonly(false);
       if (!SAUDI_PHONE_PATTERN.test(phone)) {
-        this.foundPatient.set(null);
-        this.isNewPatient.set(false);
-        this.previousPrescriptions.set([]);
-        this.setPatientReadonly(false);
+        this.phoneSearching.set(false);
         this.phoneHintKey.set(this.computePhoneHintKey(phone));
         return;
       }
       this.phoneHintKey.set(null);
+      // Keep the rest visible with a spinner while debouncing/resolving.
+      this.phoneSearching.set(true);
       phoneTimer = setTimeout(() => void this.searchPatient(phone), 400);
     });
 
@@ -245,28 +287,112 @@ export class PrescriptionFormDialogComponent {
 
         this.foundPatient.set(patient);
         this.isNewPatient.set(false);
+        this.setPatientReadonly(false);
         this.form.controls.patientFirstName.setValue(patient.firstName);
         this.form.controls.patientLastName.setValue(patient.lastName);
         this.form.controls.patientDateOfBirth.setValue(patient.dateOfBirth ? new Date(patient.dateOfBirth) : null);
         this.setPatientReadonly(true);
-        this.previousPrescriptions.set([]);
+        this.medsHistory.set([]);
+        if (patient.id) {
+          void this.loadPatientMeds(patient.id);
+        }
         return;
       }
 
       this.foundPatient.set(null);
       this.isNewPatient.set(true);
-      this.previousPrescriptions.set([]);
+      this.medsHistory.set([]);
       this.setPatientReadonly(false);
     } catch {
       this.foundPatient.set(null);
       this.isNewPatient.set(true);
-      this.previousPrescriptions.set([]);
+      this.medsHistory.set([]);
       this.setPatientReadonly(false);
     } finally {
       this.phoneSearching.set(false);
     }
   }
 
+
+  protected setLookback(days: 90 | 180 | 365): void {
+    if (this.medsLookback() === days) return;
+    this.medsLookback.set(days);
+    const id = this.foundPatient()?.id;
+    if (id) void this.loadPatientMeds(id);
+  }
+
+  private async loadPatientMeds(patientId: string): Promise<void> {
+    this.medsLoading.set(true);
+    try {
+      const history = await this.prescriptionsService.patientHistory(patientId, this.medsLookback());
+      this.medsHistory.set(history);
+    } catch {
+      this.medsHistory.set([]);
+    } finally {
+      this.medsLoading.set(false);
+    }
+  }
+
+  /** Days until next eligible dispense from server-computed nextEligibleDate. Null = no constraint. */
+  protected dueInDaysForMed(item: PatientMedicationItemDto): number | null {
+    if (!item.nextEligibleDate) return null;
+    const [y, m, d] = item.nextEligibleDate.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const due = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+    return diff > 0 ? diff : null;
+  }
+
+  protected medDisplayName(item: PatientMedicationItemDto): string {
+    return this.isArabic() && item.medicineNameAr ? item.medicineNameAr : item.medicineName;
+  }
+
+  /** Copies a history line into the current prescription, reusing the first empty row. */
+  protected async addMedToForm(item: PatientMedicationItemDto): Promise<void> {
+    const t = (key: string): string => this.translate.instant(key);
+    if (!item.medicineId || !item.medicineVariantId) {
+      this.toast.show(t('dialogs.prescriptionForm.medsHistory.medNotAvailable'), 'error');
+      return;
+    }
+    const medicine = this.medicines().find((med) => med.id === item.medicineId);
+    if (!medicine) {
+      this.toast.show(t('dialogs.prescriptionForm.medsHistory.medNotAvailable'), 'error');
+      return;
+    }
+    // Ensure variants cached for the select.
+    if (!this.variantsByMedicine()[item.medicineId]) {
+      try {
+        const details = await firstValueFrom(
+          this.http.get<MedicineDetailsDto>(`${environment.apiUrl}/medicines/${item.medicineId}`)
+        );
+        this.variantsByMedicine.update((map) => ({
+          ...map,
+          [item.medicineId]: details.variants.filter((v) => v.isActive)
+        }));
+      } catch {
+        this.toast.show(t('dialogs.prescriptionForm.medsHistory.medNotAvailable'), 'error');
+        return;
+      }
+    }
+    // Reuse the first empty row (e.g. the initial blank item) instead of appending.
+    let index = this.items.controls.findIndex(
+      (row) => !row.get('medicineId')?.value && !row.get('medicineVariantId')?.value
+    );
+    if (index < 0) {
+      this.addItem();
+      index = this.items.length - 1;
+    }
+    const group = this.items.at(index);
+    group.get('medicineId')?.setValue(item.medicineId);
+    group.get('medicineVariantId')?.setValue(item.medicineVariantId);
+    group.get('quantity')?.setValue(item.prescribedQuantity > 0 ? item.prescribedQuantity : 1);
+    group.get('dosageInstructions')?.setValue(item.dosageInstructions ?? '');
+    const searchControl = this.medicineSearchControls[index];
+    searchControl?.setValue(medicine);
+    this.toast.show(t('dialogs.prescriptionForm.medsHistory.added'), 'success');
+  }
 
   get items(): FormArray<FormGroup> {
     return this.form.controls.items;
@@ -322,6 +448,29 @@ export class PrescriptionFormDialogComponent {
     this.items.removeAt(index);
     this.medicineSearchControls.splice(index, 1);
     this.medicineSearches.update((searches) => searches.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  /** Resets the items to a single blank row (used when the patient context changes). */
+  private resetItems(): void {
+    while (this.items.length > 1) {
+      this.removeItem(this.items.length - 1);
+    }
+    if (this.items.length === 0) {
+      this.addItem();
+    }
+    const first = this.items.at(0);
+    if (first) {
+      first.get('medicineId')?.setValue(null);
+      first.get('medicineVariantId')?.setValue(null);
+      first.get('quantity')?.setValue(1);
+      first.get('dosageInstructions')?.setValue('');
+      first.get('isRefillable')?.setValue(false);
+      first.get('refillsAllowed')?.setValue(0);
+      first.get('refillIntervalDays')?.setValue(0);
+      first.markAsUntouched();
+      first.markAsPristine();
+    }
+    this.medicineSearchControls[0]?.setValue('');
   }
 
   onMedicineChange(index: number, medicineId: string): void {
@@ -409,7 +558,7 @@ export class PrescriptionFormDialogComponent {
           refillIntervalDays: Number(item['refillIntervalDays']) || 0
         }))
       });
-      this.toast.show('Prescription created.', 'success');
+      this.toast.show(this.translate.instant('dialogs.prescriptionForm.created'), 'success');
       this.dialogRef.close(true);
     } catch {
       // error toast already shown by the error interceptor

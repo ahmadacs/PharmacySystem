@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   CreatePrescriptionRequest,
   PagedResult,
+  PatientPrescriptionHistoryDto,
   PrescriptionDetailsDto,
   PrescriptionListItemDto,
   PrescriptionStatus
@@ -51,5 +52,15 @@ export class PrescriptionsService {
 
   refillItems(prescriptionId: string, itemIds: string[]): Promise<void> {
     return firstValueFrom(this.http.post<void>(`${this.baseUrl}/${prescriptionId}/refill`, { itemIds }));
+  }
+
+  patientHistory(patientId: string, lookbackDays = 180): Promise<PatientPrescriptionHistoryDto[]> {
+    const params = new HttpParams().set('lookbackDays', lookbackDays);
+    return firstValueFrom(
+      this.http.get<PatientPrescriptionHistoryDto[]>(
+        `${environment.apiUrl}/patients/${patientId}/prescriptions`,
+        { params }
+      )
+    );
   }
 }

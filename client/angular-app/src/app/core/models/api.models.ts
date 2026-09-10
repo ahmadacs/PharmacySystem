@@ -357,6 +357,37 @@ export interface PrescriptionDetailsDto {
   items: PrescriptionItemDto[];
 }
 
+export interface PatientMedicationItemDto {
+  prescriptionItemId: string;
+  medicineVariantId: string;
+  medicineId: string;
+  medicineName: string;
+  medicineNameAr?: string;
+  variantName: string;
+  form: string;
+  unit: string;
+  strength: number;
+  dosageInstructions: string | null;
+  prescribedQuantity: number;
+  dispensedQuantity: number;
+  remainingQuantity: number;
+  isRefillable: boolean;
+  refillsAllowed: number;
+  refillsUsed: number;
+  refillIntervalDays: number;
+  lastDispensedAt: string | null;
+  nextEligibleDate: string | null;
+  isCurrentlyActive: boolean;
+}
+
+export interface PatientPrescriptionHistoryDto {
+  id: string;
+  issuedDate: string;
+  status: PrescriptionStatus;
+  itemCount: number;
+  items: PatientMedicationItemDto[];
+}
+
 export interface DispenseRequest {
   prescriptionId: string;
   notes: string;

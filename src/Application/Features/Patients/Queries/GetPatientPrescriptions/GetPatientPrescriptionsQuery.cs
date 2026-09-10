@@ -1,7 +1,8 @@
 using Application.Common.Models;
-using Application.Features.Prescriptions.Dtos;
+using Application.Features.Patients.Dtos;
 using MediatR;
 
 namespace Application.Features.Patients.Queries.GetPatientPrescriptions;
 
-public sealed record GetPatientPrescriptionsQuery(Guid PatientId) : IRequest<Result<IReadOnlyList<PrescriptionListItemDto>>>;
+public sealed record GetPatientPrescriptionsQuery(Guid PatientId, int LookbackDays = 180)
+    : IRequest<Result<IReadOnlyList<PatientPrescriptionHistoryDto>>>;
