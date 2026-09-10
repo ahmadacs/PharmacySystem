@@ -4,6 +4,7 @@ import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { AuthStore } from '../auth/auth.store';
 import { TokenStore } from '../auth/token.store';
+import { readStoredCulture } from '../constants/storage-keys';
 import { SignalrService } from '../services/signalr.service';
 
 const AUTH_SKIP_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
@@ -33,7 +34,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    const lang = localStorage.getItem('Abp.Localization.CultureName');
+    const lang = readStoredCulture();
     if (lang) headers['Accept-Language'] = lang;
     return request.clone({ setHeaders: headers, withCredentials: true });
   };

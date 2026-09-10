@@ -22,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     provideNativeDateAdapter(),
     provideHttpClient(withInterceptors([languageInterceptor, errorInterceptor, authInterceptor])),
     provideTranslateService({ fallbackLang: 'en', lang: 'en' }),
-    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
+    provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json', useHttpBackend: true }),
     { provide: MatPaginatorIntl, useClass: CustomPaginatorIntl }
   ]
 };
