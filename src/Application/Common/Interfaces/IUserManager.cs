@@ -33,6 +33,15 @@ public interface IUserManager
 {
     Task<UserAccount?> FindAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<UserAccount?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Batch-resolves display names for list screens in a single round trip.
+    /// Returns only users with a non-empty display name; missing keys mean "unknown".
+    /// Use this instead of looping <see cref="FindAsync"/> (N+1).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default);
     Task<PasswordCheckResult> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken = default);
 
     /// <summary>Creates the user and assigns roles. Returns the new user id or a list of errors on failure.</summary>

@@ -35,6 +35,37 @@ public sealed class UserManagerService : IUserManager
         return user is null ? null : await ToAccountAsync(user, cancellationToken);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        // Single round trip: project only what list screens need (no roles/permissions).
+        var rows = await _db.Users
+            .AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .Select(u => new
+            {
+                u.Id,
+                u.FirstName,
+                u.LastName
+            })
+            .ToListAsync(cancellationToken);
+
+        var result = new Dictionary<Guid, string>(rows.Count);
+        foreach (var row in rows)
+        {
+            var fullName = $"{row.FirstName} {row.LastName}".Trim();
+            if (!string.IsNullOrWhiteSpace(fullName))
+                result[row.Id] = fullName;
+        }
+
+        return result;
+    }
+
     public async Task<PasswordCheckResult> CheckPasswordAsync(string email, string password, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(email);

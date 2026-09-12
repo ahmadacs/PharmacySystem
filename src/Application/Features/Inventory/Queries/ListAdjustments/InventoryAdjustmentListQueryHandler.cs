@@ -71,13 +71,7 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
             .Select(r => r.AdjustedBy!.Value)
             .Distinct()
             .ToList();
-        var userNames = new Dictionary<Guid, string>();
-        foreach (var userId in adjustedByIds)
-        {
-            var account = await _users.FindAsync(userId, cancellationToken);
-            if (!string.IsNullOrWhiteSpace(account?.FullName))
-                userNames[userId] = account.FullName;
-        }
+        var userNames = await _users.GetDisplayNamesAsync(adjustedByIds, cancellationToken);
 
         var items = rows
             .Select(r => r.ToDto(r.AdjustedBy.HasValue ? userNames.GetValueOrDefault(r.AdjustedBy.Value) : null))

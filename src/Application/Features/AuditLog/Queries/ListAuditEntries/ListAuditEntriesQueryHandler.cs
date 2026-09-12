@@ -39,13 +39,7 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
             .Select(e => e.ChangedBy!.Value)
             .Distinct()
             .ToList();
-        var authorNames = new Dictionary<Guid, string>();
-        foreach (var authorId in authorIds)
-        {
-            var account = await _users.FindAsync(authorId, cancellationToken);
-            if (!string.IsNullOrWhiteSpace(account?.FullName))
-                authorNames[authorId] = account.FullName;
-        }
+        var authorNames = await _users.GetDisplayNamesAsync(authorIds, cancellationToken);
 
         var items = page.Items
             .Select(r => r.ToDto(
