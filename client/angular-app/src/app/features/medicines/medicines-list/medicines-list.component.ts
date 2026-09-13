@@ -1,7 +1,6 @@
-import { HttpParams, httpResource } from '@angular/common/http';
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { HttpParams } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -29,10 +28,10 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
-import { CategoryEnum, MedicineForm, MedicineListItemDto, PagedResult } from '../../../core/models/api.models';
+import { CategoryEnum, MedicineForm, MedicineListItemDto } from '../../../core/models/api.models';
 import { ExportService } from '../../../core/services/export.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { emptyPage } from '../../../core/utils/empty-page';
+import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -104,49 +103,33 @@ export class MedicinesListComponent {
     return columns;
   });
 
-  protected readonly page = signal(1);
-  protected readonly pageSize = signal(10);
-  protected readonly search = signal('');
-  protected readonly sortBy = signal('name');
-  protected readonly sortDir = signal('asc');
+  protected readonly table = createPagedTable({ defaultSortBy: 'name' });
+  protected readonly page = this.table.page;
+  protected readonly pageSize = this.table.pageSize;
+  protected readonly search = this.table.search;
+  protected readonly sortBy = this.table.sortBy;
+  protected readonly sortDir = this.table.sortDir;
+  protected readonly searchControl = this.table.searchControl;
   protected readonly categoryId = signal<number | null>(null);
   protected readonly form = signal<MedicineForm | null>(null);
   protected readonly isActive = signal<boolean | null>(null);
 
-  protected readonly searchControl = new FormControl('');
-  protected readonly searchValue = toSignal(this.searchControl.valueChanges, { initialValue: '' });
-
   protected readonly categories = Object.values(CategoryEnum).filter(v => typeof v === 'number');
 
-  protected readonly medicines = httpResource<PagedResult<MedicineListItemDto>>(
-    () => {
-      let params = new HttpParams()
-        .set('page', this.page())
-        .set('pageSize', this.pageSize())
-        .set('search', this.search())
-        .set('sortBy', this.sortBy())
-        .set('sortDir', this.sortDir());
-      if (this.categoryId()) params = params.set('categoryId', this.categoryId()!);
-      if (this.form()) params = params.set('form', this.form()!);
-      if (this.isActive() !== null) params = params.set('isActive', this.isActive()!);
-      return { url: `${environment.apiUrl}/medicines`, params };
-    },
-    { defaultValue: emptyPage<MedicineListItemDto>() }
-  );
+  protected readonly medicines = createPagedResource<MedicineListItemDto>(() => {
+    let params = new HttpParams()
+      .set('page', this.table.page())
+      .set('pageSize', this.table.pageSize())
+      .set('search', this.table.search())
+      .set('sortBy', this.table.sortBy())
+      .set('sortDir', this.table.sortDir());
+    if (this.categoryId()) params = params.set('categoryId', this.categoryId()!);
+    if (this.form()) params = params.set('form', this.form()!);
+    if (this.isActive() !== null) params = params.set('isActive', this.isActive()!);
+    return { url: `${environment.apiUrl}/medicines`, params };
+  });
 
-  protected readonly totalCount = computed(() => this.medicines.value()?.totalCount ?? 0);
-
-  constructor() {
-    // categories are now static enum values
-    effect((onCleanup) => {
-      const value = (this.searchValue() ?? '').trim();
-      const handle = setTimeout(() => {
-        this.search.set(value);
-        this.page.set(1);
-      }, 300);
-      onCleanup(() => clearTimeout(handle));
-    });
-  }
+  protected readonly totalCount = this.medicines.totalCount;
 
   getStatusTranslation(isActive: boolean, isControlled: boolean): string {
     if (!isActive) return this.translate.instant('dictionary.status.inactive');
@@ -155,21 +138,15 @@ export class MedicinesListComponent {
   }
 
   onSortChange(sort: Sort): void {
-    if (!sort.active) {
-      return;
-    }
-    this.sortBy.set(sort.active);
-    this.sortDir.set(sort.direction === 'asc' ? 'asc' : 'desc');
-    this.page.set(1);
+    this.table.onSortChange(sort);
   }
 
   onPage(event: PageEvent): void {
-    this.pageSize.set(event.pageSize);
-    this.page.set(event.pageIndex + 1);
+    this.table.onPage(event);
   }
 
   onFilterChange(): void {
-    this.page.set(1);
+    this.table.resetToFirstPage();
   }
 
   private refreshMedicines(): void {

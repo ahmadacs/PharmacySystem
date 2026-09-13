@@ -9,6 +9,7 @@ import { CategoryEnum, MedicineDetailsDto, MedicineForm, MedicineUnit } from '..
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 import { MedicinesService } from '../../medicines/medicines.service';
 import { TranslateService } from '@ngx-translate/core';
+import { currentLanguage } from '../../../core/utils/localized-name.utils';
 
 export interface MedicineDetailDialogData {
   id: string;
@@ -39,7 +40,7 @@ export class MedicineDetailDialogComponent {
 
   readonly data = inject<MedicineDetailDialogData>(MAT_DIALOG_DATA);
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
-  private lang(): string { const c: any = (this.translate as any).currentLang; return typeof c === 'function' ? c() : c; }
+  private lang(): string { return currentLanguage(this.translate); }
 
   constructor() {
     void this.medicinesService

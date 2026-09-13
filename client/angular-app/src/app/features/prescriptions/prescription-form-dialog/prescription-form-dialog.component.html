@@ -21,7 +21,7 @@
         }
         @if (showRest()) {
           <div #restAnchor class="rest-section">
-        @if (isNewPatient()) {
+        @if (patientState().kind === 'new') {
           <div class="new-patient-banner">
             <mat-icon class="banner-icon">person_add</mat-icon>
             <div class="banner-text">
@@ -30,92 +30,17 @@
             </div>
           </div>
         }
-        @if (foundPatient()) {
-          <div class="meds-panel">
-            <button mat-button type="button" class="meds-toggle" (click)="medsExpanded.set(!medsExpanded())" [attr.aria-expanded]="medsExpanded()">
-              <mat-icon class="meds-toggle-icon">history</mat-icon>
-              <span class="meds-toggle-title">{{ 'dialogs.prescriptionForm.medsHistory.title' | translate:{count: activeMeds().length + pastMeds().length} }}</span>
-              <span class="meds-toggle-spacer"></span>
-              <mat-icon>{{ medsExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-            @if (medsExpanded()) {
-            <div class="meds-header">
-              <span class="meds-lookback-label">{{ 'dialogs.prescriptionForm.medsHistory.lookback' | translate }}</span>
-              <div class="lookback-toggle" role="group" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.lookback' | translate">
-                @for (days of lookbackOptions; track days) {
-                  <button mat-button type="button" [class.selected]="medsLookback() === days" (click)="setLookback(days)">
-                    {{ days === 90 ? ('dialogs.prescriptionForm.medsHistory.days90' | translate) : days === 180 ? ('dialogs.prescriptionForm.medsHistory.days180' | translate) : ('dialogs.prescriptionForm.medsHistory.days365' | translate) }}
-                  </button>
-                }
-              </div>
-            </div>
-            @if (medsLoading()) {
-              <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-            } @else if (activeMeds().length === 0 && pastMeds().length === 0) {
-              <div class="meds-empty">{{ 'dialogs.prescriptionForm.medsHistory.empty' | translate }}</div>
-            } @else {
-              @if (activeMeds().length > 0) {
-                <div class="meds-section-title">{{ 'dialogs.prescriptionForm.medsHistory.current' | translate:{count: activeMeds().length} }}</div>
-                <div class="meds-list">
-                  @for (med of activeMeds(); track med.prescriptionItemId) {
-                    <div class="med-row">
-                      <div class="med-info">
-                        <span class="med-name">{{ medDisplayName(med) }}</span>
-                        <span class="med-meta">
-                          @if (med.form) {
-                            {{ med.form | enumTranslate:'MedicineForm' }} {{ med.strength }} {{ med.unit | enumTranslate:'MedicineUnit' }}
-                          } @else {
-                            {{ med.variantName }}
-                          }
-                          · {{ med.issuedDate }} · {{ med.prescriptionStatus | enumTranslate:'PrescriptionStatus' }}</span>
-                        @if (med.dosageInstructions) {
-                          <span class="med-dose">{{ med.dosageInstructions }}</span>
-                        }
-                        <mat-chip-set>
-                          @if (med.isRefillable && med.refillsUsed < med.refillsAllowed) {
-                            <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillLeft' | translate:{used: med.refillsUsed, allowed: med.refillsAllowed} }}</mat-chip>
-                            @if (dueInDaysForMed(med); as due) {
-                              <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.dueIn' | translate:{count: due} }}</mat-chip>
-                            }
-                          } @else if (med.isRefillable) {
-                            <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillsDone' | translate }}</mat-chip>
-                          } @else {
-                            <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.noRefill' | translate }}</mat-chip>
-                          }
-                        </mat-chip-set>
-                      </div>
-                      <button mat-icon-button type="button" (click)="addMedToForm(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
-                        <mat-icon>add_circle</mat-icon>
-                      </button>
-                    </div>
-                  }
-                </div>
-              }
-              @if (pastMeds().length > 0) {
-                <div class="meds-section-title muted">{{ 'dialogs.prescriptionForm.medsHistory.previous' | translate:{count: pastMeds().length} }}</div>
-                <div class="meds-list muted">
-                  @for (med of pastMeds(); track med.prescriptionItemId) {
-                    <div class="med-row">
-                      <div class="med-info">
-                        <span class="med-name">{{ medDisplayName(med) }}</span>
-                        <span class="med-meta">
-                          @if (med.form) {
-                            {{ med.form | enumTranslate:'MedicineForm' }} {{ med.strength }} {{ med.unit | enumTranslate:'MedicineUnit' }}
-                          } @else {
-                            {{ med.variantName }}
-                          }
-                          · {{ med.issuedDate }} · {{ med.prescriptionStatus | enumTranslate:'PrescriptionStatus' }}</span>
-                      </div>
-                      <button mat-icon-button type="button" (click)="addMedToForm(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
-                        <mat-icon>add_circle</mat-icon>
-                      </button>
-                    </div>
-                  }
-                </div>
-              }
-            }
-            }
-          </div>
+        @if (patientState().kind === 'found') {
+          <app-meds-history-list
+            [history]="medsHistory()"
+            [loading]="medsLoading()"
+            [expanded]="medsExpanded()"
+            [lookback]="medsLookback()"
+            [lookbackOptions]="lookbackOptions"
+            (expandedChange)="medsExpanded.set($event)"
+            (lookbackChange)="setLookback($event)"
+            (add)="addMedToForm($event)"
+          />
         }
 
         <div class="row">
@@ -164,7 +89,7 @@
                 <mat-form-field appearance="outline" class="item-medicine">
                   <mat-label>{{ 'dialogs.prescriptionForm.medicine' | translate }}</mat-label>
                   <input matInput
-                      [formControl]="medicineSearchControls[i]"
+                      [formControl]="searchControl(i)"
                          [placeholder]="'dialogs.prescriptionForm.medicineSearchPlaceholder' | translate"
                          [matAutocomplete]="medicineAuto" />
                   <mat-icon matSuffix>search</mat-icon>
@@ -223,11 +148,17 @@
                 }
                 </div>
               </div>
-              @if (items.length > 1) {
+              @if (items.length > 1 || isItemFilled(i)) {
                 <div class="item-footer">
-                  <button mat-icon-button type="button" (click)="removeItem(i)" [aria-label]="'dialogs.prescriptionForm.removeItem' | translate">
-                    <mat-icon>close</mat-icon>
-                  </button>
+                  @if (items.length > 1) {
+                    <button mat-icon-button type="button" (click)="removeItem(i)" [aria-label]="'dialogs.prescriptionForm.removeItem' | translate" [title]="'dialogs.prescriptionForm.removeItem' | translate">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  } @else {
+                    <button mat-icon-button type="button" (click)="clearItem(i)" [aria-label]="'common.clear' | translate" [title]="'common.clear' | translate">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
                 </div>
               }
             </div>

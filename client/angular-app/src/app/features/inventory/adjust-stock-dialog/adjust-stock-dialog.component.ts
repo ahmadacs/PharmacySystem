@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { MatButton } from '@angular/material/button';
@@ -24,21 +25,9 @@ import {
   PagedResult
 } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
+import { FileService } from '../../../core/services/file.service';
+import { startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { InventoryService } from '../inventory.service';
-
-function startOfDay(value: Date): Date {
-  return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
-}
-
-function toDateString(date: Date | null): string | null {
-  if (!date) {
-    return null;
-  }
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 
 function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
   const value = control.value as Date | null;
@@ -87,8 +76,10 @@ export class AdjustStockDialogComponent {
   private readonly http = inject(HttpClient);
   private readonly inventoryService = inject(InventoryService);
   private readonly toast = inject(ToastService);
+  private readonly fileService = inject(FileService);
   private readonly dialogRef = inject(MatDialogRef<AdjustStockDialogComponent>);
   private readonly translate = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly types: InventoryAdjustmentType[] = [
     'Increase', 'Decrease', 'Correction', 'Damaged', 'Expired', 'Returned', 'Sold', 'TransferOut', 'TransferIn'
@@ -186,17 +177,17 @@ export class AdjustStockDialogComponent {
       )
     ).then((result) => this.medicines.set(result.items));
 
-    this.form.controls.type.valueChanges.subscribe((value) => {
+    this.form.controls.type.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.selectedType.set(value as InventoryAdjustmentType | null);
       this.applyValidators();
     });
-    this.form.controls.medicineId.valueChanges.subscribe((value) => {
+    this.form.controls.medicineId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.medicineIdSignal.set(value);
       this.onMedicineChange();
     });
-    this.form.controls.medicineVariantId.valueChanges.subscribe((value) => this.variantIdSignal.set(value));
-    this.form.controls.packagesReceived.valueChanges.subscribe((value) => this.packagesSignal.set(value));
-    this.medicineSearchControl.valueChanges.subscribe((value) => {
+    this.form.controls.medicineVariantId.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => this.variantIdSignal.set(value));
+    this.form.controls.packagesReceived.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => this.packagesSignal.set(value));
+    this.medicineSearchControl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.medicineSearch.set(typeof value === 'string' ? value : this.displayMedicineName(value));
     });
     this.applyValidators();
@@ -245,14 +236,9 @@ export class AdjustStockDialogComponent {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-      if (!allowedTypes.includes(file.type)) {
-        this.toast.show('Only PDF, JPG, and PNG files are allowed.', 'error');
-        return;
-      }
-      if (file.size > maxSize) {
-        this.toast.show('File size must be less than 5MB.', 'error');
+      const error = this.fileService.validateUpload(file);
+      if (error) {
+        this.toast.show(error, 'error');
         return;
       }
       this.file.set(file);
@@ -261,19 +247,6 @@ export class AdjustStockDialogComponent {
 
   removeFile(): void {
     this.file.set(null);
-  }
-
-  private async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-    });
   }
 
   async submit(): Promise<void> {
@@ -290,7 +263,7 @@ export class AdjustStockDialogComponent {
       if (this.file()) {
         this.fileUploading.set(true);
         const file = this.file()!;
-        const base64Content = await this.fileToBase64(file);
+        const base64Content = await this.fileService.fileToBase64(file);
         fileDto = {
           fileName: file.name,
           contentType: file.type,

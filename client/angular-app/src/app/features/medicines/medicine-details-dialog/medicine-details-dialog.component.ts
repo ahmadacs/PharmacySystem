@@ -21,6 +21,7 @@ import { CategoryEnum, MedicineDetailsDto, MedicineForm } from '../../../core/mo
 import { ToastService } from '../../../core/services/toast.service';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
+import { currentLanguage } from '../../../core/utils/localized-name.utils';
 
 @Component({
   selector: 'app-medicine-details-dialog',
@@ -79,5 +80,5 @@ export class MedicineDetailsDialogComponent {
     return this.lang() === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName;
   }
 
-  private lang(): string { const c: any = (this.translate as any).currentLang; return typeof c === 'function' ? c() : c; }
+  private lang(): string { return currentLanguage(this.translate); }
 }

@@ -1,0 +1,107 @@
+// Styles moved here from prescription-form-dialog.component.scss together with
+// the template: with emulated encapsulation the parent's rules never reached
+// inside this component, so owning them here also fixes the panel styling.
+:host {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.meds-panel {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  padding: 0.5rem 0.5rem 0.75rem;
+  background: var(--mat-sys-surface);
+}
+.meds-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  color: var(--mat-sys-on-surface);
+}
+.meds-toggle:hover {
+  background: var(--mat-sys-surface-container-high);
+}
+.meds-toggle-icon {
+  color: var(--mat-sys-primary);
+}
+.meds-toggle-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.meds-toggle-spacer {
+  flex: 1 1 auto;
+}
+.meds-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0 0.25rem;
+}
+.meds-lookback-label {
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+.lookback-toggle {
+  display: flex;
+  gap: 0.25rem;
+}
+.lookback-toggle button.selected {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+.meds-empty {
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 0.5rem 0.25rem;
+}
+.meds-section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0.5rem 0.25rem 0.25rem;
+}
+.meds-section-title.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+.meds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0 0.25rem;
+}
+.meds-list.muted {
+  opacity: 0.85;
+}
+.med-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  background: var(--mat-sys-surface);
+}
+.med-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.med-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.med-meta {
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+.med-dose {
+  font-size: 0.8rem;
+}

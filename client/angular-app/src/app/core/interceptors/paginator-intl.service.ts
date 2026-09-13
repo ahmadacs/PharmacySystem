@@ -1,13 +1,15 @@
-import { Injectable } from '@angular/core';
+import { DestroyRef, Injectable, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatPaginatorIntl } from '@angular/material/paginator';
 import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
 export class CustomPaginatorIntl extends MatPaginatorIntl {
+  private readonly destroyRef = inject(DestroyRef);
   constructor(private translate: TranslateService) {
     super();
 
-    this.translate.onLangChange.subscribe(() => {
+    this.translate.onLangChange.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.updateLabels();
     });
 
