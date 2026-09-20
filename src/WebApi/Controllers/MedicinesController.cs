@@ -44,16 +44,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
         => OkResponse(new GetMedicineQuery(id), cancellationToken);
 
-    /// <summary>Lists the therapeutic categories used by the catalogue.</summary>
-    /// <param name="cancellationToken">Request cancellation token.</param>
-    [HttpGet("categories")]
-    [Authorize(Policy = Permissions.Medicines.View)]
-    [OutputCache(PolicyName = OutputCachePolicies.Medicines)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public Task<IActionResult> Categories(CancellationToken cancellationToken)
-        => OkResponse(new GetMedicineCategoriesQuery(), cancellationToken);
-
     /// <summary>Creates a medicine with its initial variants.</summary>
     /// <param name="request">Medicine name, generic name, category and variants.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>

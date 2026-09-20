@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Users.Queries;
 
-public sealed record ListUsersQuery : PagedQuery, IRequest<PagedList<UserDto>>
+public sealed record ListUsersQuery : PagedQuery, IRequest<Result<PagedList<UserDto>>>
 {
     [StringLength(50, ErrorMessage = "Role must be at most 50 characters.")]
     public string? Role { get; init; }

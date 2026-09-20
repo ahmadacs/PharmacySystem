@@ -1,8 +1,9 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Prescriptions.Common;
-using Domain.Exceptions;
+using Application.Resources;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Notifications.Commands;
 
@@ -14,22 +15,25 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
     private readonly IAsyncQueryExecutor _executor;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public MarkAllNotificationsReadCommandHandler(
         INotificationRepository notifications,
         ICurrentUserService currentUser,
         IUnitOfWork uow,
-        IAsyncQueryExecutor executor)
+        IAsyncQueryExecutor executor,
+        IStringLocalizer<SharedResource> localizer)
     {
         _notifications = notifications;
         _currentUser = currentUser;
         _uow = uow;
         _executor = executor;
+        _localizer = localizer;
     }
 
         public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
     {
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
         if (authResult.IsSuccess)
         {
             var userId = authResult.Value;

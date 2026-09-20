@@ -50,12 +50,6 @@ public class FileSystemBlobStorageService : IFileStorageService
         return Task.CompletedTask;
     }
 
-    public Task<bool> ExistsAsync(string blobPath, CancellationToken cancellationToken = default)
-    {
-        var fullPath = GetSafeFullPath(blobPath);
-        return Task.FromResult(File.Exists(fullPath));
-    }
-
     private string GetSafeFullPath(string blobPath)
     {
         var combined = Path.Combine(_basePath, blobPath.Replace("/", Path.DirectorySeparatorChar.ToString()));

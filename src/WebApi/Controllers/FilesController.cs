@@ -35,33 +35,15 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
     [HttpGet("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await Sender.Send(new GetFileQuery(id), cancellationToken);
-        if (result.IsSuccess)
-        {
-            var (content, contentType, fileName) = result.Value;
-            return File(content, contentType, fileName);
-        }
-
-        return FailureResponse(result);
-    }
+    public Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
+        => FileResponse(new GetFileQuery(id), cancellationToken);
 
     /// <summary>Downloads file content.</summary>
     [HttpGet("{id:guid}/download")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await Sender.Send(new GetFileQuery(id), cancellationToken);
-        if (result.IsSuccess)
-        {
-            var (content, contentType, fileName) = result.Value;
-            return File(content, contentType, fileName);
-        }
-
-        return FailureResponse(result);
-    }
+    public Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
+        => FileResponse(new GetFileQuery(id), cancellationToken);
 
     /// <summary>Lists files for an entity.</summary>
     [HttpGet("{entityType}/{entityId:guid}/list")]

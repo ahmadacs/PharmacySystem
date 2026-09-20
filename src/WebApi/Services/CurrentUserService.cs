@@ -28,17 +28,6 @@ public sealed class CurrentUserService : ICurrentUserService
     public bool IsAuthenticated
         => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true;
 
-    public string? UserName
-        => _httpContextAccessor.HttpContext?.User.FindFirstValue(JwtRegisteredClaimNames.Name)
-           ?? _httpContextAccessor.HttpContext?.User.FindFirstValue(JwtRegisteredClaimNames.Email);
-
-    public IReadOnlyList<string> Roles
-        => _httpContextAccessor.HttpContext?.User
-            .FindAll(RoleClaimType)
-            .Select(c => c.Value)
-            .Distinct()
-            .ToList() ?? [];
-
     public IReadOnlyList<string> Permissions
         => _httpContextAccessor.HttpContext?.User
             .FindAll(PermissionClaimType)

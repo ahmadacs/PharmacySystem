@@ -12,10 +12,12 @@ internal static class PrescriptionAccess
     public static bool CanManageOwn(ICurrentUserService currentUser)
         => currentUser.Permissions.Contains(Permissions.Prescriptions.ManageOwn);
 
-    public static Result<Guid> RequireAuthenticatedUserId(ICurrentUserService currentUser)
+    public static Result<Guid> RequireAuthenticatedUserId(
+        ICurrentUserService currentUser,
+        Microsoft.Extensions.Localization.IStringLocalizer<Application.Resources.SharedResource> localizer)
     {
         if (!currentUser.IsAuthenticated || currentUser.UserId is null)
-            return Result<Guid>.Failure("You are not allowed to access this resource.", 403);
+            return Result<Guid>.Failure(localizer["Forbidden"].Value, 403);
         return Result<Guid>.Success(currentUser.UserId.Value);
     }
 }

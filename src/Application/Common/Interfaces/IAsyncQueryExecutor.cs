@@ -8,7 +8,6 @@ namespace Application.Common.Interfaces;
 public interface IAsyncQueryExecutor
 {
     Task<int> CountAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default);
-    Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default);
     Task<List<T>> ToListAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default);
     Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default);
     Task<T?> SingleOrDefaultAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default);

@@ -357,7 +357,7 @@
     }
 
     <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="lowStock.value()">
+      <table mat-table [dataSource]="lowStock.value().items">
         <ng-container matColumnDef="medicine">
           <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicine' | translate }}</th>
           <td mat-cell *matCellDef="let row">{{ row.medicineName }}</td>
@@ -394,9 +394,17 @@
         <tr mat-row *matRowDef="let row; columns: lowStockColumns"></tr>
       </table>
 
-      @if (!lowStock.isLoading() && lowStock.value().length === 0) {
+      @if (!lowStock.isLoading() && lowStock.value().items.length === 0) {
         <app-empty-state icon="check_circle" [message]="'inventory.empty.lowStock' | translate" [hint]="'inventory.empty.aboveReorder' | translate" />
       }
+
+      <mat-paginator
+        [length]="lowStockBadgeCount()"
+        [pageSize]="lowStockPageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        [pageIndex]="lowStockPage() - 1"
+        (page)="onLowStockPage($event)"
+      />
     </div>
   </mat-tab>
 </mat-tab-group>

@@ -31,12 +31,6 @@ public sealed class Result<T>
         return new(false, default, error, statusCode);
     }
 
-    /// <summary>Implicit conversion from value to success result — handy in handlers.</summary>
-    public static implicit operator Result<T>(T value) => Success(value);
-
-    public T GetValueOrThrow()
-        => IsSuccess ? Value! : throw new InvalidOperationException(Error ?? "Result is failure.");
-
     public override string ToString() => IsSuccess ? $"Success({Value})" : $"Failure({Error})";
 }
 
@@ -65,9 +59,6 @@ public sealed class Result
             throw new ArgumentException("Failure error message is required.", nameof(error));
         return new(false, error, statusCode);
     }
-
-    public static Result<T> Success<T>(T value) => Result<T>.Success(value);
-    public static Result<T> Failure<T>(string error, int statusCode = 400) => Result<T>.Failure(error, statusCode);
 
     public override string ToString() => IsSuccess ? "Success" : $"Failure({Error})";
 }

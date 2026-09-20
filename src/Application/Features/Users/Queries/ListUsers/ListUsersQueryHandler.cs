@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Users.Queries;
 
-public sealed class ListUsersQueryHandler : IRequestHandler<ListUsersQuery, PagedList<UserDto>>
+public sealed class ListUsersQueryHandler : IRequestHandler<ListUsersQuery, Result<PagedList<UserDto>>>
 {
     private readonly IUserManager _users;
 
@@ -14,7 +14,7 @@ public sealed class ListUsersQueryHandler : IRequestHandler<ListUsersQuery, Page
         _users = users;
     }
 
-    public async Task<PagedList<UserDto>> Handle(ListUsersQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedList<UserDto>>> Handle(ListUsersQuery request, CancellationToken cancellationToken)
     {
         var result = await _users.ListAsync(
             request.Search,
@@ -26,8 +26,10 @@ public sealed class ListUsersQueryHandler : IRequestHandler<ListUsersQuery, Page
             request.PageSize,
             cancellationToken);
 
-        return result.Items
+        var items = result.Items
             .Select(u => u.ToDto())
             .ToPagedList(result.Page, result.PageSize, result.TotalCount);
+
+        return Result<PagedList<UserDto>>.Success(items);
     }
 }

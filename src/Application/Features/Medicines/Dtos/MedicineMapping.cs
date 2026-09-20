@@ -1,5 +1,4 @@
 using Application.Common.Interfaces;
-using Domain.Common;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -12,8 +11,6 @@ public static class MedicineMapping
     public static string ToDisplayValue(this MedicineUnit unit) => unit.ToString();
     public static string ToDisplayValue(this CategoryEnum category) => category.ToString();
 
-    public static CategoryDto ToDto(this CategoryEnum category)
-        => new((int)category, category.ToDisplayValue(), null);
 
     /// <summary>
     /// Finds the tracked scientific name or creates and tracks a new one, updating
@@ -76,107 +73,47 @@ public static class MedicineMapping
             variants.Any(v => v.IsLowStock));
     }
 
-    public static MedicineListItemDto ToListItemDto(this Medicine medicine, DateOnly asOf)
+   
+
+    /// <summary>
+    /// Assembles the details DTO from the single-query projection rows
+    /// (see GetMedicineQueryHandler). DisplayName/IsLowStock rules are reused
+    /// from the row mappings instead of being recomputed here.
+    /// </summary>
+    public static MedicineDetailsDto ToDto(this MedicineDetailsRow r, DateOnly asOf)
     {
-        var activeVariants = medicine.Variants.NotDeleted().Where(v => v.IsActive).ToList();
-        var row = new MedicineRow(
-            medicine.Id,
-            medicine.Name,
-            medicine.NameAr,
-            medicine.GenericName.Name,
-            medicine.GenericName.NameAr,
-            medicine.CategoryEnum,
-            medicine.IsControlled,
-            medicine.IsActive,
-            activeVariants.Select(v => new MedicineVariantRow(
-                v.Id,
-                v.Form,
-                v.Unit,
-                v.Strength,
-                v.GetAvailableStock(asOf).Value,
-                v.ReorderLevel.Value,
-                v.UnitOfMeasure.BaseUnitName,
-                v.UnitOfMeasure.PackageUnitName,
-                v.UnitOfMeasure.UnitsPerPackage,
-                v.UnitOfMeasure.IsDivisible)).ToList(),
-            activeVariants.Count);
+        var variants = r.Variants.Select(v =>
+        {
+            var summary = v.Variant.ToDto();
+            return new MedicineVariantDto(
+                v.Variant.Id,
+                r.Id,
+                v.Variant.Form,
+                v.Variant.Unit,
+                v.Variant.Strength,
+                summary.DisplayName,
+                v.IsActive,
+                v.Variant.AvailableQuantity,
+                v.Variant.ReorderLevel,
+                summary.IsLowStock,
+                v.Variant.BaseUnitName,
+                v.Variant.PackageUnitName,
+                v.Variant.UnitsPerPackage,
+                v.Variant.IsDivisible,
+                v.Batches.Select(b => b.ToDto(asOf)).ToList());
+        }).ToList();
 
-        return row.ToDto();
-    }
-
-    public static MedicineDetailsDto ToDetailsDto(this Medicine medicine, DateOnly asOf)
-        => new(
-            medicine.Id,
-            medicine.Name,
-            medicine.NameAr,
-            medicine.GenericName.Name,
-            medicine.GenericName.NameAr,
-            medicine.CategoryEnum,
-            medicine.IsControlled,
-            medicine.IsActive,
-            medicine.GetAvailableStock(asOf).Value,
-            medicine.Variants.NotDeleted()
-                .OrderBy(v => v.Form)
-                .ThenBy(v => v.Strength)
-                .Select(v => v.ToDto(asOf))
-                .ToList());
-
-    public static MedicineVariantDto ToDto(this MedicineVariant variant, DateOnly asOf)
-        => new(
-            variant.Id,
-            variant.MedicineId,
-            variant.Form,
-            variant.Unit,
-            variant.Strength,
-            $"{variant.Form} {variant.Strength} {variant.Unit}",
-            variant.IsActive,
-            variant.GetAvailableStock(asOf).Value,
-            variant.ReorderLevel.Value,
-            variant.IsLowStock(asOf),
-            variant.UnitOfMeasure.BaseUnitName,
-            variant.UnitOfMeasure.PackageUnitName,
-            variant.UnitOfMeasure.UnitsPerPackage,
-            variant.UnitOfMeasure.IsDivisible,
-            variant.Batches.NotDeleted()
-                .Select(b => b.ToDto(variant.Id, variant.Medicine?.Name ?? "Unknown", variant.Medicine?.NameAr, asOf))
-                .OrderBy(b => b.ExpiryDate)
-                .ToList());
-
-    public static MedicineBatchDto ToDto(this MedicineBatch batch, Guid medicineVariantId, string medicineName, string? medicineNameAr, DateOnly asOf, int dispensedQuantity = 0)
-    {
-        int? daysToExpiry = null;
-        if (!batch.IsExpired(asOf))
-            daysToExpiry = batch.ExpiryDate.DayNumber - asOf.DayNumber;
-
-        string batchStatus = batch.IsExpired(asOf)
-            ? "Expired"
-            : batch.QuantityAvailable.Value <= 0
-                ? "Depleted"
-                : "Active";
-
-        // Variant display name from parts
-        var variantName = batch.MedicineVariant is not null
-            ? $"{batch.MedicineVariant.Form} {batch.MedicineVariant.Strength} {batch.MedicineVariant.Unit}"
-            : "Unknown";
-
-        return new MedicineBatchDto(
-            batch.Id,
-            medicineVariantId,
-            medicineName,
-            medicineNameAr,
-            variantName,
-            batch.BatchNumber,
-            batch.ManufactureDate,
-            batch.ExpiryDate,
-            batch.QuantityReceived.Value,
-            batch.QuantityAvailable.Value,
-            dispensedQuantity,
-            batch.UnitCost.Amount,
-            batch.SupplierName,
-            batch.IsExpired(asOf),
-            daysToExpiry,
-            batchStatus,
-            batch.CreatedAt);
+        return new(
+            r.Id,
+            r.Name,
+            r.NameAr,
+            r.GenericName,
+            r.GenericNameAr,
+            r.Category,
+            r.IsControlled,
+            r.IsActive,
+            variants.Sum(v => v.AvailableQuantity),
+            variants);
     }
 
     /// <summary>

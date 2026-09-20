@@ -16,9 +16,6 @@ public sealed class EfQueryExecutor : IAsyncQueryExecutor
     public Task<int> CountAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         => source.CountAsync(cancellationToken);
 
-    public Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
-        => source.AnyAsync(cancellationToken);
-
     public Task<List<T>> ToListAsync<T>(IQueryable<T> source, CancellationToken cancellationToken = default)
         => source.ToListAsync(cancellationToken);
 

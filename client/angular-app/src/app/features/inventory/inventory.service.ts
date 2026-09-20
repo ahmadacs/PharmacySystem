@@ -9,10 +9,6 @@ export class InventoryService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/inventory`;
 
-  lowStock(): Promise<unknown> {
-    return firstValueFrom(this.http.get<unknown>(`${this.baseUrl}/low-stock`));
-  }
-
   adjust(request: AdjustInventoryRequest): Promise<InventoryAdjustmentDto> {
     return firstValueFrom(
       this.http.post<InventoryAdjustmentDto>(`${this.baseUrl}/adjustments`, request)

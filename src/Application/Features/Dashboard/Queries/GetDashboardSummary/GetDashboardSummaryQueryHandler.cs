@@ -36,6 +36,9 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
 
         // Raw sets only: repositories expose data, every rule below lives here
         // in the Application layer (same predicates as the list-query handlers).
+        // NOTE: no IsDeleted guard anywhere below — the EF global query filter
+        // (ApplicationDbContext.ApplySoftDeleteFilters) already excludes
+        // soft-deleted rows from every database query.
         var dispensing = _prescriptions.QueryDispensingRecords();
         var prescriptions = _prescriptions.Query();
         var medicines = _medicines.Query();
@@ -65,11 +68,11 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
                 LowStock: medicines
                     .Where(m => m.IsActive)
                     .SelectMany(m => m.Variants
-                        .Where(v => v.IsActive && !v.IsDeleted)
+                        .Where(v => v.IsActive)
                         .Select(v => new
                         {
                             Available = v.Batches
-                                .Where(b => !b.IsDeleted && b.ExpiryDate > asOf)
+                                .Where(b => b.ExpiryDate > asOf)
                                 .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
                             ReorderLevel = v.ReorderLevel.Value
                         }))
@@ -147,11 +150,11 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
                 LowStock = _medicines.Query()
                     .Where(m => m.IsActive)
                     .SelectMany(m => m.Variants
-                        .Where(v => v.IsActive && !v.IsDeleted)
+                        .Where(v => v.IsActive)
                         .Select(v => new
                         {
                             Available = v.Batches
-                                .Where(b => !b.IsDeleted && b.ExpiryDate > asOf)
+                                .Where(b => b.ExpiryDate > asOf)
                                 .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
                             ReorderLevel = v.ReorderLevel.Value
                         }))

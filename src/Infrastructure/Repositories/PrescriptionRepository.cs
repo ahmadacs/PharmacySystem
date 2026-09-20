@@ -25,21 +25,6 @@ public sealed class PrescriptionRepository : BaseRepository<Prescription>, IPres
             .Include(p => p.Doctor)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
-    public async Task<List<Prescription>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default)
-        => await Db.Set<Prescription>()
-            .Include(p => p.Patient)
-            .Include(p => p.Items)
-            .Where(p => p.PatientId == patientId)
-            .OrderByDescending(p => p.IssuedDate)
-            .ToListAsync(cancellationToken);
-
-    public async Task<Dictionary<Guid, int>> GetDispensedTotalsAsync(IReadOnlyCollection<Guid> batchIds, CancellationToken cancellationToken = default)
-        => await Db.Set<DispensingRecordItem>()
-            .Where(i => batchIds.Contains(i.MedicineBatchId))
-            .GroupBy(i => i.MedicineBatchId)
-            .Select(g => new { BatchId = g.Key, Total = g.Sum(i => i.Quantity.Value) })
-            .ToDictionaryAsync(x => x.BatchId, x => x.Total, cancellationToken);
-
     /// <summary>Queryable dispensing-record set for handler-built searches. Pure data access.</summary>
     public IQueryable<DispensingRecord> QueryDispensingRecords()
         => Db.Set<DispensingRecord>();

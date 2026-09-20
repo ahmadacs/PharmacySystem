@@ -4,7 +4,6 @@ using Application.Common.Security;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Files;
-using Domain.Exceptions;
 using Application.Features.Files.Dtos;
 using MediatR;
 using Microsoft.Extensions.Localization;
@@ -44,14 +43,7 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
             var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
             if (prescription is not null)
             {
-                try
-                {
-                    await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
-                }
-                catch (ForbiddenResourceException ex)
-                {
-                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(ex.Message, 403);
-                }
+                await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
             }
             else
                 return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "Prescription", request.EntityId].Value, 404);

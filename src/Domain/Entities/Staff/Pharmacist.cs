@@ -19,7 +19,4 @@ public class Pharmacist : BaseEntity
         UserId = userId;
         LicenseNumber = LicenseNumberVo.Of(licenseNumber);
     }
-
-    public void Deactivate() => IsActive = false;
-    public void Activate() => IsActive = true;
 }

@@ -3,7 +3,6 @@ using Application.Common.Models;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
-using Domain.Exceptions;
 using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;

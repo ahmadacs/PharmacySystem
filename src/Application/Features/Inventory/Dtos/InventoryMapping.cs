@@ -68,7 +68,7 @@ public static class InventoryMapping
             r.BatchId,
             r.MedicineName,
             r.MedicineNameAr,
-            r.Strength is null ? $"{r.Form} {r.Unit}".Trim() : $"{r.Form} {r.Strength} {r.Unit}",
+            $"{r.Form} {r.Strength} {r.Unit}",
             r.BatchNumber,
             r.ExpiryDate,
             r.DaysToExpiry,

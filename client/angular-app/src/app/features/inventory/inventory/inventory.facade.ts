@@ -129,11 +129,20 @@ export class InventoryFacade {
   readonly adjCount = computed(() => this.adjustments.value()?.totalCount ?? 0);
 
   // ---- Low stock tab ----
-  readonly lowStock = httpResource<LowStockDto[]>(
-    () => ({ url: `${environment.apiUrl}/inventory/low-stock` }),
-    { defaultValue: [] },
+  readonly lowStockTable = createPagedTable({ defaultSortBy: 'medicineName' });
+
+  readonly lowStock = httpResource<PagedResult<LowStockDto>>(
+    () => {
+      const params = new HttpParams()
+        .set('page', this.lowStockTable.page())
+        .set('pageSize', this.lowStockTable.pageSize())
+        .set('sortBy', this.lowStockTable.sortBy())
+        .set('sortDir', this.lowStockTable.sortDir());
+      return { url: `${environment.apiUrl}/inventory/low-stock`, params };
+    },
+    { defaultValue: emptyPage<LowStockDto>() },
   );
-  readonly lowStockBadgeCount = computed(() => this.lowStock.value().length);
+  readonly lowStockBadgeCount = computed(() => this.lowStock.value()?.totalCount ?? 0);
 
   reloadAfterAdjust(): void {
     if (this.adjTable.page() === 1) {

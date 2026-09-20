@@ -1,10 +1,11 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Medicines.Dtos;
+using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Enums;
-using Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Medicines.Commands;
 
@@ -12,11 +13,13 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
 {
     private readonly IMedicineRepository _repo;
     private readonly IUnitOfWork _uow;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow)
+    public CreateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
+        _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(CreateMedicineCommand request, CancellationToken cancellationToken)
@@ -24,7 +27,7 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
         var req = request.Request;
 
         if (await _repo.MedicineNameExistsAsync(req.Name, null, cancellationToken))
-            return Result<Guid>.Failure($"A medicine named '{req.Name}' already exists.", 409);
+            return Result<Guid>.Failure(_localizer["MedicineAlreadyExists", req.Name].Value, 409);
 
         GenericName genericName = await MedicineMapping.ResolveGenericNameAsync(_repo, req.GenericName, req.GenericNameAr, cancellationToken);
 
@@ -37,20 +40,13 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
             var key = (variantRequest.Form, variantRequest.Unit, variantRequest.Strength);
             if (!seenKeys.Add(key))
                 return Result<Guid>.Failure(
-                    $"A duplicate variant '{variantRequest.Form} {variantRequest.Strength} {variantRequest.Unit}' was provided in this request.", 409);
+                    _localizer["VariantAlreadyExists", $"{variantRequest.Form} {variantRequest.Strength} {variantRequest.Unit}"].Value, 400);
 
             medicine.AddVariant(variantRequest.ToEntity(medicine.Id));
         }
 
         _repo.Add(medicine);
-        try
-        {
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
-        catch (DomainException ex)
-        {
-            return Result<Guid>.Failure(ex.Message, 422);
-        }
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return Result<Guid>.Success(medicine.Id);
     }

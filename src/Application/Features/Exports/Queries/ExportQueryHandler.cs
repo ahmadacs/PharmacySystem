@@ -2,7 +2,6 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
 using Application.Resources;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -57,26 +56,11 @@ public sealed class ExportQueryHandler : IRequestHandler<ExportQuery, Result<Exp
         else return Result<ExportFileResult>.Failure(_localizer["InvalidEntityType", request.EntityType, "medicines, inventory, prescriptions, dispensing"].Value, 422);
 
         ExportFileResult result;
-        try
-        {
-            if (entity == "medicines") result = await ExportMedicines(isExcel, cancellationToken);
-            else if (entity == "inventory") result = await ExportInventory(isExcel, cancellationToken);
-            else if (entity == "prescriptions") result = await ExportPrescriptions(isExcel, request.Id, cancellationToken);
-            else if (entity == "dispensing") result = await ExportDispensing(isExcel, cancellationToken);
-            else return Result<ExportFileResult>.Failure(_localizer["InvalidEntityType", request.EntityType, "medicines, inventory, prescriptions, dispensing"].Value, 422);
-        }
-        catch (FileValidationException ex)
-        {
-            return Result<ExportFileResult>.Failure(ex.Message, 422);
-        }
-        catch (ForbiddenResourceException ex)
-        {
-            return Result<ExportFileResult>.Failure(ex.Message, 403);
-        }
-        catch (DomainException ex)
-        {
-            return Result<ExportFileResult>.Failure(ex.Message, 422);
-        }
+        if (entity == "medicines") result = await ExportMedicines(isExcel, cancellationToken);
+        else if (entity == "inventory") result = await ExportInventory(isExcel, cancellationToken);
+        else if (entity == "prescriptions") result = await ExportPrescriptions(isExcel, request.Id, cancellationToken);
+        else if (entity == "dispensing") result = await ExportDispensing(isExcel, cancellationToken);
+        else return Result<ExportFileResult>.Failure(_localizer["InvalidEntityType", request.EntityType, "medicines, inventory, prescriptions, dispensing"].Value, 422);
 
         return Result<ExportFileResult>.Success(result);
     }

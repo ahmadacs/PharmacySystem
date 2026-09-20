@@ -26,9 +26,16 @@ public sealed record AdjustInventoryRequest
 
 public sealed record FileUploadDto
 {
+    [Required, StringLength(260)]
     public string FileName { get; init; } = string.Empty;
+
+    [Required, StringLength(100)]
     public string ContentType { get; init; } = string.Empty;
+
+    [Range(1, long.MaxValue)]
     public long SizeBytes { get; init; }
+
+    [Required]
     public string Base64Content { get; init; } = string.Empty;
 }
 

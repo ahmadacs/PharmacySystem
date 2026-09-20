@@ -1,7 +1,5 @@
 ﻿using Domain.Common;
-using Domain.Events;
 using Domain.Enums;
-using Domain.ValueObjects;
 
 namespace Domain.Entities.Medicines;
 
@@ -61,21 +59,4 @@ public class Medicine : BaseEntity
             throw new ArgumentException("Variant must belong to this medicine.", nameof(variant));
         _variants.Add(variant);
     }
-
-    public Quantity GetAvailableStock(DateOnly asOf) =>
-        _variants
-            .NotDeleted()
-            .Where(v => v.IsActive)
-            .Select(v => v.GetAvailableStock(asOf))
-            .Aggregate(Quantity.Zero, (total, q) => total.Add(q));
-
-    /// <summary>True when any active variant is at or below its reorder level.</summary>
-    public bool HasAnyLowStockVariant(DateOnly asOf) =>
-        _variants.NotDeleted().Where(v => v.IsActive).Any(v => v.IsLowStock(asOf));
-
-    public IEnumerable<MedicineBatch> GetExpiredBatches(DateOnly asOf) =>
-        _variants.NotDeleted().SelectMany(v => v.GetExpiredBatches(asOf));
-
-    public IEnumerable<MedicineBatch> GetNearExpiryBatches(DateOnly asOf, int withinDays) =>
-        _variants.NotDeleted().SelectMany(v => v.GetNearExpiryBatches(asOf, withinDays));
 }

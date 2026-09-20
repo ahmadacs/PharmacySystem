@@ -4,7 +4,6 @@ using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Enums;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -45,14 +44,7 @@ public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicin
         if (req.IsActive) medicine.Activate();
         else medicine.Deactivate();
 
-        try
-        {
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
-        catch (DomainException ex)
-        {
-            return Result.Failure(ex.Message, 422);
-        }
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

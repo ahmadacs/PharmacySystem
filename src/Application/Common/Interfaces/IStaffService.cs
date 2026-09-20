@@ -7,13 +7,10 @@ namespace Application.Common.Interfaces;
 public interface IStaffService
 {
     Task<Guid?> GetDoctorIdForUserAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task<Guid?> GetPharmacistIdForUserAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task<(Guid Id, string FullName)?> GetDoctorAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<(Guid Id, string FullName)?> GetPharmacistAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>Looks up a staff member's name (from the linked user account) by its domain id.</summary>
     Task<string?> GetDoctorNameAsync(Guid doctorId, CancellationToken cancellationToken = default);
-    Task<string?> GetPharmacistNameAsync(Guid pharmacistId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Resolves many doctor names with ONE query (WHERE IN). Pure data access:
@@ -26,8 +23,7 @@ public interface IStaffService
 
     /// <summary>
     /// Resolves many pharmacist names with ONE query (WHERE IN). Pure data
-    /// access: no filtering, no rules. Use this instead of calling
-    /// <see cref="GetPharmacistNameAsync"/> in a loop (N+1).
+    /// access: no filtering, no rules. Use this instead of per-id lookups (N+1).
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> GetPharmacistNamesAsync(
         IEnumerable<Guid> pharmacistIds,

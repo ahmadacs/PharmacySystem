@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Application.Features.Medicines.Queries;
 
-public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQuery, PagedList<MedicineListItemDto>>
+public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQuery, Result<PagedList<MedicineListItemDto>>>
 {
     private readonly IMedicineRepository _repo;
     private readonly IAsyncQueryExecutor _executor;
@@ -17,7 +17,7 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
         _executor = executor;
     }
 
-    public async Task<PagedList<MedicineListItemDto>> Handle(ListMedicinesQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedList<MedicineListItemDto>>> Handle(ListMedicinesQuery request, CancellationToken cancellationToken)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -38,7 +38,7 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
             baseQuery = baseQuery.Where(m => (int)m.CategoryEnum == request.CategoryId.Value);
 
         if (request.Form.HasValue)
-            baseQuery = baseQuery.Where(m => m.Variants.Any(v => v.Form == request.Form.Value && !v.IsDeleted));
+            baseQuery = baseQuery.Where(m => m.Variants.Any(v => v.Form == request.Form.Value));
 
         if (request.IsActive.HasValue)
             baseQuery = baseQuery.Where(m => m.IsActive == request.IsActive.Value);
@@ -47,7 +47,7 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
         {
             "createdat" => SortDir(baseQuery, m => m.CreatedAt, request.SortDir),
             "category" => SortDir(baseQuery, m => m.CategoryEnum, request.SortDir),
-            "form" => SortDir(baseQuery, m => m.Variants.Where(v => !v.IsDeleted).OrderBy(v => v.Form).Select(v => v.Form).FirstOrDefault(), request.SortDir),
+            "form" => SortDir(baseQuery, m => m.Variants.OrderBy(v => v.Form).Select(v => v.Form).FirstOrDefault(), request.SortDir),
             _ => SortDir(baseQuery, m => m.Name, request.SortDir)
         };
 
@@ -62,21 +62,21 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
                 m.IsControlled,
                 m.IsActive,
                 m.Variants
-                    .Where(v => !v.IsDeleted && v.IsActive)
+                    .Where(v => v.IsActive)
                     .OrderBy(v => v.Form)
                     .Select(v => new MedicineVariantRow(
                         v.Id,
                         v.Form,
                         v.Unit,
                         v.Strength,
-                        v.Batches.Where(b => !b.IsDeleted && b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
+                        v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
                         v.ReorderLevel.Value,
                         v.UnitOfMeasure.BaseUnitName,
                         v.UnitOfMeasure.PackageUnitName,
                         v.UnitOfMeasure.UnitsPerPackage,
                         v.UnitOfMeasure.IsDivisible))
                     .ToList(),
-                m.Variants.Count(v => !v.IsDeleted && v.IsActive)));
+                m.Variants.Count(v => v.IsActive)));
 
         var totalCount = await _executor.CountAsync(projected, cancellationToken);
 
@@ -87,9 +87,11 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
             projected.Skip((page - 1) * pageSize).Take(pageSize),
             cancellationToken);
 
-        return rows
+        var items = rows
             .Select(r => r.ToDto())
             .ToPagedList(page, pageSize, totalCount);
+
+        return Result<PagedList<MedicineListItemDto>>.Success(items);
     }
 
     private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(

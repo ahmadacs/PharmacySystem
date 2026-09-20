@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Application.Features.Medicines.Queries;
 
-public sealed record ListMedicinesQuery : PagedQuery, IRequest<PagedList<MedicineListItemDto>>
+public sealed record ListMedicinesQuery : PagedQuery, IRequest<Result<PagedList<MedicineListItemDto>>>
 {
     public override string? SortBy { get; init; } = "name";
 

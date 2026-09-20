@@ -104,10 +104,6 @@ POST {{WebApi_HostAddress}}/api/v1/auth/logout
 GET {{WebApi_HostAddress}}/api/v1/medicines?page=1&pageSize=10&search=paracetamol&sortBy=name&sortDir=asc&form=Tablet
 Authorization: Bearer {{accessToken}}
 
-### Medicine categories
-GET {{WebApi_HostAddress}}/api/v1/medicines/categories
-Authorization: Bearer {{accessToken}}
-
 ### Low-stock inventory
 GET {{WebApi_HostAddress}}/api/v1/inventory/low-stock
 Authorization: Bearer {{accessToken}}

@@ -62,13 +62,17 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     /// <summary>Returns medicines whose available stock is at or below their reorder level.</summary>
+    /// <param name="query">Page, pageSize, sortBy, sortDir.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("low-stock")]
     [Authorize(Policy = Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public Task<IActionResult> LowStock(CancellationToken cancellationToken)
-        => OkResponse(new ListLowStockQuery(), cancellationToken);
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<IActionResult> LowStock(
+        [FromQuery] ListLowStockQuery query,
+        CancellationToken cancellationToken)
+        => OkResponse(query, cancellationToken);
 
     /// <summary>Lists stock adjustments with pagination, search, sorting and type filtering.</summary>
     /// <param name="query">Page, pageSize, search, sortBy, sortDir, type.</param>

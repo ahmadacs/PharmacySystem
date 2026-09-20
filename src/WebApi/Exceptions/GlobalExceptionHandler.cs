@@ -45,8 +45,6 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             case ForbiddenResourceException:
                 return (StatusCodes.Status403Forbidden, S(localizer["Forbidden"].Value));
             case InvalidCredentialsException:
-            case AccountLockedOutException:
-            case AccountDisabledException:
             case InvalidRefreshTokenException:
                 return (StatusCodes.Status401Unauthorized, S(exception.Message));
             case ConflictingOperationException:

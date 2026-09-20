@@ -1,11 +1,13 @@
+using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Inventory.Dtos;
+using Domain.Entities.Medicines;
 using MediatR;
 
 namespace Application.Features.Inventory.Queries;
 
-public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery, Result<IReadOnlyList<LowStockDto>>>
+public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery, Result<PagedList<LowStockDto>>>
 {
     private readonly IMedicineRepository _repo;
     private readonly IAsyncQueryExecutor _executor;
@@ -16,33 +18,55 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
         _executor = executor;
     }
 
-    public async Task<Result<IReadOnlyList<LowStockDto>>> Handle(ListLowStockQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedList<LowStockDto>>> Handle(ListLowStockQuery request, CancellationToken cancellationToken)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // NOTE: filtering/sorting must use entity members BEFORE the row
-        // projection — EF cannot translate member access on a constructed
-        // record (e.g. OrderBy(x => x.MedicineName) fails).
+        IQueryable<MedicineVariant> data = _repo.QueryVariants()
+            .Where(v => v.IsActive && v.Medicine!.IsActive)
+            .Where(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
+
+        var sorted = request.SortBy?.ToLowerInvariant() switch
+        {
+            "quantity" or "available" => SortDir(data, AvailableStock(asOf), request.SortDir),
+            "strength" => SortDir(data, v => v.Strength, request.SortDir),
+            _ => SortDir(data, v => v.Medicine!.Name, request.SortDir)
+        };
+
+        var totalCount = await _executor.CountAsync(sorted, cancellationToken);
+
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize(100);
+
         var rows = await _executor.ToListAsync(
-            _repo.Query()
-                .Where(m => m.IsActive)
-                .OrderBy(m => m.Name)
-                .SelectMany(m => m.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted)
-                    .Where(v => v.Batches.Where(b => !b.IsDeleted && b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value)
-                    .OrderBy(v => v.Strength)
-                    .Select(v => new LowStockRow(
-                        m.Id,
-                        m.Name,
-                        m.NameAr,
-                        v.Id,
-                        v.Batches.Where(b => !b.IsDeleted && b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
-                        v.ReorderLevel.Value,
-                        v.Form,
-                        v.Unit,
-                        v.Strength))),
+            sorted.Skip((page - 1) * pageSize).Take(pageSize)
+                .Select(v => new LowStockRow(
+                    v.MedicineId,
+                    v.Medicine!.Name,
+                    v.Medicine!.NameAr,
+                    v.Id,
+                    v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
+                    v.ReorderLevel.Value,
+                    v.Form,
+                    v.Unit,
+                    v.Strength)),
             cancellationToken);
 
-        return Result<IReadOnlyList<LowStockDto>>.Success(rows.Select(r => r.ToDto()).ToList());
+        var items = rows
+            .Select(r => r.ToDto())
+            .ToPagedList(page, pageSize, totalCount);
+
+        return Result<PagedList<LowStockDto>>.Success(items);
     }
+
+    private static Expression<Func<MedicineVariant, int>> AvailableStock(DateOnly asOf)
+        => v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0;
+
+    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
+        IQueryable<TSource> source,
+        System.Linq.Expressions.Expression<Func<TSource, TKey>> keySelector,
+        string sortDir)
+        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
+            ? source.OrderByDescending(keySelector)
+            : source.OrderBy(keySelector);
 }

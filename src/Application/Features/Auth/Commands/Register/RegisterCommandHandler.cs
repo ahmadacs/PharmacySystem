@@ -28,7 +28,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         var req = request.Request;
         var role = req.Role.Trim();
         if (role != Roles.Doctor && role != Roles.Pharmacist)
-            return Result<AuthResponse>.Failure(_localizer["SelfRegistration"].Value, 409);
+            return Result<AuthResponse>.Failure(_localizer["SelfRegistration"].Value, 403);
 
         var result = await _users.TryCreateUserAsync(
             req.Email,

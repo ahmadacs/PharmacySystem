@@ -3,7 +3,6 @@ using Application.Common.Models;
 using Application.Common.Security;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -43,14 +42,7 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
             var prescription = await _prescriptions.GetByIdAsync(attachment.EntityId, cancellationToken);
             if (prescription is not null)
             {
-                try
-                {
-                    await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
-                }
-                catch (ForbiddenResourceException ex)
-                {
-                    return Result<(Stream Content, string ContentType, string FileName)>.Failure(ex.Message, 403);
-                }
+                await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
             }
         }
 

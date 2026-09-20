@@ -2,7 +2,6 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Resources;
 using Domain.Entities.Medicines;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -28,14 +27,7 @@ public sealed class DeleteBatchCommandHandler : IRequestHandler<DeleteBatchComma
             return Result.Failure(_localizer["ResourceNotFound", "MedicineBatch", request.Id].Value, 404);
 
         _repo.RemoveBatch(batch);
-        try
-        {
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
-        catch (DomainException ex)
-        {
-            return Result.Failure(ex.Message, 422);
-        }
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

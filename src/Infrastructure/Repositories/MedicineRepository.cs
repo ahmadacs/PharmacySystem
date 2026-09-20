@@ -21,14 +21,6 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
         // Add only to the DbContext. The Unit of Work / caller is responsible for SaveChanges.
         => Db.Set<GenericName>().Add(genericName);
 
-    public async Task<Medicine?> GetByIdWithVariantsAsync(Guid id, CancellationToken cancellationToken = default)
-        => await Db.Set<Medicine>()
-            .AsNoTracking()
-            .Include(m => m.Variants)
-                .ThenInclude(v => v.Batches)
-            .Include(m => m.GenericName)
-            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
-
     public async Task<MedicineVariant?> GetVariantByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await Db.Set<MedicineVariant>().FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
 
@@ -52,9 +44,6 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
 
     public void AddVariant(MedicineVariant variant)
         => Db.Set<MedicineVariant>().Add(variant);
-
-    public void RemoveVariant(MedicineVariant variant)
-        => Db.Set<MedicineVariant>().Remove(variant);
 
     public async Task<MedicineBatch?> GetBatchByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await Db.Set<MedicineBatch>().FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
@@ -81,6 +70,10 @@ public sealed class MedicineRepository : BaseRepository<Medicine>, IMedicineRepo
         return await Db.Set<MedicineBatch>()
             .AnyAsync(b => b.BatchNumber == trimmed && (excludeId == null || b.Id != excludeId), cancellationToken);
     }
+
+    /// <summary>Queryable variant set for handler-built searches. Pure data access.</summary>
+    public IQueryable<MedicineVariant> QueryVariants()
+        => Db.Set<MedicineVariant>();
 
     /// <summary>Queryable batch set for handler-built searches. Pure data access.</summary>
     public IQueryable<MedicineBatch> QueryBatches()

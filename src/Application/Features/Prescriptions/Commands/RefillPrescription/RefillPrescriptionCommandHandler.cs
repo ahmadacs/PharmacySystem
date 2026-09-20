@@ -3,7 +3,6 @@ using Application.Common.Models;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -49,31 +48,9 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
                 return Result.Failure(_localizer["RefillItemExhausted", itemId, item.RefillsUsed, item.RefillsAllowed].Value, 409);
         }
 
-        try
-        {
-            prescription.RegisterItemsRefill(request.ItemIds);
-        }
-        catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
-        {
-            return Result.Failure(ex.Message, 409);
-        }
-        catch (DomainException ex)
-        {
-            return Result.Failure(ex.Message, 422);
-        }
+        prescription.RegisterItemsRefill(request.ItemIds);
 
-        try
-        {
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
-        catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
-        {
-            return Result.Failure(ex.Message, 409);
-        }
-        catch (DomainException ex)
-        {
-            return Result.Failure(ex.Message, 422);
-        }
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

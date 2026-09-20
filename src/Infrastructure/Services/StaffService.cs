@@ -20,23 +20,6 @@ public sealed class StaffService : IStaffService
             .Select(d => (Guid?)d.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<Guid?> GetPharmacistIdForUserAsync(Guid userId, CancellationToken cancellationToken = default)
-        => await _db.Set<Pharmacist>()
-            .Where(p => p.UserId == userId)
-            .Select(p => (Guid?)p.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
-    public async Task<(Guid Id, string FullName)?> GetDoctorAsync(Guid userId, CancellationToken cancellationToken = default)
-    {
-        var doctor = await (from d in _db.Set<Doctor>()
-                            join u in _db.Users on d.UserId equals u.Id
-                            where d.UserId == userId
-                            select new { d.Id, FullName = (u.FirstName + " " + u.LastName).Trim() })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return doctor is null ? null : (doctor.Id, doctor.FullName);
-    }
-
     public async Task<(Guid Id, string FullName)?> GetPharmacistAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var pharmacist = await (from ph in _db.Set<Pharmacist>()
@@ -52,12 +35,6 @@ public sealed class StaffService : IStaffService
         => (from d in _db.Set<Doctor>()
             join u in _db.Users on d.UserId equals u.Id
             where d.Id == doctorId
-            select (u.FirstName + " " + u.LastName).Trim()).FirstOrDefaultAsync(cancellationToken);
-
-    public Task<string?> GetPharmacistNameAsync(Guid pharmacistId, CancellationToken cancellationToken = default)
-        => (from ph in _db.Set<Pharmacist>()
-            join u in _db.Users on ph.UserId equals u.Id
-            where ph.Id == pharmacistId
             select (u.FirstName + " " + u.LastName).Trim()).FirstOrDefaultAsync(cancellationToken);
 
     /// <summary>All requested doctor names in one round trip (WHERE IN).</summary>

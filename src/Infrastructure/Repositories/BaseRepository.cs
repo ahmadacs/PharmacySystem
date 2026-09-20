@@ -23,9 +23,6 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
     public void Add(TEntity entity)
         => Db.Set<TEntity>().Add(entity);
 
-    public void Update(TEntity entity)
-        => Db.Set<TEntity>().Update(entity);
-
     public void Remove(TEntity entity)
         => Db.Set<TEntity>().Remove(entity);
 }

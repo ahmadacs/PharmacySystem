@@ -28,8 +28,6 @@ public sealed class PagedList<T>
         PageSize = pageSize;
         TotalCount = totalCount;
     }
-
-    public static PagedList<T> Empty(int page = 1, int pageSize = 10) => new([], page, pageSize, 0);
 }
 
 /// <summary>

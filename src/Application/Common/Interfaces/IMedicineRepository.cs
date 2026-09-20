@@ -8,7 +8,6 @@ namespace Application.Common.Interfaces;
 public interface IMedicineRepository : IBaseRepository<Medicine>
 {
     Task<MedicineBatch?> GetBatchByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<Medicine?> GetByIdWithVariantsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<MedicineVariant?> GetVariantByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Returns the tracked scientific name with the given exact name, or null.</summary>
@@ -23,6 +22,9 @@ public interface IMedicineRepository : IBaseRepository<Medicine>
     /// <summary>Loads variants with their batches, used by the atomic dispensing flow.</summary>
     Task<List<MedicineVariant>> GetForDispensingAsync(IReadOnlyCollection<Guid> variantIds, CancellationToken cancellationToken = default);
 
+    /// <summary>Queryable variant set for handler-built searches. Pure data access.</summary>
+    IQueryable<MedicineVariant> QueryVariants();
+
     /// <summary>Queryable batch set for handler-built searches. Pure data access.</summary>
     IQueryable<MedicineBatch> QueryBatches();
 
@@ -35,7 +37,6 @@ public interface IMedicineRepository : IBaseRepository<Medicine>
     void AddBatch(MedicineBatch batch);
     void RemoveBatch(MedicineBatch batch);
     void AddVariant(MedicineVariant variant);
-    void RemoveVariant(MedicineVariant variant);
     void AddAdjustment(InventoryAdjustment adjustment);
     void AddGenericName(GenericName genericName);
 }

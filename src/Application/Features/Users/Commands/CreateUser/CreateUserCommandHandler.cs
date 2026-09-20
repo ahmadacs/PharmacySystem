@@ -2,7 +2,6 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
 using Application.Resources;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -26,7 +25,7 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
         var req = request.Request;
         var role = req.Role.Trim();
         if (!Roles.All.Contains(role))
-            return Result<Guid>.Failure(_localizer["UnknownRole", role].Value, 409);
+            return Result<Guid>.Failure(_localizer["UnknownRole", role].Value, 400);
 
         var result = await _users.TryCreateUserAsync(
             req.Email,

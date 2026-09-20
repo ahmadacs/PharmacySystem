@@ -2,8 +2,10 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Prescriptions.Common;
 using Application.Features.Prescriptions.Dtos;
+using Application.Resources;
 using Domain.Entities.Prescriptions;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Prescriptions.Queries;
 
@@ -13,17 +15,20 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IAsyncQueryExecutor _executor;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
     public ListPrescriptionsQueryHandler(
         IPrescriptionRepository prescriptions,
         ICurrentUserService currentUser,
         IStaffService staff,
-        IAsyncQueryExecutor executor)
+        IAsyncQueryExecutor executor,
+        IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
         _currentUser = currentUser;
         _staff = staff;
         _executor = executor;
+        _localizer = localizer;
     }
 
     public async Task<Result<PagedList<PrescriptionListItemDto>>> Handle(
@@ -34,7 +39,7 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
 
         if (PrescriptionAccess.CanManageOwn(_currentUser) && !PrescriptionAccess.CanViewAll(_currentUser))
         {
-            var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+            var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
             if (authResult.IsSuccess)
             {
                 var userId = authResult.Value;

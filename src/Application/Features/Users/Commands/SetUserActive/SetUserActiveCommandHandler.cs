@@ -1,7 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Resources;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 

@@ -1,4 +1,3 @@
-using Domain.Entities.Patients;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
 
@@ -35,19 +34,6 @@ public static class PrescriptionMapping
             row.IssuedDate,
             row.Status,
             row.ItemCount);
-
-    public static PrescriptionListItemDto ToListItemDto(this Prescription prescription, string doctorName)
-        => new(
-            prescription.Id,
-            prescription.DoctorId,
-            doctorName,
-            prescription.Patient?.FullName ?? string.Empty,
-            prescription.Patient?.DateOfBirth ?? default,
-            prescription.Patient?.Age ?? 0,
-            prescription.Patient?.PhoneNumber,
-            prescription.IssuedDate,
-            prescription.Status.ToDisplayValue(),
-            prescription.Items.Count);
 
     public static PrescriptionDetailsDto ToDetailsDto(
         this Prescription prescription,
@@ -87,13 +73,6 @@ public static class PrescriptionMapping
             patientId,
             request.IssuedDate,
             request.Diagnosis);
-
-    public static Patient ToPatient(this CreatePrescriptionRequest request)
-        => new(
-            request.PatientFirstName,
-            request.PatientLastName,
-            request.PatientDateOfBirth,
-            request.PatientPhoneNumber);
 
     private static string ToDisplayValue(this PrescriptionStatus status) => status.ToString();
 }

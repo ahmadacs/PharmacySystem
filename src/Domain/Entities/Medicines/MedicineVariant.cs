@@ -39,24 +39,6 @@ public class MedicineVariant : BaseEntity
         UnitOfMeasure = unitOfMeasure ?? UnitOfMeasure.Create("Unit", "Box", 1);
     }
 
-    public void UpdateDetails(MedicineForm form, MedicineUnit unit, decimal strength, int reorderLevel, UnitOfMeasure? unitOfMeasure = null)
-    {
-        if (strength <= 0)
-            throw new ArgumentException("Strength must be greater than zero.", nameof(strength));
-
-        Form = form;
-        Unit = unit;
-        Strength = strength;
-        ReorderLevel = Quantity.Of(reorderLevel);
-        if (unitOfMeasure is not null)
-            UnitOfMeasure = unitOfMeasure;
-    }
-
-    public void UpdateReorderLevel(int reorderLevel) => ReorderLevel = Quantity.Of(reorderLevel);
-
-    public void Deactivate() => IsActive = false;
-    public void Activate() => IsActive = true;
-
     public bool IsLowStock(DateOnly asOf) => GetAvailableStock(asOf).Value <= ReorderLevel.Value;
 
     /// <summary>
@@ -99,25 +81,11 @@ public class MedicineVariant : BaseEntity
             DateTime.UtcNow));
     }
 
-    public void AddBatch(MedicineBatch batch)
-    {
-        ArgumentNullException.ThrowIfNull(batch);
-        _batches.Add(batch);
-    }
-
     public Quantity GetAvailableStock(DateOnly asOf) =>
         _batches
             .NotDeleted()
             .Where(b => !b.IsExpired(asOf))
             .Aggregate(Quantity.Zero, (total, b) => total.Add(b.QuantityAvailable));
-
-    public IEnumerable<MedicineBatch> GetExpiredBatches(DateOnly asOf) =>
-        _batches.NotDeleted().Where(b => b.IsExpired(asOf));
-
-    public IEnumerable<MedicineBatch> GetNearExpiryBatches(DateOnly asOf, int withinDays) =>
-        _batches.NotDeleted()
-            .Where(b => !b.IsExpired(asOf)
-                         && b.ExpiryDate.DayNumber - asOf.DayNumber <= withinDays);
 
     /// <summary>
     /// Draws the required quantity from non-expired batches (earliest expiry first).

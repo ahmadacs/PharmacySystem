@@ -27,7 +27,7 @@ public sealed class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQ
 
         var account = await _users.FindAsync(_currentUser.UserId.Value, cancellationToken);
         if (account is null)
-            return Result<CurrentUserDto>.Failure(_localizer["EmailOrPasswordIncorrect"].Value, 401);
+            return Result<CurrentUserDto>.Failure(_localizer["ResourceNotFound", "User", _currentUser.UserId.Value].Value, 404);
 
         return Result<CurrentUserDto>.Success(account.ToDto());
     }

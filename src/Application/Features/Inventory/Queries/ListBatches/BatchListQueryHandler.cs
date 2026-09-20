@@ -50,9 +50,6 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
 
         var dispensingLines = _prescriptions.QueryDispensingRecordItems();
 
-        // ONE round trip for rows: dispensed-per-batch rides as a correlated
-        // subquery. TotalCount stays a separate query so it is exact even on
-        // overflow pages.
         var rows = await _executor.ToListAsync(
             ordered
                 .Skip((page - 1) * pageSize)

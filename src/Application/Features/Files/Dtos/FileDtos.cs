@@ -23,7 +23,7 @@ public static class FileAttachmentMapping
         string blobPath)
         => new(entityType, entityId, fileName, contentType, sizeBytes, blobPath);
 
-    public static FileAttachmentDto ToDto(this Domain.Entities.Files.FileAttachment e, string? baseUrl = null) => new(
+    public static FileAttachmentDto ToDto(this Domain.Entities.Files.FileAttachment e) => new(
         e.Id,
         e.EntityType.ToString(),
         e.EntityId,
@@ -32,6 +32,6 @@ public static class FileAttachmentMapping
         e.SizeBytes,
         e.BlobPath,
         e.CreatedAt,
-        baseUrl is null ? null : $"{baseUrl.TrimEnd('/')}/{e.BlobPath}"
+        null
     );
 }

@@ -201,6 +201,25 @@ PharmacySystem/
 └── PharmacySystem.slnx
 ```
 
+## Architecture Decisions
+
+- **DbContext as Unit of Work (with thin repositories).** `ApplicationDbContext` implements
+  `IUnitOfWork`; all repositories share the same scoped instance and every request commits
+  with a single `SaveChangesAsync`, which EF Core wraps in an implicit transaction — this is
+  what makes dispensing atomic. Repositories stay as query roots (`Query()`/`QueryBatches()`/
+  `QueryAdjustments()`) plus set-membership (`Add`/`Remove`) so handlers build LINQ without
+  depending on EF (see `docs/ARCHITECTURE.md`).
+- **ASP.NET Core Identity** for users/roles/password hashing (default choice — no custom
+  user store).
+- **Result + centralized exceptions.** Handlers return `Result<T>` for expected outcomes
+  (not found, conflicts detected by queries); domain invariant violations throw typed
+  `DomainException`s mapped once in `GlobalExceptionHandler` (`IExceptionHandler`).
+  Controllers contain no `try/catch`.
+- **Token storage (strongest option).** Access token lives only in an in-memory Angular
+  signal (`TokenStore` — never `localStorage`/`sessionStorage`); the refresh token travels
+  in an httpOnly cookie (`withCredentials`) and is stored hashed, rotated and revocable
+  server-side.
+
 ## Contributing
 
 1. Create a feature branch: `git checkout -b feature/your-feature`

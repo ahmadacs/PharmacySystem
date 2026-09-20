@@ -27,13 +27,4 @@ public class Doctor : BaseEntity
         Specialization = specialization?.Trim();
         PhoneNumber = phoneNumber?.Trim();
     }
-
-    public void Deactivate() => IsActive = false;
-    public void Activate() => IsActive = true;
-
-    public bool Owns(Prescription prescription)
-    {
-        ArgumentNullException.ThrowIfNull(prescription);
-        return prescription.DoctorId == Id;
-    }
 }

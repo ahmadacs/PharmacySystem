@@ -1,5 +1,7 @@
 namespace Application.Features.Patients.Dtos;
 
+using Domain.Enums;
+
 /// <summary>
 /// One prescribed line inside the patient medication history.
 /// <see cref="IsCurrentlyActive"/> is computed server-side so the doctor UI
@@ -39,6 +41,38 @@ public sealed record PatientPrescriptionHistoryDto(
     int ItemCount,
     IReadOnlyList<PatientMedicationItemDto> Items);
 
+/// <summary>
+/// Query projection row for one prescribed line (variant info flattened).
+/// Never constructed outside queries; maps via <c>PatientMedicationMapping</c>.
+/// </summary>
+public sealed record PatientMedicationItemRow(
+    Guid Id,
+    Guid MedicineVariantId,
+    Guid MedicineId,
+    string MedicineName,
+    string? MedicineNameAr,
+    MedicineForm Form,
+    MedicineUnit Unit,
+    decimal Strength,
+    string? DosageInstructions,
+    int PrescribedQuantity,
+    int DispensedQuantity,
+    bool IsRefillable,
+    int RefillsAllowed,
+    int RefillsUsed,
+    int RefillIntervalDays,
+    DateOnly? LastDispensedAt);
+
+/// <summary>
+/// Single-query projection shape for the patient history screen.
+/// Never constructed outside queries; maps via <c>PatientMedicationMapping</c>.
+/// </summary>
+public sealed record PatientPrescriptionHistoryRow(
+    Guid Id,
+    DateOnly IssuedDate,
+    PrescriptionStatus Status,
+    IReadOnlyList<PatientMedicationItemRow> Items);
+
 public static class PatientMedicationMapping
 {
     /// <summary>
@@ -75,4 +109,36 @@ public static class PatientMedicationMapping
         => lastDispensedAt.HasValue && intervalDays > 0
             ? lastDispensedAt.Value.AddDays(intervalDays)
             : null;
+
+    /// <summary>
+    /// Assembles the history DTO from the single-query projection rows
+    /// (see GetPatientPrescriptionsQueryHandler).
+    /// </summary>
+    public static PatientPrescriptionHistoryDto ToDto(this PatientPrescriptionHistoryRow r, DateOnly cutoff)
+    {
+        var status = r.Status.ToString();
+        var items = r.Items.Select(i => new PatientMedicationItemDto(
+            i.Id,
+            i.MedicineVariantId,
+            i.MedicineId,
+            i.MedicineName,
+            i.MedicineNameAr,
+            $"{i.Form} {i.Strength} {i.Unit}",
+            i.Form.ToString(),
+            i.Unit.ToString(),
+            i.Strength,
+            i.DosageInstructions,
+            i.PrescribedQuantity,
+            i.DispensedQuantity,
+            i.PrescribedQuantity - i.DispensedQuantity,
+            i.IsRefillable,
+            i.RefillsAllowed,
+            i.RefillsUsed,
+            i.RefillIntervalDays,
+            i.LastDispensedAt,
+            NextEligible(i.LastDispensedAt, i.RefillIntervalDays),
+            IsActive(status, i.IsRefillable, i.RefillsUsed, i.RefillsAllowed, i.LastDispensedAt, r.IssuedDate, cutoff))).ToList();
+
+        return new(r.Id, r.IssuedDate, status, items.Count, items);
+    }
 }

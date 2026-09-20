@@ -47,7 +47,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     public async Task<Result<Guid>> Handle(CreatePrescriptionCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
         if (authResult.IsSuccess)
         {
             var userId = authResult.Value;
@@ -76,33 +76,11 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
                 if (!existingVariantIds.Contains(item.MedicineVariantId))
                     return Result<Guid>.Failure(_localizer["ResourceNotFound", nameof(MedicineVariant), item.MedicineVariantId].Value, 404);
 
-                try
-                {
-                    prescription.AddItem(item.MedicineVariantId, item.Quantity, item.DosageInstructions, item.IsRefillable, item.RefillsAllowed, item.RefillIntervalDays);
-                }
-                catch (DomainException ex) when (ex is InvalidPrescriptionStatusException)
-                {
-                    return Result<Guid>.Failure(ex.Message, 409);
-                }
-                catch (DomainException ex)
-                {
-                    return Result<Guid>.Failure(ex.Message, 422);
-                }
+                prescription.AddItem(item.MedicineVariantId, item.Quantity, item.DosageInstructions, item.IsRefillable, item.RefillsAllowed, item.RefillIntervalDays);
             }
 
             _prescriptions.Add(prescription);
-            try
-            {
-                await _uow.SaveChangesAsync(cancellationToken);
-            }
-            catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
-            {
-                return Result<Guid>.Failure(ex.Message, 409);
-            }
-            catch (DomainException ex)
-            {
-                return Result<Guid>.Failure(ex.Message, 422);
-            }
+            await _uow.SaveChangesAsync(cancellationToken);
 
             return Result<Guid>.Success(prescription.Id);
         }

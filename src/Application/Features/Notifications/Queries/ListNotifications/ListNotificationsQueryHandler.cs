@@ -2,7 +2,9 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Notifications.Dtos;
 using Application.Features.Prescriptions.Common;
+using Application.Resources;
 using MediatR;
+using Microsoft.Extensions.Localization;
 
 namespace Application.Features.Notifications.Queries;
 
@@ -11,19 +13,21 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
     private readonly INotificationRepository _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IAsyncQueryExecutor _executor;
+    private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public ListNotificationsQueryHandler(INotificationRepository notifications, ICurrentUserService currentUser, IAsyncQueryExecutor executor)
+    public ListNotificationsQueryHandler(INotificationRepository notifications, ICurrentUserService currentUser, IAsyncQueryExecutor executor, IStringLocalizer<SharedResource> localizer)
     {
         _notifications = notifications;
         _currentUser = currentUser;
         _executor = executor;
+        _localizer = localizer;
     }
 
     public async Task<Result<PagedList<NotificationListItemDto>>> Handle(
         ListNotificationsQuery request,
         CancellationToken cancellationToken)
     {
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
         if (authResult.IsSuccess)
         {
             var userId = authResult.Value;

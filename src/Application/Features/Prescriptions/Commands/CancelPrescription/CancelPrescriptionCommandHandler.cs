@@ -3,7 +3,6 @@ using Application.Common.Models;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -36,31 +35,9 @@ public sealed class CancelPrescriptionCommandHandler : IRequestHandler<CancelPre
         if (prescription.Status == PrescriptionStatus.FullyDispensed)
             return Result.Failure(_localizer["CannotCancelDispensed"].Value, 409);
 
-        try
-        {
-            prescription.Cancel();
-        }
-        catch (DomainException ex) when (ex is InvalidPrescriptionStatusException)
-        {
-            return Result.Failure(ex.Message, 409);
-        }
-        catch (DomainException ex)
-        {
-            return Result.Failure(ex.Message, 422);
-        }
+        prescription.Cancel();
 
-        try
-        {
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
-        catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException)
-        {
-            return Result.Failure(ex.Message, 409);
-        }
-        catch (DomainException ex)
-        {
-            return Result.Failure(ex.Message, 422);
-        }
+        await _uow.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

@@ -67,14 +67,6 @@ public class Prescription : BaseEntity
         RaiseDomainEvent(new PrescriptionCancelledEvent(Id, DateTime.UtcNow));
     }
 
-    public void MarkExpired()
-    {
-        if (Status is PrescriptionStatus.FullyDispensed or PrescriptionStatus.Cancelled)
-            return;
-
-        Status = PrescriptionStatus.Expired;
-    }
-
     /// <summary>Validates the prescription is in a state that allows dispensing at all.</summary>
     public void EnsureCanBeDispensed(DateOnly asOf)
     {
@@ -108,14 +100,6 @@ public class Prescription : BaseEntity
             DateTime.UtcNow,
             quantitiesByPrescriptionItemId.Sum(kv => kv.Value)));
     }
-
-    /// <summary>
-    /// Refills a single item. Only that item must be fully dispensed; the rest
-    /// of the prescription may be in any dispensed state. Cancelled/expired
-    /// prescriptions can never be refilled.
-    /// </summary>
-    public void RegisterItemRefill(Guid prescriptionItemId)
-        => RegisterItemsRefill([prescriptionItemId]);
 
     /// <summary>
     /// Refills several items atomically: every id is validated first so a

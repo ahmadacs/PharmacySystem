@@ -8,7 +8,7 @@ using MediatR;
 namespace Application.Features.Inventory.Queries;
 
 public sealed class MedicineInventorySummaryQueryHandler
-    : IRequestHandler<MedicineInventorySummaryQuery, PagedList<MedicineInventorySummaryDto>>
+    : IRequestHandler<MedicineInventorySummaryQuery, Result<PagedList<MedicineInventorySummaryDto>>>
 {
     private readonly IMedicineRepository _repo;
     private readonly IAsyncQueryExecutor _executor;
@@ -19,7 +19,7 @@ public sealed class MedicineInventorySummaryQueryHandler
         _executor = executor;
     }
 
-    public async Task<PagedList<MedicineInventorySummaryDto>> Handle(
+    public async Task<Result<PagedList<MedicineInventorySummaryDto>>> Handle(
         MedicineInventorySummaryQuery request,
         CancellationToken cancellationToken)
     {
@@ -37,16 +37,11 @@ public sealed class MedicineInventorySummaryQueryHandler
                 (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)));
         }
 
-        // NOTE: filtering/sorting must use entity members BEFORE the row
-        // projection — EF cannot translate member access on a constructed
-        // record (e.g. Where(x => x.TotalQuantity > 0) fails). The aggregate
-        // expressions below are passed directly (never invoked) so they stay
-        // translatable; asOf is captured as a query constant.
         data = request.StockStatus?.ToLowerInvariant() switch
         {
-            "instock" or "in_stock" => data.Where(InStock(asOf)),
-            "low" or "lowstock" or "low_stock" => data.Where(LowStock(asOf)),
-            "out" or "outofstock" or "out_of_stock" => data.Where(OutOfStock(asOf)),
+            "instock" or "in_stock" => data.Where(HasStock(asOf)).Where(HasNoLowVariant(asOf)),
+            "low" or "lowstock" or "low_stock" => data.Where(HasStock(asOf)).Where(HasLowVariant(asOf)),
+            "out" or "outofstock" or "out_of_stock" => data.Where(HasNoStock(asOf)),
             _ => data
         };
 
@@ -55,7 +50,7 @@ public sealed class MedicineInventorySummaryQueryHandler
             "quantity" or "available" or "totalquantity" => SortDir(data, TotalQuantity(asOf), request.SortDir),
             "reorder" or "reorderlevel" => SortDir(data, ReorderLevelSum(), request.SortDir),
             "nearestExpiry" or "expiry" => SortDir(data, NearestExpiry(asOf), request.SortDir),
-            "variantCount" or "variants" => SortDir(data, m => m.Variants.Count(v => v.IsActive && !v.IsDeleted), request.SortDir),
+            "variantCount" or "variants" => SortDir(data, m => m.Variants.Count(v => v.IsActive), request.SortDir),
             _ => SortDir(data, m => m.Name, request.SortDir)
         };
 
@@ -72,64 +67,55 @@ public sealed class MedicineInventorySummaryQueryHandler
                     m.NameAr,
                     m.GenericName != null ? m.GenericName.Name : string.Empty,
                     m.GenericName != null ? m.GenericName.NameAr : null,
-                    m.Variants.Count(v => v.IsActive && !v.IsDeleted),
+                    m.Variants.Count(v => v.IsActive),
                     m.Variants
-                        .Where(v => v.IsActive && !v.IsDeleted)
-                        .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted))
-                        .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
-                    m.Variants.Where(v => v.IsActive && !v.IsDeleted).Sum(v => (int?)v.ReorderLevel.Value) ?? 0,
-                    m.Variants.Where(v => v.IsActive && !v.IsDeleted).Any(v =>
-                        v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value),
+                        .Where(v => v.IsActive)
+                        .Sum(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value)) ?? 0,
+                    m.Variants.Where(v => v.IsActive).Sum(v => (int?)v.ReorderLevel.Value) ?? 0,
+                    m.Variants.Where(v => v.IsActive).Any(v =>
+                        v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value),
                     m.Variants
-                        .SelectMany(v => v.Batches)
-                        .Where(b => b.ExpiryDate >= asOf && !b.IsDeleted)
-                        .Min(b => (DateOnly?)b.ExpiryDate),
+                        .Min(v => v.Batches.Where(b => b.ExpiryDate >= asOf).Min(b => (DateOnly?)b.ExpiryDate)),
                     m.Variants
-                        .SelectMany(v => v.Batches)
-                        .Count(b => b.ExpiryDate > asOf && b.QuantityAvailable.Value > 0 && !b.IsDeleted))),
+                        .Sum(v => (int?)v.Batches.Count(b => b.ExpiryDate > asOf && b.QuantityAvailable.Value > 0)) ?? 0)),
             cancellationToken);
 
-        return rows
+        var items = rows
             .Select(r => r.ToDto())
             .ToPagedList(page, pageSize, totalCount);
+
+        return Result<PagedList<MedicineInventorySummaryDto>>.Success(items);
     }
 
     private static Expression<Func<Medicine, int>> TotalQuantity(DateOnly asOf)
         => m => m.Variants
-            .Where(v => v.IsActive && !v.IsDeleted)
-            .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted))
-            .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0;
+            .Where(v => v.IsActive)
+            .Sum(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value)) ?? 0;
 
     private static Expression<Func<Medicine, int>> ReorderLevelSum()
-        => m => m.Variants.Where(v => v.IsActive && !v.IsDeleted).Sum(v => (int?)v.ReorderLevel.Value) ?? 0;
+        => m => m.Variants.Where(v => v.IsActive).Sum(v => (int?)v.ReorderLevel.Value) ?? 0;
 
     private static Expression<Func<Medicine, DateOnly?>> NearestExpiry(DateOnly asOf)
         => m => m.Variants
-            .SelectMany(v => v.Batches)
-            .Where(b => b.ExpiryDate >= asOf && !b.IsDeleted)
-            .Min(b => (DateOnly?)b.ExpiryDate);
+            .Min(v => v.Batches.Where(b => b.ExpiryDate >= asOf).Min(b => (DateOnly?)b.ExpiryDate));
 
-    private static Expression<Func<Medicine, bool>> InStock(DateOnly asOf)
+    private static Expression<Func<Medicine, bool>> HasStock(DateOnly asOf)
         => m => (m.Variants
-                .Where(v => v.IsActive && !v.IsDeleted)
-                .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted))
-                .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0) > 0
-            && !m.Variants.Where(v => v.IsActive && !v.IsDeleted).Any(v =>
-                v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
+                .Where(v => v.IsActive)
+                .Sum(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value)) ?? 0) > 0;
 
-    private static Expression<Func<Medicine, bool>> LowStock(DateOnly asOf)
+    private static Expression<Func<Medicine, bool>> HasNoStock(DateOnly asOf)
         => m => (m.Variants
-                .Where(v => v.IsActive && !v.IsDeleted)
-                .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted))
-                .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0) > 0
-            && m.Variants.Where(v => v.IsActive && !v.IsDeleted).Any(v =>
-                v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
+                .Where(v => v.IsActive)
+                .Sum(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value)) ?? 0) == 0;
 
-    private static Expression<Func<Medicine, bool>> OutOfStock(DateOnly asOf)
-        => m => (m.Variants
-                .Where(v => v.IsActive && !v.IsDeleted)
-                .SelectMany(v => v.Batches.Where(b => b.ExpiryDate > asOf && !b.IsDeleted))
-                .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0) == 0;
+    private static Expression<Func<Medicine, bool>> HasLowVariant(DateOnly asOf)
+        => m => m.Variants.Where(v => v.IsActive).Any(v =>
+                v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
+
+    private static Expression<Func<Medicine, bool>> HasNoLowVariant(DateOnly asOf)
+        => m => !m.Variants.Where(v => v.IsActive).Any(v =>
+                v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
 
     private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
         IQueryable<TSource> source,

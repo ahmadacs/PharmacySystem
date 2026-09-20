@@ -51,7 +51,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         if (prescription is null)
             return Result<DispensePrescriptionResponse>.Failure(_localizer["ResourceNotFound", nameof(Prescription), req.PrescriptionId].Value, 404);
 
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
         if (authResult.IsSuccess)
         {
             var userId = authResult.Value;
@@ -76,14 +76,9 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
             {
                 record = _dispensing.Dispense(prescription, byId, pharmacistId, now);
             }
-            catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException or ConflictingOperationException)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 409);
-            }
-            catch (DomainException ex) when (ex is MissingMedicineVariantException)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 400);
-            }
+            // Only enrichment stays caught here (IDs → localized names); every
+            // other domain exception flows to GlobalExceptionHandler with the
+            // same status code this ladder used to return (409/400/422).
             catch (InsufficientStockException ex)
             {
                 // The exception carries IDs only: resolve display names here so the
@@ -101,14 +96,6 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
                 return Result<DispensePrescriptionResponse>.Failure(
                     _localizer["InsufficientStockBatch", batch.BatchNumber, name, requested, available].Value, 422);
             }
-            catch (DomainException ex) when (ex is ExpiredBatchException or FileValidationException)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 422);
-            }
-            catch (DomainException ex)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 422);
-            }
 
             var asOf = DateOnly.FromDateTime(now);
             foreach (var variant in variants)
@@ -119,26 +106,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
             record.SetNotes(req.Notes);
             _prescriptions.AddDispensingRecord(record);
 
-            try
-            {
-                await _uow.SaveChangesAsync(cancellationToken);
-            }
-            catch (DomainException ex) when (ex is InvalidPrescriptionStatusException or RefillNotEligibleException or ConflictingOperationException)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 409);
-            }
-            catch (DomainException ex) when (ex is MissingMedicineVariantException)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 400);
-            }
-            catch (DomainException ex) when (ex is InsufficientStockException or ExpiredBatchException or FileValidationException)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 422);
-            }
-            catch (DomainException ex)
-            {
-                return Result<DispensePrescriptionResponse>.Failure(ex.Message, 422);
-            }
+            await _uow.SaveChangesAsync(cancellationToken);
 
             // Transparency-only messages, already localized for the request culture:
             // the dispense already succeeded with 201, no new rejections.

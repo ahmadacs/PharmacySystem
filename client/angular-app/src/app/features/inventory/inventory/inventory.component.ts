@@ -147,6 +147,8 @@ export class InventoryComponent {
   protected get adjCount() { return this.facade.adjCount; }
 
   // Low stock tab
+  protected get lowStockPage() { return this.facade.lowStockTable.page; }
+  protected get lowStockPageSize() { return this.facade.lowStockTable.pageSize; }
   protected get lowStock() { return this.facade.lowStock; }
   protected get lowStockBadgeCount() { return this.facade.lowStockBadgeCount; }
 
@@ -189,6 +191,10 @@ export class InventoryComponent {
 
   onAdjPage(event: PageEvent): void {
     this.facade.adjTable.onPage(event);
+  }
+
+  onLowStockPage(event: PageEvent): void {
+    this.facade.lowStockTable.onPage(event);
   }
 
   openAdjust(): void {

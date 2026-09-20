@@ -1,7 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Inventory.Dtos;
-using Domain.Enums;
+using Domain.Entities.Medicines;
 using MediatR;
 
 namespace Application.Features.Inventory.Queries;
@@ -23,48 +23,29 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
     public async Task<Result<PagedList<ExpiryAlertDto>>> Handle(ExpiryAlertListQuery request, CancellationToken cancellationToken)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (expiryFrom, expiryTo) = GetExpiryRange(request.Status, asOf);
 
-        var batches = _repo.Query()
-            .SelectMany(m => m.Variants.SelectMany(v => v.Batches.Select(b => new
-            {
-                Batch = b,
-                MedicineName = m.Name,
-                MedicineNameAr = m.NameAr,
-                Variant = v
-            })));
+        IQueryable<MedicineBatch> data = _repo.QueryBatches();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim();
-            batches = batches.Where(x =>
-                x.Batch.BatchNumber.Contains(search) ||
-                x.MedicineName.Contains(search));
+            data = data.Where(b =>
+                b.BatchNumber.Contains(search) ||
+                b.MedicineVariant!.Medicine!.Name.Contains(search));
         }
 
-        switch (request.Status?.ToLowerInvariant())
-        {
-            case "expired":
-                batches = batches.Where(x => x.Batch.ExpiryDate < asOf);
-                break;
-            case "critical":
-                batches = batches.Where(x => x.Batch.ExpiryDate >= asOf && x.Batch.ExpiryDate < asOf.AddDays(CriticalWithinDays));
-                break;
-            case "warning":
-                batches = batches.Where(x => x.Batch.ExpiryDate >= asOf.AddDays(CriticalWithinDays) && x.Batch.ExpiryDate < asOf.AddDays(WarningWithinDays));
-                break;
-            case "safe":
-                batches = batches.Where(x => x.Batch.ExpiryDate >= asOf.AddDays(WarningWithinDays));
-                break;
-        }
+        if (expiryFrom.HasValue)
+            data = data.Where(b => b.ExpiryDate >= expiryFrom.Value);
 
-        // NOTE: sorting must use entity members BEFORE the row projection —
-        // EF cannot translate member access on a constructed record.
-        // Days-to-expiry ordering == expiry-date ordering (asOf is constant).
+        if (expiryTo.HasValue)
+            data = data.Where(b => b.ExpiryDate < expiryTo.Value);
+
         var sorted = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "remaining" => SortDir(batches, x => x.Batch.QuantityAvailable.Value, request.SortDir),
-            "batch" or "batchnumber" => SortDir(batches, x => x.Batch.BatchNumber, request.SortDir),
-            _ => SortDir(batches, x => x.Batch.ExpiryDate, request.SortDir)
+            "quantity" or "remaining" => SortDir(data, b => b.QuantityAvailable.Value, request.SortDir),
+            "batch" or "batchnumber" => SortDir(data, b => b.BatchNumber, request.SortDir),
+            _ => SortDir(data, b => b.ExpiryDate, request.SortDir)
         };
 
         var totalCount = await _executor.CountAsync(sorted, cancellationToken);
@@ -74,17 +55,17 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
 
         var rows = await _executor.ToListAsync(
             sorted.Skip((page - 1) * pageSize).Take(pageSize)
-                .Select(x => new ExpiryAlertRow(
-                    x.Batch.Id,
-                    x.MedicineName,
-                    x.MedicineNameAr,
-                    (MedicineForm?)x.Variant.Form,
-                    (MedicineUnit?)x.Variant.Unit,
-                    (decimal?)x.Variant.Strength,
-                    x.Batch.BatchNumber,
-                    x.Batch.ExpiryDate,
-                    x.Batch.ExpiryDate.DayNumber - asOf.DayNumber,
-                    x.Batch.QuantityAvailable.Value)),
+                .Select(b => new ExpiryAlertRow(
+                    b.Id,
+                    b.MedicineVariant!.Medicine!.Name,
+                    b.MedicineVariant!.Medicine!.NameAr,
+                    b.MedicineVariant!.Form,
+                    b.MedicineVariant!.Unit,
+                    b.MedicineVariant!.Strength,
+                    b.BatchNumber,
+                    b.ExpiryDate,
+                    b.ExpiryDate.DayNumber - asOf.DayNumber,
+                    b.QuantityAvailable.Value)),
             cancellationToken);
 
         var items = rows
@@ -93,6 +74,16 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
 
         return Result<PagedList<ExpiryAlertDto>>.Success(items);
     }
+
+    private static (DateOnly? From, DateOnly? To) GetExpiryRange(string? status, DateOnly asOf)
+        => status?.ToLowerInvariant() switch
+        {
+            "expired" => (null, asOf),
+            "critical" => (asOf, asOf.AddDays(CriticalWithinDays)),
+            "warning" => (asOf.AddDays(CriticalWithinDays), asOf.AddDays(WarningWithinDays)),
+            "safe" => (asOf.AddDays(WarningWithinDays), null),
+            _ => (null, null)
+        };
 
     private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
         IQueryable<TSource> source,

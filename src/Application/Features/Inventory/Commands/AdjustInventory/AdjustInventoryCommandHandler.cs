@@ -57,14 +57,7 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
             v.RaiseLowStockEventIfNeeded(asOf);
 
         _repo.AddAdjustment(adjustment);
-        try
-        {
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
-        catch (Domain.Exceptions.DomainException ex)
-        {
-            return Result<Guid>.Failure(ex.Message, 422);
-        }
+        await _uow.SaveChangesAsync(cancellationToken);
 
         // Upload file if provided
         if (req.File is not null && !string.IsNullOrWhiteSpace(req.File.Base64Content))

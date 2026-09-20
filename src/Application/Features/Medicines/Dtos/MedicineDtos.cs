@@ -2,11 +2,6 @@ using Domain.Enums;
 
 namespace Application.Features.Medicines.Dtos;
 
-public sealed record CategoryDto(
-    int Id,
-    string Name,
-    string? NameAr);
-
 public sealed record MedicineVariantSummaryDto(
     Guid Id,
     MedicineForm Form,
@@ -73,6 +68,31 @@ public sealed record MedicineBatchRow(
     string? SupplierName,
     DateTime CreatedAt,
     int DispensedQuantity);
+
+/// <summary>
+/// Single-query projection shape for the medicine details screen: header +
+/// variant rows, each carrying its own batch rows.
+/// Never constructed outside queries; maps via <c>MedicineMapping.ToDto</c>.
+/// </summary>
+public sealed record VariantWithBatchesRow(
+    bool IsActive,
+    MedicineVariantRow Variant,
+    IReadOnlyList<MedicineBatchRow> Batches);
+
+/// <summary>
+/// Single-query projection shape for the medicine details screen.
+/// Never constructed outside queries; maps via <c>MedicineMapping.ToDto</c>.
+/// </summary>
+public sealed record MedicineDetailsRow(
+    Guid Id,
+    string Name,
+    string? NameAr,
+    string GenericName,
+    string? GenericNameAr,
+    CategoryEnum Category,
+    bool IsControlled,
+    bool IsActive,
+    IReadOnlyList<VariantWithBatchesRow> Variants);
 
 public sealed record MedicineListItemDto(
     Guid Id,

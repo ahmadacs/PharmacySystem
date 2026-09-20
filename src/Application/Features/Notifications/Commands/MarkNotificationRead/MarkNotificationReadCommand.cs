@@ -3,7 +3,6 @@ using Application.Common.Models;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Notifications;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -32,7 +31,7 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
 
     public async Task<Result> Handle(MarkNotificationReadCommand request, CancellationToken cancellationToken)
     {
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser);
+        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
         if (authResult.IsSuccess)
         {
             var userId = authResult.Value;
@@ -44,14 +43,7 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
             if (notification.UserId != userId)
                 return Result.Failure(_localizer["OwnNotifications"].Value, 403);
 
-            try
-            {
-                notification.MarkRead(DateTime.UtcNow);
-            }
-            catch (DomainException ex)
-            {
-                return Result.Failure(ex.Message, 422);
-            }
+            notification.MarkRead(DateTime.UtcNow);
 
             await _uow.SaveChangesAsync(cancellationToken);
             return Result.Success();
