@@ -15,18 +15,6 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
 {
     protected ISender Sender => sender;
 
-    /// <summary>Sends a query/command and returns 200 with the result.</summary>
-    protected async Task<IActionResult> OkResponse<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken)
-    {
-        var result = await Sender.Send(request, cancellationToken);
-
-        // If handler opted into Result<T> pattern, unwrap to proper envelope/status.
-        if (result is Result<TResponse> wrapped)
-            return wrapped.IsSuccess ? base.Ok(wrapped.Value) : FailureResponse(wrapped.Error!, wrapped.StatusCode);
-
-        return base.Ok(result);
-    }
-
     /// <summary>Overload for handlers that return Result&lt;T&gt; explicitly.</summary>
     protected async Task<IActionResult> OkResponse<T>(IRequest<Result<T>> request, CancellationToken cancellationToken)
     {
@@ -40,18 +28,6 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
     {
         var result = await Sender.Send(request, cancellationToken);
         return result.IsSuccess ? NoContent() : FailureResponse(result.Error!, result.StatusCode);
-    }
-
-    /// <summary>Sends a command that returns a response (e.g. Unit) and returns 204.</summary>
-    protected async Task<IActionResult> NoContent<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken)
-    {
-        var result = await Sender.Send(request, cancellationToken);
-        if (result is Result<TResponse> wrapped)
-            return wrapped.IsSuccess ? NoContent() : FailureResponse(wrapped.Error!, wrapped.StatusCode);
-        if (result is Result r)
-            return r.IsSuccess ? NoContent() : FailureResponse(r.Error!, r.StatusCode);
-        await Task.CompletedTask;
-        return NoContent();
     }
 
     /// <summary>Sends a command that returns Result&lt;Guid&gt; and returns 201.</summary>
