@@ -653,6 +653,9 @@
       "divisible": "قابلة للتجزئة",
       "addVariant": "إضافة متغير",
       "variantRequired": "مطلوب متغير كامل واحد على الأقل.",
+      "attachFile": "إرفاق ملف",
+      "browse": "تصفح",
+      "removeFile": "إزالة الملف",
       "cancel": "إلغاء",
       "create": "إنشاء",
       "save": "حفظ"
@@ -671,6 +674,7 @@
       "expired": "منتهية",
       "noBatches": "لا توجد دفعات لهذا النوع.",
       "attachments": "المرفقات",
+      "viewAttachments": "عرض المرفقات",
       "close": "إغلاق",
       "batch": "الدفعة",
       "expiry": "الانتهاء",
@@ -719,6 +723,8 @@
       "unitCost": "تكلفة الوحدة",
       "supplier": "المورد",
       "status": "الحالة",
+      "attachments": "المرفقات",
+      "viewAttachments": "عرض المرفقات",
       "noBatches": "لا توجد دفعات لهذا النوع.",
       "close": "إغلاق"
     },
@@ -852,6 +858,9 @@
       "removeItem": "إزالة العنصر",
       "addItem": "إضافة عنصر",
       "itemRequired": "مطلوب عنصر كامل واحد على الأقل.",
+      "attachFile": "إرفاق ملف",
+      "browse": "تصفح",
+      "removeFile": "إزالة الملف",
       "cancel": "إلغاء",
       "create": "إنشاء"
     },
@@ -873,7 +882,13 @@
       "print": "طباعة",
       "exported": "تم تصدير الوصفة.",
       "cancelPrescription": "إلغاء الوصفة",
+      "viewAttachments": "عرض المرفقات",
       "close": "إغلاق"
+    },
+    "attachmentViewer": {
+      "title": "المرفقات",
+      "empty": "لا توجد مرفقات بعد.",
+      "download": "تنزيل"
     }
   }
 }

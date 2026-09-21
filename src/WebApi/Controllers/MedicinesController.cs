@@ -67,7 +67,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateMedicineRequest request, CancellationToken cancellationToken)
     {
         if (request.Id != id)
-            return BadRequest("The id in the URL does not match the id in the request body.");
+            return FailureResponse("The id in the URL does not match the id in the request body.", StatusCodes.Status400BadRequest);
 
         return await NoContent(new UpdateMedicineCommand(request), cancellationToken);
     }
@@ -106,7 +106,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public async Task<IActionResult> AddVariant(Guid id, [FromBody] CreateVariantRequest request, CancellationToken cancellationToken)
     {
         if (request.MedicineId != id)
-            return BadRequest("The id in the URL does not match the id in the request body.");
+            return FailureResponse("The id in the URL does not match the id in the request body.", StatusCodes.Status400BadRequest);
 
         return await Created(nameof(Get), new { id }, new CreateVariantCommand(request), cancellationToken);
     }

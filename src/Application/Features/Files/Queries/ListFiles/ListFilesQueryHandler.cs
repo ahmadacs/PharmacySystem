@@ -4,6 +4,7 @@ using Application.Common.Security;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Files;
+using Domain.Enums;
 using Application.Features.Files.Dtos;
 using MediatR;
 using Microsoft.Extensions.Localization;
@@ -30,23 +31,42 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
     public async Task<Result<IReadOnlyList<FileAttachmentDto>>> Handle(ListFilesQuery request, CancellationToken cancellationToken)
     {
         if (request.EntityId == Guid.Empty) return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["EntityIdRequired"].Value, 422);
-        if (!Enum.TryParse<Domain.Entities.Files.FileEntityType>(request.EntityType, true, out var entityType))
-            return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription"].Value, 422);
+        if (!Enum.TryParse<FileEntityType>(request.EntityType, true, out var entityType))
+            return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription, Batch, InventoryAdjustment"].Value, 422);
 
-        if (entityType == FileEntityType.Medicine)
+        switch (entityType)
         {
-            if (!_currentUser.Permissions.Contains(Permissions.Medicines.View))
-                return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["FileViewMedicine"].Value, 403);
-        }
-        else
-        {
-            var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
-            if (prescription is not null)
+            case FileEntityType.Medicine:
+                if (!_currentUser.Permissions.Contains(Permissions.Medicines.View))
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["FileViewMedicine"].Value, 403);
+                if (!await _files.MedicineExistsAsync(request.EntityId, cancellationToken))
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "Medicine", request.EntityId].Value, 404);
+                break;
+            case FileEntityType.Batch:
+                if (!_currentUser.Permissions.Contains(Permissions.Inventory.View)
+                    && !_currentUser.Permissions.Contains(Permissions.Inventory.Adjust))
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["FileViewBatch"].Value, 403);
+                if (!await _files.BatchExistsAsync(request.EntityId, cancellationToken))
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "MedicineBatch", request.EntityId].Value, 404);
+                break;
+            case FileEntityType.InventoryAdjustment:
+                if (!_currentUser.Permissions.Contains(Permissions.Inventory.View)
+                    && !_currentUser.Permissions.Contains(Permissions.Inventory.Adjust))
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["FileViewInventory"].Value, 403);
+                if (!await _files.InventoryAdjustmentExistsAsync(request.EntityId, cancellationToken))
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "InventoryAdjustment", request.EntityId].Value, 404);
+                break;
+            default:
             {
-                await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
+                var prescription = await _prescriptions.GetByIdAsync(request.EntityId, cancellationToken);
+                if (prescription is not null)
+                {
+                    await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
+                }
+                else
+                    return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "Prescription", request.EntityId].Value, 404);
+                break;
             }
-            else
-                return Result<IReadOnlyList<FileAttachmentDto>>.Failure(_localizer["ResourceNotFound", "Prescription", request.EntityId].Value, 404);
         }
 
         var list = await _files.ListByEntityAsync(entityType, request.EntityId, cancellationToken);

@@ -1,12 +1,11 @@
 using System.Globalization;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
 using Application.Features.Dispensing.Dtos;
-using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
-using Domain.Exceptions;
 using Domain.Services;
 using MediatR;
 using Microsoft.Extensions.Localization;
@@ -51,86 +50,58 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         if (prescription is null)
             return Result<DispensePrescriptionResponse>.Failure(_localizer["ResourceNotFound", nameof(Prescription), req.PrescriptionId].Value, 404);
 
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
-        if (authResult.IsSuccess)
-        {
-            var userId = authResult.Value;
+        var authFailure = AuthGuard.RequireUserId<DispensePrescriptionResponse>(_currentUser, _localizer, out var userId);
+        if (authFailure is not null)
+            return authFailure;
 
-            var pharmacist = await _staff.GetPharmacistAsync(userId, cancellationToken);
-            if (pharmacist is null)
-                return Result<DispensePrescriptionResponse>.Failure(_localizer["OnlyPharmacistDispense"].Value, 403);
-            var pharmacistId = pharmacist.Value.Id;
+        var pharmacist = await _staff.GetPharmacistAsync(userId, cancellationToken);
+        if (pharmacist is null)
+            return Result<DispensePrescriptionResponse>.Failure(_localizer["OnlyPharmacistDispense"].Value, 403);
+        var pharmacistId = pharmacist.Value.Id;
 
-            var variantIds = prescription.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
-            var variants = await _medicines.GetForDispensingAsync(variantIds, cancellationToken);
-            var byId = variants.ToDictionary(m => m.Id);
+        var variantIds = prescription.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
+        var variants = await _medicines.GetForDispensingAsync(variantIds, cancellationToken);
+        var byId = variants.ToDictionary(m => m.Id);
 
-            // Total units targeted by this dispense (remaining across pending items).
-            var requestedTotal = prescription.Items
-                .Where(i => !i.IsFullyDispensed)
-                .Sum(i => i.RemainingQuantity.Value);
+        // Total units targeted by this dispense (remaining across pending items).
+        var requestedTotal = prescription.Items
+            .Where(i => !i.IsFullyDispensed)
+            .Sum(i => i.RemainingQuantity.Value);
 
-            var now = DateTime.UtcNow;
-            Domain.Entities.Dispensing.DispensingRecord record;
-            try
-            {
-                record = _dispensing.Dispense(prescription, byId, pharmacistId, now);
-            }
-            // Only enrichment stays caught here (IDs → localized names); every
-            // other domain exception flows to GlobalExceptionHandler with the
-            // same status code this ladder used to return (409/400/422).
-            catch (InsufficientStockException ex)
-            {
-                // The exception carries IDs only: resolve display names here so the
-                // localized message shows names instead of GUIDs.
-                var variant = variants.FirstOrDefault(v => v.Id == ex.MedicineBatchId)
-                    ?? variants.FirstOrDefault(v => v.Batches.Any(b => b.Id == ex.MedicineBatchId));
-                var batch = variant?.Batches.FirstOrDefault(b => b.Id == ex.MedicineBatchId);
-                var name = variant is null ? "Unknown medicine"
-                    : $"{variant.Medicine?.Name} {DispensingMapping.GetVariantDisplayName(variant.Form, variant.Unit, variant.Strength)}".Trim();
-                var requested = ex.Requested.ToString(CultureInfo.InvariantCulture);
-                var available = ex.Available.ToString(CultureInfo.InvariantCulture);
-                if (batch is null)
-                    return Result<DispensePrescriptionResponse>.Failure(
-                        _localizer["InsufficientStockVariant", name, requested, available].Value, 422);
-                return Result<DispensePrescriptionResponse>.Failure(
-                    _localizer["InsufficientStockBatch", batch.BatchNumber, name, requested, available].Value, 422);
-            }
+        var now = DateTime.UtcNow;
+        var record = _dispensing.Dispense(prescription, byId, pharmacistId, now);
 
-            var asOf = DateOnly.FromDateTime(now);
-            foreach (var variant in variants)
-                variant.RaiseLowStockEventIfNeeded(asOf);
-            foreach (var batch in variants.SelectMany(v => v.Batches))
-                batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
+        var asOf = DateOnly.FromDateTime(now);
+        foreach (var variant in variants)
+            variant.RaiseLowStockEventIfNeeded(asOf);
+        foreach (var batch in variants.SelectMany(v => v.Batches))
+            batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
-            record.SetNotes(req.Notes);
-            _prescriptions.AddDispensingRecord(record);
+        record.SetNotes(req.Notes);
+        _prescriptions.AddDispensingRecord(record);
 
-            await _uow.SaveChangesAsync(cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
 
-            // Transparency-only messages, already localized for the request culture:
-            // the dispense already succeeded with 201, no new rejections.
-            var dispensedTotal = record.GetQuantitiesByPrescriptionItem().Values.Sum();
-            var warnings = new List<string>();
-            if (dispensedTotal < requestedTotal)
-                warnings.Add(_localizer["PartialShortfall",
-                    dispensedTotal.ToString(CultureInfo.InvariantCulture),
-                    requestedTotal.ToString(CultureInfo.InvariantCulture)].Value);
+        // Transparency-only messages, already localized for the request culture:
+        // the dispense already succeeded with 201, no new rejections.
+        var dispensedTotal = record.GetQuantitiesByPrescriptionItem().Values.Sum();
+        var warnings = new List<string>();
+        if (dispensedTotal < requestedTotal)
+            warnings.Add(_localizer["PartialShortfall",
+                dispensedTotal.ToString(CultureInfo.InvariantCulture),
+                requestedTotal.ToString(CultureInfo.InvariantCulture)].Value);
 
-            var usedBatchIds = record.Items.Select(i => i.MedicineBatchId).ToHashSet();
-            warnings.AddRange(variants
-                .SelectMany(v => v.Batches)
-                .Where(b => usedBatchIds.Contains(b.Id)
-                    && b.ExpiryDate.DayNumber - asOf.DayNumber <= _notificationOptions.ExpiryWarningDays)
-                .OrderBy(b => b.ExpiryDate)
-                .Select(b => _localizer["BatchNearExpiry",
-                    b.BatchNumber,
-                    b.ExpiryDate.ToString("dd/MM/yyyy"),
-                    (b.ExpiryDate.DayNumber - asOf.DayNumber).ToString(CultureInfo.InvariantCulture)].Value));
+        var usedBatchIds = record.Items.Select(i => i.MedicineBatchId).ToHashSet();
+        warnings.AddRange(variants
+            .SelectMany(v => v.Batches)
+            .Where(b => usedBatchIds.Contains(b.Id)
+                && b.ExpiryDate.DayNumber - asOf.DayNumber <= _notificationOptions.ExpiryWarningDays)
+            .OrderBy(b => b.ExpiryDate)
+            .Select(b => _localizer["BatchNearExpiry",
+                b.BatchNumber,
+                b.ExpiryDate.ToString("dd/MM/yyyy"),
+                (b.ExpiryDate.DayNumber - asOf.DayNumber).ToString(CultureInfo.InvariantCulture)].Value));
 
-            return Result<DispensePrescriptionResponse>.Success(new(record.Id, requestedTotal, dispensedTotal, warnings));
-        }
-
-        return Result<DispensePrescriptionResponse>.Failure(authResult.Error!, authResult.StatusCode);
+        return Result<DispensePrescriptionResponse>.Success(new(record.Id, requestedTotal, dispensedTotal, warnings));
     }
 }

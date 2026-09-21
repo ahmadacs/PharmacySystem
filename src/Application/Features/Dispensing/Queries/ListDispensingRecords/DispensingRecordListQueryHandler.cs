@@ -44,8 +44,8 @@ public sealed class DispensingRecordListQueryHandler : IRequestHandler<Dispensin
 
         data = SortDir(data, r => r.DispensedAt, request.SortDir);
 
-        var page = Math.Max(1, request.Page);
-        var pageSize = Math.Clamp(request.PageSize, 1, 100);
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
 
         var rows = await _executor.ToListAsync(
             data

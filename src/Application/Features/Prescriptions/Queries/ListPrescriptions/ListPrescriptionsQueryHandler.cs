@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Prescriptions.Common;
@@ -39,16 +40,11 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
 
         if (PrescriptionAccess.CanManageOwn(_currentUser) && !PrescriptionAccess.CanViewAll(_currentUser))
         {
-            var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
-            if (authResult.IsSuccess)
-            {
-                var userId = authResult.Value;
-                restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
-            }
-            else
-            {
-                return Result<PagedList<PrescriptionListItemDto>>.Failure(authResult.Error!, 403);
-            }
+            var authFailure = AuthGuard.RequireUserId<PagedList<PrescriptionListItemDto>>(_currentUser, _localizer, out var userId);
+            if (authFailure is not null)
+                return authFailure;
+
+            restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
         }
 
         IQueryable<Prescription> data = _prescriptions.Query();
@@ -82,8 +78,8 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
             _ => SortDir(data, p => p.IssuedDate, request.SortDir)
         };
 
-        var page = Math.Max(1, request.Page);
-        var pageSize = Math.Clamp(request.PageSize, 1, 100);
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
 
         var rows = await _executor.ToListAsync(
             data

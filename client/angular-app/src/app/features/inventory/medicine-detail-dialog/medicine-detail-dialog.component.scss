@@ -45,6 +45,12 @@
   margin: 0;
 }
 
+.details__actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
 .expired {
   color: var(--mat-sys-error);
   font-weight: 600;

@@ -3,13 +3,17 @@ import { Component, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 import { CategoryEnum, MedicineDetailsDto, MedicineForm, MedicineUnit } from '../../../core/models/api.models';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 import { MedicinesService } from '../../medicines/medicines.service';
 import { TranslateService } from '@ngx-translate/core';
 import { currentLanguage } from '../../../core/utils/localized-name.utils';
+import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
+import { FileEntityType } from '../../../core/services/file.service';
 
 export interface MedicineDetailDialogData {
   id: string;
@@ -21,6 +25,8 @@ export interface MedicineDetailDialogData {
   standalone: true,
   imports: [
     MatButton,
+    MatIconButton,
+    MatIcon,
     MatProgressBar,
     MatDialogTitle,
     MatDialogContent,
@@ -29,13 +35,15 @@ export interface MedicineDetailDialogData {
     RiyadhDatePipe,
     CurrencyPipe,
     TranslatePipe,
-    EnumTranslatePipe
+    EnumTranslatePipe,
+    MatTooltip
   ],
   templateUrl: './medicine-detail-dialog.component.html',
   styleUrl: './medicine-detail-dialog.component.scss'
 })
 export class MedicineDetailDialogComponent {
   private readonly medicinesService = inject(MedicinesService);
+  private readonly viewer = inject(AttachmentViewerService);
   protected readonly translate = inject(TranslateService);
 
   readonly data = inject<MedicineDetailDialogData>(MAT_DIALOG_DATA);
@@ -50,4 +58,8 @@ export class MedicineDetailDialogComponent {
 
   displayName(details: MedicineDetailsDto): string { return this.lang() === 'ar' && details.nameAr ? details.nameAr : details.name; }
   genericDisplay(details: MedicineDetailsDto): string { return this.lang() === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName; }
+
+  protected openImages(entityType: FileEntityType, entityId: string): void {
+    this.viewer.open(entityType, entityId);
+  }
 }

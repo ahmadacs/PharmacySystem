@@ -17,6 +17,13 @@ export interface FileAttachmentDto {
 
 export type FileEntityType = 'Medicine' | 'Prescription' | 'Batch' | 'InventoryAdjustment';
 
+export interface ImagePreview {
+  id: string;
+  fileName: string;
+  contentType: string;
+  url: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FileService {
   private readonly http = inject(HttpClient);
@@ -37,6 +44,44 @@ export class FileService {
 
   downloadUrl(fileId: string): string {
     return `${this.baseUrl}/${fileId}/download`;
+  }
+
+  /** Authenticated blob fetch (carries the JWT via the auth interceptor) for <img> previews and downloads. */
+  downloadBlob(fileId: string): Promise<Blob> {
+    return firstValueFrom(this.http.get(`${this.baseUrl}/${fileId}/download`, { responseType: 'blob' }));
+  }
+
+  /**
+   * Loads image previews for an entity: lists attachments, then fetches each
+   * image as an authenticated blob and exposes it as an object URL ready for
+   * direct <img [src]> binding (plain <img src> sends no Authorization header).
+   * Non-image files are returned separately for download links.
+   */
+  async loadImagePreviews(
+    entityType: FileEntityType,
+    entityId: string
+  ): Promise<{ images: ImagePreview[]; documents: FileAttachmentDto[] }> {
+    const list = await this.list(entityType, entityId).catch(() => [] as FileAttachmentDto[]);
+    const images: ImagePreview[] = [];
+    const documents = list.filter((f) => !f.contentType.toLowerCase().startsWith('image/'));
+    await Promise.all(
+      list
+        .filter((f) => f.contentType.toLowerCase().startsWith('image/'))
+        .map(async (f) => {
+          try {
+            const blob = await this.downloadBlob(f.id);
+            images.push({
+              id: f.id,
+              fileName: f.fileName,
+              contentType: f.contentType,
+              url: URL.createObjectURL(new Blob([blob], { type: f.contentType }))
+            });
+          } catch {
+            // per-file failure: skip thumbnail, global interceptor already toasted
+          }
+        })
+    );
+    return { images, documents };
   }
 
   /** Shared client-side validation (single source of truth for all dialogs). */

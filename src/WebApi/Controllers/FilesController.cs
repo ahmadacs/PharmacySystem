@@ -21,7 +21,7 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
     public async Task<IActionResult> Upload(string entityType, Guid entityId, IFormFile file, CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
-            return BadRequest(new { message = "File is required." });
+            return FailureResponse("File is required.", StatusCodes.Status400BadRequest);
 
         using var stream = new MemoryStream();
         await file.CopyToAsync(stream, cancellationToken);

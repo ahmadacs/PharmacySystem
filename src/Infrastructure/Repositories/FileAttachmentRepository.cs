@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Domain.Entities.Files;
+using Domain.Enums;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

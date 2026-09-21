@@ -12,6 +12,13 @@
       <span><strong>{{ 'dialogs.medicineDetailInventory.totalStock' | translate }}:</strong> {{ details.availableQuantity }}</span>
     </div>
 
+    <div class="details__actions">
+      <button mat-stroked-button type="button" (click)="openImages('Medicine', data.id)">
+        <mat-icon>image</mat-icon>
+        {{ 'dialogs.medicineDetailInventory.viewAttachments' | translate }}
+      </button>
+    </div>
+
     @for (variant of details.variants; track variant.id) {
       <div class="variant-block">
         <div class="variant-header">
@@ -42,6 +49,7 @@
                 <th>{{ 'dialogs.medicineDetailInventory.unitCost' | translate }}</th>
                 <th>{{ 'dialogs.medicineDetailInventory.supplier' | translate }}</th>
                 <th>{{ 'dialogs.medicineDetailInventory.status' | translate }}</th>
+                <th>{{ 'dialogs.medicineDetailInventory.attachments' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +70,13 @@
                       [class.chip-depleted]="batch.batchStatus === 'Depleted'">
                       {{ batch.batchStatus | enumTranslate:'BatchStatus' }}
                     </span>
+                  </td>
+                  <td>
+                    <button mat-icon-button type="button" (click)="openImages('Batch', batch.id)"
+                            [matTooltip]="'dialogs.medicineDetailInventory.viewAttachments' | translate"
+                            [attr.aria-label]="'dialogs.medicineDetailInventory.viewAttachments' | translate">
+                      <mat-icon>image</mat-icon>
+                    </button>
                   </td>
                 </tr>
               }

@@ -1,6 +1,6 @@
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using MediatR;
 using Microsoft.Extensions.Localization;
@@ -33,23 +33,19 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
 
         public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
     {
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
-        if (authResult.IsSuccess)
-        {
-            var userId = authResult.Value;
+        var authFailure = AuthGuard.RequireUserId(_currentUser, _localizer, out var userId);
+        if (authFailure is not null)
+            return authFailure;
 
-            var unread = await _executor.ToListAsync(
-                _notifications.Query().Where(n => n.UserId == userId && !n.IsRead),
-                cancellationToken);
+        var unread = await _executor.ToListAsync(
+            _notifications.Query().Where(n => n.UserId == userId && !n.IsRead),
+            cancellationToken);
 
-            var now = DateTime.UtcNow;
-            foreach (var notification in unread)
-                notification.MarkRead(now);
+        var now = DateTime.UtcNow;
+        foreach (var notification in unread)
+            notification.MarkRead(now);
 
-            await _uow.SaveChangesAsync(cancellationToken);
-            return Result.Success();
-        }
-
-        return Result.Failure(authResult.Error!, authResult.StatusCode);
+        await _uow.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 }

@@ -66,4 +66,7 @@ public sealed record ReceiveInventoryRequest
 
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
+
+    /// <summary>Optional file attachment (e.g., invoice photo) stored against the new batch.</summary>
+    public FileUploadDto? File { get; init; }
 }

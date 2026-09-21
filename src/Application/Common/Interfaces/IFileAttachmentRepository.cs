@@ -1,4 +1,5 @@
 using Domain.Entities.Files;
+using Domain.Enums;
 
 namespace Application.Common.Interfaces;
 

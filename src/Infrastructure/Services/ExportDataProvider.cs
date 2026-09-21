@@ -23,7 +23,7 @@ public class ExportDataProvider : IExportDataProvider
         {
             if (m.Variants.Count == 0)
             {
-                rows.Add(new MedicineExportRow(m.Name, m.GenericName.Name, m.CategoryEnum.ToDisplayValue(), "-", "-", 0, m.IsActive));
+                rows.Add(new MedicineExportRow(m.Name, m.GenericName.Name, m.CategoryEnum.ToString(), "-", "-", 0, m.IsActive));
             }
             else
             {
@@ -32,7 +32,7 @@ public class ExportDataProvider : IExportDataProvider
                     // No soft-delete guard here: the EF global query filter already
                     // excluded deleted variants/batches when the graph was loaded.
                     var stock = v.Batches.Sum(b => b.QuantityAvailable.Value);
-                    rows.Add(new MedicineExportRow(m.Name, m.GenericName.Name, m.CategoryEnum.ToDisplayValue(), v.Form.ToString(), $"{v.Strength} {v.Unit}", stock, m.IsActive));
+                    rows.Add(new MedicineExportRow(m.Name, m.GenericName.Name, m.CategoryEnum.ToString(), v.Form.ToString(), $"{v.Strength} {v.Unit}", stock, m.IsActive));
                 }
             }
         }

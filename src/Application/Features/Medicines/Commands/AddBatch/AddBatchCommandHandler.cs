@@ -18,10 +18,11 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     private readonly IUnitOfWork _uow;
     private readonly ICurrentUserService _currentUser;
     private readonly NotificationOptions _notificationOptions;
+    private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public AddBatchCommandHandler(IMedicineRepository repo, IAsyncQueryExecutor executor, IUnitOfWork uow,
-        ICurrentUserService currentUser, NotificationOptions notificationOptions,
+        ICurrentUserService currentUser, NotificationOptions notificationOptions, IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
@@ -29,6 +30,7 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
         _uow = uow;
         _currentUser = currentUser;
         _notificationOptions = notificationOptions;
+        _attachments = attachments;
         _localizer = localizer;
     }
 
@@ -94,6 +96,8 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
         _repo.AddBatch(batch);
         _repo.AddAdjustment(adjustment);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        await _attachments.UploadAsync("Batch", batch.Id, req.File, cancellationToken);
 
         return Result<Guid>.Success(batch.Id);
     }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Common.Attributes;
+using Application.Features.Inventory.Dtos;
 
 namespace Application.Features.Prescriptions.Dtos;
 
@@ -49,4 +50,7 @@ public sealed record CreatePrescriptionRequest
 
     [MinLength(1)]
     public List<PrescriptionItemRequest> Items { get; init; } = [];
+
+    /// <summary>Optional file attachment (e.g., scanned prescription) stored against the new prescription.</summary>
+    public FileUploadDto? File { get; init; }
 }

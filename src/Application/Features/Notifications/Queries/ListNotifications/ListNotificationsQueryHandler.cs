@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Notifications.Dtos;
@@ -27,33 +28,29 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
         ListNotificationsQuery request,
         CancellationToken cancellationToken)
     {
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
-        if (authResult.IsSuccess)
-        {
-            var userId = authResult.Value;
+        var authFailure = AuthGuard.RequireUserId<PagedList<NotificationListItemDto>>(_currentUser, _localizer, out var userId);
+        if (authFailure is not null)
+            return authFailure;
 
-            var query = _notifications.Query().Where(n => n.UserId == userId);
-            if (request.IsRead.HasValue)
-                query = query.Where(n => n.IsRead == request.IsRead.Value);
+        var query = _notifications.Query().Where(n => n.UserId == userId);
+        if (request.IsRead.HasValue)
+            query = query.Where(n => n.IsRead == request.IsRead.Value);
 
-            var ordered = query.OrderByDescending(n => n.CreatedAt);
+        var ordered = query.OrderByDescending(n => n.CreatedAt);
 
-            var totalCount = await _executor.CountAsync(ordered, cancellationToken);
+        var totalCount = await _executor.CountAsync(ordered, cancellationToken);
 
-            var page = Math.Max(1, request.Page);
-            var pageSize = Math.Clamp(request.PageSize, 1, 200);
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize(200);
 
-            var rows = await _executor.ToListAsync(
-                ordered.Skip((page - 1) * pageSize).Take(pageSize),
-                cancellationToken);
+        var rows = await _executor.ToListAsync(
+            ordered.Skip((page - 1) * pageSize).Take(pageSize),
+            cancellationToken);
 
-            var items = rows
-                .Select(n => n.ToListItemDto())
-                .ToPagedList(page, pageSize, totalCount);
+        var items = rows
+            .Select(n => n.ToListItemDto())
+            .ToPagedList(page, pageSize, totalCount);
 
-            return Result<PagedList<NotificationListItemDto>>.Success(items);
-        }
-
-        return Result<PagedList<NotificationListItemDto>>.Failure(authResult.Error!, 403);
+        return Result<PagedList<NotificationListItemDto>>.Success(items);
     }
 }

@@ -1,13 +1,12 @@
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Patients.Dtos;
-using Application.Features.Prescriptions.Common;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
 using Domain.Entities.Patients;
 using Domain.Entities.Prescriptions;
-using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -22,6 +21,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
     private readonly IAsyncQueryExecutor _executor;
+    private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CreatePrescriptionCommandHandler(
@@ -32,6 +32,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         IStaffService staff,
         IUnitOfWork uow,
         IAsyncQueryExecutor executor,
+        IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
@@ -41,54 +42,48 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         _staff = staff;
         _uow = uow;
         _executor = executor;
+        _attachments = attachments;
         _localizer = localizer;
     }
 
     public async Task<Result<Guid>> Handle(CreatePrescriptionCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var authResult = PrescriptionAccess.RequireAuthenticatedUserId(_currentUser, _localizer);
-        if (authResult.IsSuccess)
-        {
-            var userId = authResult.Value;
+        var authFailure = AuthGuard.RequireUserId<Guid>(_currentUser, _localizer, out var userId);
+        if (authFailure is not null)
+            return authFailure;
 
-            var doctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
-            if (doctorId is null)
-                return Result<Guid>.Failure(_localizer["OnlyDoctorCreate"].Value, 403);
+        var doctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
+        if (doctorId is null)
+            return Result<Guid>.Failure(_localizer["OnlyDoctorCreate"].Value, 403);
 
-            Patient patient;
-            try
-            {
-                patient = await FindOrCreatePatientAsync(req, cancellationToken);
-            }
-            catch (ConflictingOperationException)
-            {
+            var patient = await FindOrCreatePatientAsync(req, cancellationToken);
+            if (patient is null)
                 return Result<Guid>.Failure(_localizer["PhoneRegistered", NormalizePhone(req.PatientPhoneNumber)].Value, 409);
-            }
+
             var prescription = req.ToEntity(doctorId.Value, patient.Id);
 
-            var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
-            var existingVariants = await _medicines.GetVariantsByIdsAsync(variantIds, cancellationToken);
-            var existingVariantIds = existingVariants.Select(v => v.Id).ToHashSet();
+        var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
+        var existingVariants = await _medicines.GetVariantsByIdsAsync(variantIds, cancellationToken);
+        var existingVariantIds = existingVariants.Select(v => v.Id).ToHashSet();
 
-            foreach (var item in req.Items)
-            {
-                if (!existingVariantIds.Contains(item.MedicineVariantId))
-                    return Result<Guid>.Failure(_localizer["ResourceNotFound", nameof(MedicineVariant), item.MedicineVariantId].Value, 404);
+        foreach (var item in req.Items)
+        {
+            if (!existingVariantIds.Contains(item.MedicineVariantId))
+                return Result<Guid>.Failure(_localizer["ResourceNotFound", nameof(MedicineVariant), item.MedicineVariantId].Value, 404);
 
-                prescription.AddItem(item.MedicineVariantId, item.Quantity, item.DosageInstructions, item.IsRefillable, item.RefillsAllowed, item.RefillIntervalDays);
-            }
-
-            _prescriptions.Add(prescription);
-            await _uow.SaveChangesAsync(cancellationToken);
-
-            return Result<Guid>.Success(prescription.Id);
+            prescription.AddItem(item.MedicineVariantId, item.Quantity, item.DosageInstructions, item.IsRefillable, item.RefillsAllowed, item.RefillIntervalDays);
         }
 
-        return Result<Guid>.Failure(authResult.Error!, authResult.StatusCode);
+        _prescriptions.Add(prescription);
+        await _uow.SaveChangesAsync(cancellationToken);
+
+            await _attachments.UploadAsync("Prescription", prescription.Id, req.File, cancellationToken);
+
+            return Result<Guid>.Success(prescription.Id);
     }
 
-    private async Task<Patient> FindOrCreatePatientAsync(CreatePrescriptionRequest request, CancellationToken cancellationToken)
+    private async Task<Patient?> FindOrCreatePatientAsync(CreatePrescriptionRequest request, CancellationToken cancellationToken)
     {
         var firstName = request.PatientFirstName.Trim();
         var lastName = request.PatientLastName.Trim();
@@ -97,12 +92,11 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         var patient = await _patients.FindByPhoneAsync(normalizedPhone, cancellationToken);
         if (patient is not null)
         {
-            // Verify identity: phone is unique, but if name/DOB mismatch, it's a different person trying to use same phone
             if (!string.Equals(patient.FirstName, firstName, StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(patient.LastName, lastName, StringComparison.OrdinalIgnoreCase) ||
                 patient.DateOfBirth != request.PatientDateOfBirth)
             {
-                throw new ConflictingOperationException($"Phone number {normalizedPhone} is already registered to another patient.");
+                return null;
             }
             return patient;
         }

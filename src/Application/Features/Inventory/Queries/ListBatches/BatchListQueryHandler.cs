@@ -45,8 +45,8 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
             _ => SortDir(filtered, b => b.ExpiryDate, request.SortDir)
         };
 
-        var page = Math.Max(1, request.Page);
-        var pageSize = Math.Clamp(request.PageSize, 1, 100);
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
 
         var dispensingLines = _prescriptions.QueryDispensingRecordItems();
 

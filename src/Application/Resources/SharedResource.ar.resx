@@ -27,6 +27,21 @@
   <data name="ResourceNotFound" xml:space="preserve">
     <value>المورد '{0}' بالمعرف '{1}' غير موجود.</value>
   </data>
+  <data name="PrescriptionStatus_Pending" xml:space="preserve">
+    <value>معلقة</value>
+  </data>
+  <data name="PrescriptionStatus_PartiallyDispensed" xml:space="preserve">
+    <value>مصروفة جزئياً</value>
+  </data>
+  <data name="PrescriptionStatus_FullyDispensed" xml:space="preserve">
+    <value>مصروفة بالكامل</value>
+  </data>
+  <data name="PrescriptionStatus_Cancelled" xml:space="preserve">
+    <value>ملغاة</value>
+  </data>
+  <data name="PrescriptionStatus_Expired" xml:space="preserve">
+    <value>منتهية</value>
+  </data>
   <data name="Forbidden" xml:space="preserve">
     <value>غير مسموح لك بالوصول إلى هذا المورد.</value>
   </data>
@@ -101,6 +116,12 @@
   </data>
   <data name="FileViewMedicine" xml:space="preserve">
     <value>لا صلاحية لعرض ملفات الأدوية.</value>
+  </data>
+  <data name="FileViewBatch" xml:space="preserve">
+    <value>لا صلاحية لعرض ملفات الدفعات.</value>
+  </data>
+  <data name="FileViewInventory" xml:space="preserve">
+    <value>لا صلاحية لعرض ملفات المخزون.</value>
   </data>
   <data name="FileUploadMedicine" xml:space="preserve">
     <value>لا صلاحية لرفع ملفات الأدوية.</value>

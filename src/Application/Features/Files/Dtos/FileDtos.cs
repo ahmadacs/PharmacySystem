@@ -1,3 +1,5 @@
+using Domain.Enums;
+
 namespace Application.Features.Files.Dtos;
 
 public sealed record FileAttachmentDto(
@@ -15,7 +17,7 @@ public sealed record FileAttachmentDto(
 public static class FileAttachmentMapping
 {
     public static Domain.Entities.Files.FileAttachment ToEntity(
-        Domain.Entities.Files.FileEntityType entityType,
+        FileEntityType entityType,
         Guid entityId,
         string fileName,
         string contentType,

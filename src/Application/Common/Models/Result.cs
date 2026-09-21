@@ -9,7 +9,6 @@ namespace Application.Common.Models;
 public sealed class Result<T>
 {
     public bool IsSuccess { get; }
-    public bool IsFailure => !IsSuccess;
     public T? Value { get; }
     public string? Error { get; }
     public int StatusCode { get; }
@@ -30,8 +29,6 @@ public sealed class Result<T>
             throw new ArgumentException("Failure error message is required.", nameof(error));
         return new(false, default, error, statusCode);
     }
-
-    public override string ToString() => IsSuccess ? $"Success({Value})" : $"Failure({Error})";
 }
 
 /// <summary>
@@ -40,7 +37,6 @@ public sealed class Result<T>
 public sealed class Result
 {
     public bool IsSuccess { get; }
-    public bool IsFailure => !IsSuccess;
     public string? Error { get; }
     public int StatusCode { get; }
 
@@ -59,6 +55,4 @@ public sealed class Result
             throw new ArgumentException("Failure error message is required.", nameof(error));
         return new(false, error, statusCode);
     }
-
-    public override string ToString() => IsSuccess ? "Success" : $"Failure({Error})";
 }

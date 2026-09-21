@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
+using Domain.Enums;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using MediatR;
@@ -32,10 +33,17 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
         var attachment = await _files.GetByIdAsync(request.FileId, cancellationToken);
         if (attachment is null) return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["ResourceNotFound", "FileAttachment", request.FileId].Value, 404);
 
-        if (attachment.EntityType == Domain.Entities.Files.FileEntityType.Medicine)
+        if (attachment.EntityType == FileEntityType.Medicine)
         {
             if (!_currentUser.Permissions.Contains(Permissions.Medicines.View))
                 return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["FileViewMedicine"].Value, 403);
+        }
+        else if (attachment.EntityType == FileEntityType.Batch
+            || attachment.EntityType == FileEntityType.InventoryAdjustment)
+        {
+            if (!_currentUser.Permissions.Contains(Permissions.Inventory.View)
+                && !_currentUser.Permissions.Contains(Permissions.Inventory.Adjust))
+                return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["FileViewInventory"].Value, 403);
         }
         else
         {

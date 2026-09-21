@@ -1,13 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Application.Common.Interfaces;
+using Application.Common.Security;
 
 namespace WebApi.Services;
 
 public sealed class CurrentUserService : ICurrentUserService
 {
-    public const string PermissionClaimType = "permission";
-    public const string RoleClaimType = "role";
+    public const string PermissionClaimType = JwtClaimTypes.Permission;
+    public const string RoleClaimType = JwtClaimTypes.Role;
 
     private readonly IHttpContextAccessor _httpContextAccessor;
 

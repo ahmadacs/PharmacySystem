@@ -92,6 +92,11 @@
   margin: 0;
 }
 
+.details__actions {
+  display: flex;
+  gap: 8px;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

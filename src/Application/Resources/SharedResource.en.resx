@@ -27,6 +27,21 @@
   <data name="ResourceNotFound" xml:space="preserve">
     <value>Resource '{0}' with id '{1}' was not found.</value>
   </data>
+  <data name="PrescriptionStatus_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="PrescriptionStatus_PartiallyDispensed" xml:space="preserve">
+    <value>Partially dispensed</value>
+  </data>
+  <data name="PrescriptionStatus_FullyDispensed" xml:space="preserve">
+    <value>Fully dispensed</value>
+  </data>
+  <data name="PrescriptionStatus_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="PrescriptionStatus_Expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
   <data name="Forbidden" xml:space="preserve">
     <value>You are not allowed to access this resource.</value>
   </data>
@@ -101,6 +116,12 @@
   </data>
   <data name="FileViewMedicine" xml:space="preserve">
     <value>Missing permission to view medicine files.</value>
+  </data>
+  <data name="FileViewBatch" xml:space="preserve">
+    <value>Missing permission to view batch files.</value>
+  </data>
+  <data name="FileViewInventory" xml:space="preserve">
+    <value>Missing permission to view inventory files.</value>
   </data>
   <data name="FileUploadMedicine" xml:space="preserve">
     <value>Missing permission to upload medicine files.</value>

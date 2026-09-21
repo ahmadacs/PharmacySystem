@@ -27,6 +27,8 @@ import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PrescriptionsService } from '../prescriptions.service';
 import { ExportService } from '../../../core/services/export.service';
+import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
+import { FileEntityType } from '../../../core/services/file.service';
 
 @Component({
   selector: 'app-prescription-details-dialog',
@@ -64,6 +66,7 @@ export class PrescriptionDetailsDialogComponent {
   private readonly authStore = inject(AuthStore);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionDetailsDialogComponent>);
   private readonly exportService = inject(ExportService);
+  private readonly viewer = inject(AttachmentViewerService);
   protected readonly translate = inject(TranslateService);
 
   readonly prescriptionId = inject<string>(MAT_DIALOG_DATA);
@@ -140,6 +143,10 @@ export class PrescriptionDetailsDialogComponent {
     } catch {
       // handled
     }
+  }
+
+  protected openImages(entityType: FileEntityType, entityId: string): void {
+    this.viewer.open(entityType, entityId);
   }
 
   async refillItem(prescriptionId: string, itemId: string): Promise<void> {

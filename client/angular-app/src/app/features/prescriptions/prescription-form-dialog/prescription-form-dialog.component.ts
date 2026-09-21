@@ -18,6 +18,7 @@ import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from '@angular/m
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
+import { MatTooltip } from '@angular/material/tooltip';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { map, startWith } from 'rxjs';
 import {
@@ -29,6 +30,8 @@ import {
 import { startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { isArabicLang } from '../../../core/utils/localized-name.utils';
 import { ToastService } from '../../../core/services/toast.service';
+import { FileService } from '../../../core/services/file.service';
+import { FileUploadDto } from '../../../core/models/inventory.models';
 import { PrescriptionsService } from '../prescriptions.service';
 import { MedicineLookupService } from '../medicine-lookup.service';
 import { FoundPatient, SAUDI_PHONE_PATTERN } from '../patient-lookup.service';
@@ -63,7 +66,8 @@ import { refillsAllowedValidator, notInFuture } from './prescription-item.valida
     MatDialogClose,
     MatButton,
     MatIconButton,
-    MatIcon
+    MatIcon,
+    MatTooltip
   ],
   templateUrl: './prescription-form-dialog.component.html',
   styleUrl: './prescription-form-dialog.component.scss'
@@ -73,11 +77,30 @@ export class PrescriptionFormDialogComponent {
   private readonly medicineLookup = inject(MedicineLookupService);
   private readonly phoneSearch = inject(PatientPhoneSearchService);
   private readonly toast = inject(ToastService);
+  private readonly fileService = inject(FileService);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionFormDialogComponent>);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly translate = inject(TranslateService);
 
   protected readonly submitting = signal(false);
+  protected readonly file = signal<File | null>(null);
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const selected = input.files[0];
+      const error = this.fileService.validateUpload(selected);
+      if (error) {
+        this.toast.show(error, 'error');
+        return;
+      }
+      this.file.set(selected);
+    }
+  }
+
+  removeFile(): void {
+    this.file.set(null);
+  }
   protected readonly medicines = this.medicineLookup.medicines;
   protected readonly today = startOfDay(new Date());
 
@@ -416,6 +439,16 @@ export class PrescriptionFormDialogComponent {
     this.submitting.set(true);
     try {
       const value = this.form.getRawValue();
+      let fileDto: FileUploadDto | undefined;
+      if (this.file()) {
+        const selected = this.file()!;
+        fileDto = {
+          fileName: selected.name,
+          contentType: selected.type,
+          sizeBytes: selected.size,
+          base64Content: await this.fileService.fileToBase64(selected)
+        };
+      }
       await this.prescriptionsService.create({
         patientFirstName: value.patientFirstName,
         patientLastName: value.patientLastName,
@@ -430,7 +463,8 @@ export class PrescriptionFormDialogComponent {
           isRefillable: item['isRefillable'] as boolean,
           refillsAllowed: item['refillsAllowed'] as number,
           refillIntervalDays: Number(item['refillIntervalDays']) || 0
-        }))
+        })),
+        file: fileDto
       });
       this.toast.show(this.translate.instant('dialogs.prescriptionForm.created'), 'success');
       this.dialogRef.close(true);

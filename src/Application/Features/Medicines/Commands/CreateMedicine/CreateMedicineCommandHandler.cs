@@ -13,12 +13,14 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
 {
     private readonly IMedicineRepository _repo;
     private readonly IUnitOfWork _uow;
+    private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public CreateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IAttachmentUploadService attachments, IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
+        _attachments = attachments;
         _localizer = localizer;
     }
 
@@ -47,6 +49,8 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
 
         _repo.Add(medicine);
         await _uow.SaveChangesAsync(cancellationToken);
+
+        await _attachments.UploadAsync("Medicine", medicine.Id, req.File, cancellationToken);
 
         return Result<Guid>.Success(medicine.Id);
     }

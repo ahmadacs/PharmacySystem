@@ -7,11 +7,6 @@ namespace Application.Features.Medicines.Dtos;
 
 public static class MedicineMapping
 {
-    public static string ToDisplayValue(this MedicineForm form) => form.ToString();
-    public static string ToDisplayValue(this MedicineUnit unit) => unit.ToString();
-    public static string ToDisplayValue(this CategoryEnum category) => category.ToString();
-
-
     /// <summary>
     /// Finds the tracked scientific name or creates and tracks a new one, updating
     /// the Arabic name when it changed. Shared by the create/update medicine flows.

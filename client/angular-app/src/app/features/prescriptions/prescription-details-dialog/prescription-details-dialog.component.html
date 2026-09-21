@@ -15,6 +15,12 @@
         @if (p.diagnosis) {
           <p><strong>{{ 'dialogs.prescriptionDetails.diagnosis' | translate }}:</strong> {{ p.diagnosis }}</p>
         }
+        <div class="details__actions">
+          <button mat-stroked-button type="button" (click)="openImages('Prescription', p.id)">
+            <mat-icon>image</mat-icon>
+            {{ 'dialogs.prescriptionDetails.viewAttachments' | translate }}
+          </button>
+        </div>
         <table mat-table [dataSource]="p.items">
           <ng-container matColumnDef="medicineName">
             <th mat-header-cell *matHeaderCellDef>{{ 'dialogs.prescriptionDetails.medicine' | translate }}</th>

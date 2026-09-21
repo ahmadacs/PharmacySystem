@@ -26,6 +26,10 @@
     table {
       width: 100%;
     }
+    .details__actions {
+      display: flex;
+      gap: 8px;
+    }
     .cell-name {
       display: block;
       font-weight: 500;

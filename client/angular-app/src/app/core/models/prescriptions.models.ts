@@ -14,6 +14,8 @@ export interface PrescriptionItemRequest {
   refillIntervalDays: number;
 }
 
+import { FileUploadDto } from './inventory.models';
+
 export interface CreatePrescriptionRequest {
   patientFirstName: string;
   patientLastName: string;
@@ -22,6 +24,7 @@ export interface CreatePrescriptionRequest {
   diagnosis?: string;
   issuedDate: string;
   items: PrescriptionItemRequest[];
+  file?: FileUploadDto;
 }
 
 export interface PrescriptionItemDto {

@@ -1,0 +1,48 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(560px, 80vw);
+}
+
+.viewer__empty {
+  color: #777;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.viewer__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  a img {
+    width: 160px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    background: #fafafa;
+    display: block;
+  }
+}
+
+.viewer__docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.doc-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.doc-card__icon {
+  color: #c62828;
+}

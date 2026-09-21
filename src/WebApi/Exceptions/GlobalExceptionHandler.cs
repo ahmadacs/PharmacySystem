@@ -1,8 +1,6 @@
-using System.Diagnostics;
 using Application.Resources;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using WebApi.Common;
@@ -22,7 +20,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        var (statusCode, response) = Map(exception, _localizer);
+        var (statusCode, message) = Map(exception, _localizer);
 
         if (statusCode == StatusCodes.Status500InternalServerError)
             _logger.LogError(exception, "Unhandled exception for {Path}", httpContext.Request.Path);
@@ -30,45 +28,31 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             _logger.LogWarning(exception, "Request failed for {Path}", httpContext.Request.Path);
 
         httpContext.Response.StatusCode = statusCode;
-        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(
+            new ErrorResponse { Message = message, TraceId = httpContext.TraceIdentifier },
+            cancellationToken);
 
         return true;
     }
 
-    private static (int StatusCode, ErrorResponse Response) Map(Exception exception, IStringLocalizer<SharedResource> localizer)
-    {
-        switch (exception)
+    private static (int StatusCode, string Message) Map(Exception exception, IStringLocalizer<SharedResource> localizer) =>
+        exception switch
         {
-            case EntityNotFoundException e:
-                return (StatusCodes.Status404NotFound,
-                    S(localizer["ResourceNotFound", e.EntityType.Name, e.EntityId].Value));
-            case ForbiddenResourceException:
-                return (StatusCodes.Status403Forbidden, S(localizer["Forbidden"].Value));
-            case InvalidCredentialsException:
-            case InvalidRefreshTokenException:
-                return (StatusCodes.Status401Unauthorized, S(exception.Message));
-            case ConflictingOperationException:
-            case RefillNotEligibleException:
-            case InvalidPrescriptionStatusException:
-                return (StatusCodes.Status409Conflict, S(exception.Message));
-            case DbUpdateConcurrencyException:
-                return (StatusCodes.Status409Conflict, S(localizer["ConcurrencyConflict"].Value));
-            case MissingMedicineVariantException:
-                return (StatusCodes.Status400BadRequest, S(exception.Message));
-            case InsufficientStockException:
-            case ExpiredBatchException:
-            case FileValidationException:
-            case DomainException:
-                return (StatusCodes.Status422UnprocessableEntity, S(exception.Message));
-            default:
-                return (StatusCodes.Status500InternalServerError, S(localizer["UnexpectedError"].Value));
-        }
-    }
-
-    private static ErrorResponse S(string message)
-        => new()
-        {
-            Message = message,
-            TraceId = Activity.Current?.Id ?? Guid.NewGuid().ToString("N")
+            EntityNotFoundException e =>
+                (StatusCodes.Status404NotFound, localizer["ResourceNotFound", e.EntityType.Name, e.EntityId]),
+            ForbiddenResourceException =>
+                (StatusCodes.Status403Forbidden, localizer["Forbidden"]),
+            InvalidCredentialsException or InvalidRefreshTokenException =>
+                (StatusCodes.Status401Unauthorized, exception.Message),
+            ConflictingOperationException or RefillNotEligibleException or InvalidPrescriptionStatusException =>
+                (StatusCodes.Status409Conflict, exception.Message),
+            DbUpdateConcurrencyException =>
+                (StatusCodes.Status409Conflict, localizer["ConcurrencyConflict"]),
+            MissingMedicineVariantException =>
+                (StatusCodes.Status400BadRequest, exception.Message),
+            DomainException =>
+                (StatusCodes.Status422UnprocessableEntity, exception.Message),
+            _ =>
+                (StatusCodes.Status500InternalServerError, localizer["UnexpectedError"])
         };
 }

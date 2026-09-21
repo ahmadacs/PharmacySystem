@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>
+  {{ 'dialogs.attachmentViewer.title' | translate }} ({{ totalCount() }})
+</h2>
+
+<mat-dialog-content class="viewer">
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (!loading() && totalCount() === 0) {
+    <p class="viewer__empty">{{ 'dialogs.attachmentViewer.empty' | translate }}</p>
+  }
+
+  @if (images().length > 0) {
+    <div class="viewer__grid">
+      @for (img of images(); track img.id) {
+        <a [href]="img.url" target="_blank" rel="noopener" [matTooltip]="img.fileName">
+          <img [src]="img.url" [alt]="img.fileName" loading="lazy" />
+        </a>
+      }
+    </div>
+  }
+
+  @if (documents().length > 0) {
+    <div class="viewer__docs">
+      @for (doc of documents(); track doc.id) {
+        <div class="doc-card" [matTooltip]="doc.fileName">
+          <mat-icon class="doc-card__icon">picture_as_pdf</mat-icon>
+          <button mat-icon-button type="button" (click)="download(doc)"
+                  [matTooltip]="'dialogs.attachmentViewer.download' | translate"
+                  [attr.aria-label]="'dialogs.attachmentViewer.download' | translate">
+            <mat-icon>download</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="true">{{ 'common.close' | translate }}</button>
+</mat-dialog-actions>

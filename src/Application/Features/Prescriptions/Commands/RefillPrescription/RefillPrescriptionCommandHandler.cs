@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
@@ -23,7 +24,7 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
 
     public async Task<Result> Handle(RefillPrescriptionCommand request, CancellationToken cancellationToken)
     {
-        if (request.ItemIds.Count == 0)
+        if (request.ItemIds is null || request.ItemIds.Count == 0)
             return Result.Failure(_localizer["RefillItemRequired"].Value, 400);
 
         var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken);
@@ -33,7 +34,9 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         // Localized pre-checks mirror the domain rules: the domain still
         // re-validates as a safety net (English fallback, unreachable here).
         if (prescription.Status is PrescriptionStatus.Cancelled or PrescriptionStatus.Expired)
-            return Result.Failure(_localizer["RefillPrescriptionStatus", request.Id, prescription.Status].Value, 409);
+            return Result.Failure(
+                _localizer["RefillPrescriptionStatus", request.Id, PrescriptionStatusDisplay.ToDisplayName(prescription.Status, _localizer)].Value,
+                409);
 
         foreach (var itemId in request.ItemIds.Distinct())
         {

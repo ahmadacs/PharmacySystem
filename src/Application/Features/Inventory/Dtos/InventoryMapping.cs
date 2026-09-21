@@ -21,7 +21,8 @@ public static class InventoryMapping
             ExpiryDate = request.ExpiryDate,
             PackagesReceived = request.PackagesReceived,
             UnitCost = request.UnitCost,
-            SupplierName = request.SupplierName
+            SupplierName = request.SupplierName,
+            File = request.File
         };
 
     /// <summary>

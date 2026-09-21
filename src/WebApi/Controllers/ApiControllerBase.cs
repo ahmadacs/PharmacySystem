@@ -49,15 +49,14 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
         return FailureResponse(result.Error!, result.StatusCode);
     }
 
-    protected ObjectResult FailureResponse(string error, int statusCode = 0)
+    protected ObjectResult FailureResponse(string error, int statusCode)
     {
-        var code = statusCode != 0 ? statusCode : MapErrorToStatusCode(error);
         var envelope = new ErrorResponse
         {
             Message = error,
             TraceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
         };
-        return StatusCode(code, envelope);
+        return StatusCode(statusCode, envelope);
     }
 
     protected ObjectResult FailureResponse<T>(Result<T> result) => FailureResponse(result.Error!, result.StatusCode);
@@ -110,18 +109,5 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
         }
 
         return FailureResponse(result);
-    }
-
-    // Heuristic mapping so Result.Failure(string) can still return 404/403/409/422 instead of always 400.
-    // Handlers that need precise codes can prefix the message or throw typed DomainExceptions (still handled by GlobalExceptionHandler).
-    private static int MapErrorToStatusCode(string error)
-    {
-        var lower = error.ToLowerInvariant();
-        if (lower.Contains("not found") || lower.Contains("not exist")) return StatusCodes.Status404NotFound;
-        if (lower.Contains("forbidden") || lower.Contains("not authorized") || lower.Contains("permission")) return StatusCodes.Status403Forbidden;
-        if (lower.Contains("unauthorized") || lower.Contains("invalid credentials") || lower.Contains("locked out")) return StatusCodes.Status401Unauthorized;
-        if (lower.Contains("already exists") || lower.Contains("conflict") || lower.Contains("already dispensed")) return StatusCodes.Status409Conflict;
-        if (lower.Contains("insufficient stock") || lower.Contains("expired") || lower.Contains("validation failed")) return StatusCodes.Status422UnprocessableEntity;
-        return StatusCodes.Status400BadRequest;
     }
 }

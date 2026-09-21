@@ -1,10 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
-import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
-import { MatButton } from '@angular/material/button';
-import { MatAccordion, MatExpansionPanel, MatExpansionPanelDescription, MatExpansionPanelHeader, MatExpansionPanelTitle } from '@angular/material/expansion';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatDialogTitle, MatDialogActions, MatDialogClose, MatDialogContent, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription } from '@angular/material/expansion';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 import {
   MatTable,
   MatColumnDef,
@@ -17,17 +18,21 @@ import {
   MatHeaderRow,
   MatRow
 } from '@angular/material/table';
-import { CategoryEnum, MedicineDetailsDto, MedicineForm } from '../../../core/models/api.models';
-import { ToastService } from '../../../core/services/toast.service';
+import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
 import { currentLanguage } from '../../../core/utils/localized-name.utils';
+import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
+import { FileEntityType } from '../../../core/services/file.service';
+import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 
 @Component({
   selector: 'app-medicine-details-dialog',
   standalone: true,
   imports: [
     MatButton,
+    MatIconButton,
+    MatIcon,
     MatProgressBar,
     MatTable,
     MatColumnDef,
@@ -49,21 +54,21 @@ import { currentLanguage } from '../../../core/utils/localized-name.utils';
     MatExpansionPanelTitle,
     MatExpansionPanelDescription,
     TranslatePipe,
-    EnumTranslatePipe
+    EnumTranslatePipe,
+    MatTooltip
   ],
   templateUrl: './medicine-details-dialog.component.html',
   styleUrl: './medicine-details-dialog.component.scss'
 })
 export class MedicineDetailsDialogComponent {
-  protected readonly medicineForm = MedicineForm;
   private readonly medicinesService = inject(MedicinesService);
-  private readonly toast = inject(ToastService);
+  private readonly viewer = inject(AttachmentViewerService);
   private readonly dialogRef = inject(MatDialogRef<MedicineDetailsDialogComponent>);
   protected readonly translate = inject(TranslateService);
 
   readonly medicineId = inject<string>(MAT_DIALOG_DATA);
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
-  readonly batchColumns = ['batchNumber', 'expiry', 'supplier'];
+  readonly batchColumns = ['batchNumber', 'expiry', 'supplier', 'attachments'];
 
   constructor() {
     void this.medicinesService.get(this.medicineId).then((details) => this.medicine.set(details));
@@ -74,11 +79,15 @@ export class MedicineDetailsDialogComponent {
   }
 
   displayName(details: MedicineDetailsDto): string {
-    return this.lang() === 'ar' && details.nameAr ? details.nameAr : details.name;
+    const lang = currentLanguage(this.translate);
+    return lang === 'ar' && details.nameAr ? details.nameAr : details.name;
   }
   genericDisplay(details: MedicineDetailsDto): string {
-    return this.lang() === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName;
+    const lang = currentLanguage(this.translate);
+    return lang === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName;
   }
 
-  private lang(): string { return currentLanguage(this.translate); }
+  protected openImages(entityType: FileEntityType, entityId: string): void {
+    this.viewer.open(entityType, entityId);
+  }
 }

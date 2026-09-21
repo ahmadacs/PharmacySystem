@@ -7,6 +7,7 @@ using Application.Features.Files.Dtos;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Files;
+using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;

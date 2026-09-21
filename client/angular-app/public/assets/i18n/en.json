@@ -653,6 +653,9 @@
       "divisible": "Divisible",
       "addVariant": "Add type",
       "variantRequired": "At least one complete type is required.",
+      "attachFile": "Attach file",
+      "browse": "Browse",
+      "removeFile": "Remove file",
       "cancel": "Cancel",
       "create": "Create",
       "save": "Save"
@@ -671,6 +674,7 @@
       "expired": "expired",
       "noBatches": "No batches for this variant.",
       "attachments": "Attachments",
+      "viewAttachments": "View attachments",
       "close": "Close",
       "batch": "Batch",
       "expiry": "Expiry",
@@ -719,6 +723,8 @@
       "unitCost": "Unit cost",
       "supplier": "Supplier",
       "status": "Status",
+      "attachments": "Attachments",
+      "viewAttachments": "View attachments",
       "noBatches": "No batches for this variant.",
       "close": "Close"
     },
@@ -852,6 +858,9 @@
       "removeItem": "Remove item",
       "addItem": "Add item",
       "itemRequired": "At least one complete item is required.",
+      "attachFile": "Attach file",
+      "browse": "Browse",
+      "removeFile": "Remove file",
       "cancel": "Cancel",
       "create": "Create"
     },
@@ -873,7 +882,13 @@
       "print": "Print",
       "exported": "Prescription exported.",
       "cancelPrescription": "Cancel prescription",
+      "viewAttachments": "View attachments",
       "close": "Close"
+    },
+    "attachmentViewer": {
+      "title": "Attachments",
+      "empty": "No attachments yet.",
+      "download": "Download"
     }
   }
 }

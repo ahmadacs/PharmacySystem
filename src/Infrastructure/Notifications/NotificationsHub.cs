@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Application.Common.Security;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using Microsoft.AspNetCore.SignalR;
@@ -21,8 +22,6 @@ public sealed class NotificationsHub : Hub
     {
         _notifications = notifications;
     }
-    private const string RoleClaimType = "role";
-
     public override async Task OnConnectedAsync()
     {
         var userId = Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -30,7 +29,7 @@ public sealed class NotificationsHub : Hub
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
 
-            foreach (var role in Context.User?.FindAll(RoleClaimType).Select(c => c.Value).Distinct() ?? Enumerable.Empty<string>())
+            foreach (var role in Context.User?.FindAll(JwtClaimTypes.Role).Select(c => c.Value).Distinct() ?? Enumerable.Empty<string>())
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"role:{role}");
 
             if (Guid.TryParse(userId, out var uid))

@@ -61,7 +61,7 @@ public static class PrescriptionMapping
             prescription.Patient?.PhoneNumber,
             prescription.Diagnosis,
             prescription.IssuedDate,
-            prescription.Status.ToDisplayValue(),
+            prescription.Status.ToString(),
             prescription.CreatedBy,
             prescription.CreatedAt,
             items);
@@ -73,6 +73,4 @@ public static class PrescriptionMapping
             patientId,
             request.IssuedDate,
             request.Diagnosis);
-
-    private static string ToDisplayValue(this PrescriptionStatus status) => status.ToString();
 }

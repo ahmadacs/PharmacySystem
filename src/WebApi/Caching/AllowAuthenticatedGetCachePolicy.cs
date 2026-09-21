@@ -15,8 +15,6 @@ namespace WebApi.Caching;
 /// </summary>
 public sealed class AllowAuthenticatedGetCachePolicy : IOutputCachePolicy
 {
-    public static readonly AllowAuthenticatedGetCachePolicy Instance = new();
-
     ValueTask IOutputCachePolicy.CacheRequestAsync(OutputCacheContext context, CancellationToken cancellationToken)
     {
         var method = context.HttpContext.Request.Method;

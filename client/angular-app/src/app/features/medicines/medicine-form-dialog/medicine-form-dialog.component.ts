@@ -16,8 +16,11 @@ import { MatError, MatFormField, MatLabel, MatHint } from '@angular/material/for
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSelect } from '@angular/material/select';
+import { MatTooltip } from '@angular/material/tooltip';
 import { CategoryEnum, MedicineForm, MedicineListItemDto, MedicineUnit } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
+import { FileService } from '../../../core/services/file.service';
+import { FileUploadDto } from '../../../core/models/inventory.models';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -42,7 +45,8 @@ import { TranslateService } from '@ngx-translate/core';
     MatDialogClose,
     MatButton,
     MatIconButton,
-    MatIcon
+    MatIcon,
+    MatTooltip
   ],
   templateUrl: './medicine-form-dialog.component.html',
   styleUrl: './medicine-form-dialog.component.scss'
@@ -50,6 +54,7 @@ import { TranslateService } from '@ngx-translate/core';
 export class MedicineFormDialogComponent {
   private readonly medicinesService = inject(MedicinesService);
   private readonly toast = inject(ToastService);
+  private readonly fileService = inject(FileService);
   private readonly dialogRef = inject(MatDialogRef<MedicineFormDialogComponent>);
   private readonly translate = inject(TranslateService);
 
@@ -57,6 +62,7 @@ export class MedicineFormDialogComponent {
   private readonly medicine = inject<MedicineListItemDto | null>(MAT_DIALOG_DATA);
 
   protected readonly submitting = signal(false);
+  protected readonly file = signal<File | null>(null);
   protected readonly medicineForms = Object.values(MedicineForm).filter(
     (form): form is MedicineForm => typeof form === 'number'
   );
@@ -115,6 +121,23 @@ export class MedicineFormDialogComponent {
     this.variants.removeAt(index);
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const selected = input.files[0];
+      const error = this.fileService.validateUpload(selected);
+      if (error) {
+        this.toast.show(error, 'error');
+        return;
+      }
+      this.file.set(selected);
+    }
+  }
+
+  removeFile(): void {
+    this.file.set(null);
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
@@ -139,6 +162,16 @@ export class MedicineFormDialogComponent {
         });
         this.toast.show('Medicine updated.', 'success');
       } else {
+        let fileDto: FileUploadDto | undefined;
+        if (this.file()) {
+          const selected = this.file()!;
+          fileDto = {
+            fileName: selected.name,
+            contentType: selected.type,
+            sizeBytes: selected.size,
+            base64Content: await this.fileService.fileToBase64(selected)
+          };
+        }
         await this.medicinesService.create({
           name: value.name,
           nameAr: value.nameAr || undefined,
@@ -155,7 +188,8 @@ export class MedicineFormDialogComponent {
             packageUnitName: v['packageUnitName'],
             unitsPerPackage: v['unitsPerPackage'],
             isDivisible: v['isDivisible']
-          }))
+          })),
+          file: fileDto
         });
         this.toast.show('Medicine created.', 'success');
       }

@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Options;
 using Application.Features.Dashboard.Dtos;
 using Application.Features.Prescriptions.Dtos;
 using Domain.Enums;
@@ -13,17 +14,20 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
     private readonly IMedicineRepository _medicines;
     private readonly IStaffService _staff;
     private readonly IAsyncQueryExecutor _executor;
+    private readonly NotificationOptions _notificationOptions;
 
     public GetDashboardSummaryQueryHandler(
         IPrescriptionRepository prescriptions,
         IMedicineRepository medicines,
         IStaffService staff,
-        IAsyncQueryExecutor executor)
+        IAsyncQueryExecutor executor,
+        NotificationOptions notificationOptions)
     {
         _prescriptions = prescriptions;
         _medicines = medicines;
         _staff = staff;
         _executor = executor;
+        _notificationOptions = notificationOptions;
     }
 
     public async Task<Result<DashboardSummaryDto>> Handle(GetDashboardSummaryQuery request, CancellationToken cancellationToken)
@@ -32,7 +36,7 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
         var today = now.Date;
         var tomorrow = today.AddDays(1);
         var asOf = DateOnly.FromDateTime(now);
-        var expiringLimit = asOf.AddDays(30);
+        var expiringLimit = asOf.AddDays(_notificationOptions.ExpiryWarningDays);
 
         // Raw sets only: repositories expose data, every rule below lives here
         // in the Application layer (same predicates as the list-query handlers).
@@ -77,7 +81,7 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
                             ReorderLevel = v.ReorderLevel.Value
                         }))
                     .Count(x => x.Available <= x.ReorderLevel),
-                // Same window as BatchListQueryHandler "ExpiringSoon" (WithinDays = 30).
+                // Same window as the near-expiry domain rule (NotificationOptions.ExpiryWarningDays).
                 ExpiringSoon: batches
                     .Count(b => b.ExpiryDate > asOf && b.ExpiryDate <= expiringLimit),
                 Fragmented: prescriptions
@@ -141,7 +145,7 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
     private async Task<DashboardSummarySnapshot> PrescriptionlessFallbackAsync(CancellationToken cancellationToken)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
-        var expiringLimit = asOf.AddDays(30);
+        var expiringLimit = asOf.AddDays(_notificationOptions.ExpiryWarningDays);
 
         var rest = await _executor.SingleOrDefaultAsync(
             from _ in _medicines.Query().Take(1)
