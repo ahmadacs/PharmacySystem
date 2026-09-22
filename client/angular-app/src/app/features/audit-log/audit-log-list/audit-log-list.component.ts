@@ -1,9 +1,8 @@
 import { HttpParams } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatIconButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
@@ -21,7 +20,6 @@ import {
   MatHeaderRow,
   MatRow
 } from '@angular/material/table';
-import { MatTooltip } from '@angular/material/tooltip';
 import { environment } from '../../../../environments/environment';
 import { AuditAction, AuditEntryDto } from '../../../core/models/api.models';
 import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
@@ -30,6 +28,8 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
+import { AuditLogDetailsDialogComponent } from '../audit-log-details-dialog/audit-log-details-dialog.component';
+import { shortAuditId } from '../audit-display.utils';
 
 export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
 
@@ -46,8 +46,6 @@ export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
     MatLabel,
     MatSelect,
     MatOption,
-    MatIconButton,
-    MatIcon,
     MatTable,
     MatColumnDef,
     MatHeaderCellDef,
@@ -62,7 +60,6 @@ export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
     MatSortHeader,
     MatPaginator,
     MatProgressBar,
-    MatTooltip,
     PageHeaderComponent,
     EmptyStateComponent
   ],
@@ -70,7 +67,7 @@ export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
   styleUrls: ['./audit-log-list.component.scss']
 })
 export class AuditLogListComponent {
-  protected readonly displayedColumns = ['action', 'entity', 'user', 'changedAt', 'expand'];
+  protected readonly displayedColumns = ['action', 'entity', 'user', 'changedAt'];
   protected readonly actions = AUDIT_ACTIONS;
 
   protected readonly table = createPagedTable({ defaultSortBy: 'changedAt', defaultSortDir: 'desc' });
@@ -82,7 +79,7 @@ export class AuditLogListComponent {
   protected readonly searchControl = this.table.searchControl;
   protected readonly action = signal('');
 
-  protected readonly expandedId = signal<string | null>(null);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly audit = createPagedResource<AuditEntryDto>(() => {
     let params = new HttpParams()
@@ -109,7 +106,11 @@ export class AuditLogListComponent {
     this.table.resetToFirstPage();
   }
 
-  toggleDetails(id: string): void {
-    this.expandedId.update((current) => (current === id ? null : id));
+  protected openDetails(row: AuditEntryDto): void {
+    this.dialog.open(AuditLogDetailsDialogComponent, { width: '720px', data: row });
+  }
+
+  protected shortId(id: string): string {
+    return shortAuditId(id);
   }
 }

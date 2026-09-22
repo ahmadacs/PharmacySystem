@@ -430,7 +430,9 @@
       "dispensingRecord": "Dispensing Record",
       "dispensingRecordItem": "Dispensed Item",
       "inventoryAdjustment": "Inventory",
-      "notification": "Notification"
+      "notification": "Notification",
+      "genericName": "Generic Name",
+      "fileAttachment": "File"
     },
     "properties": {
       "Id": "ID",
@@ -455,14 +457,80 @@
       "BatchNumber": "Batch Number",
       "ExpiryDate": "Expiry Date",
       "UnitCost": "Unit Cost",
-      "SupplierName": "Supplier"
+      "SupplierName": "Supplier",
+      "nameAr": "Arabic Name",
+      "categoryEnum": "Category",
+      "genericNameId": "Generic Name",
+      "isControlled": "Controlled",
+      "isActive": "Active",
+      "medicineId": "Medicine",
+      "form": "Form",
+      "unit": "Unit",
+      "strength": "Strength",
+      "manufactureDate": "Manufacture Date",
+      "diagnosis": "Diagnosis",
+      "issuedDate": "Issue Date",
+      "status": "Status",
+      "prescribedQuantity": "Prescribed Qty",
+      "dispensedQuantity": "Dispensed Qty",
+      "dosageInstructions": "Dosage Instructions",
+      "isRefillable": "Refillable",
+      "refillsAllowed": "Refills Allowed",
+      "refillsUsed": "Refills Used",
+      "refillIntervalDays": "Refill Interval (days)",
+      "lastDispensedAt": "Last Dispensed",
+      "pharmacistId": "Pharmacist",
+      "dispensedAt": "Dispensed At",
+      "notes": "Notes",
+      "dispensingRecordId": "Dispensing Record",
+      "prescriptionItemId": "Prescribed Item",
+      "quantity": "Quantity",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "dateOfBirth": "Date of Birth",
+      "phoneNumber": "Phone",
+      "userId": "User",
+      "specialization": "Specialization",
+      "licenseNumber": "License Number",
+      "entityType": "Entity Type",
+      "entityId": "Entity ID",
+      "fileName": "File Name",
+      "contentType": "Content Type",
+      "sizeBytes": "Size",
+      "blobPath": "Storage Path",
+      "value": "Value",
+      "amount": "Amount",
+      "currency": "Currency",
+      "baseUnitName": "Base Unit",
+      "packageUnitName": "Package Unit",
+      "unitsPerPackage": "Units / Package",
+      "isDivisible": "Divisible"
+    },
+    "values": {
+      "true": "Yes",
+      "false": "No"
     },
     "empty": {
       "message": "No audit entries found",
       "hint": "Try adjusting your search or filters."
     },
     "tooltip": {
-      "toggle": "Toggle details"
+      "toggle": "Toggle details",
+      "copyId": "Copy full ID"
+    },
+    "referenceId": "Reference",
+    "copied": "ID copied to clipboard",
+    "summary": {
+      "units": "units"
+    },
+    "details": {
+      "changes": "Changes",
+      "eventInfo": "Event Information",
+      "field": "Field",
+      "before": "Before",
+      "after": "After",
+      "value": "Value",
+      "performedBy": "Performed By"
     }
   },
   "files": {

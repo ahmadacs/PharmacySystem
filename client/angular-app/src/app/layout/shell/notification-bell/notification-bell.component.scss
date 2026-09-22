@@ -23,6 +23,8 @@
   --deep-green: #28392F;
   --amber: #B8823C;
   --amber-soft: #EFE0C4;
+  --unread: #E8EAE7;
+  --unread-hover: #DFE2DD;
 
   width: 100%;
   background: var(--paper);
@@ -109,9 +111,14 @@
   background: var(--bg);
 }
 
+// غير المقروء بخلفية رمادية فاتحة (النمط الشائع) بدل الأصفر
 .notification-item--unread {
-  background: var(--amber-soft);
-  border-inline-start-color: var(--amber);
+  background: var(--unread);
+  border-inline-start-color: transparent;
+}
+
+.notification-item--unread:hover {
+  background: var(--unread-hover);
 }
 
 .notification-item__icon {

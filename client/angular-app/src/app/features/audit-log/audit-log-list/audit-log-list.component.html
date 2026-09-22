@@ -27,7 +27,6 @@
     [dataSource]="audit.value().items"
     matSort
     (matSortChange)="onSortChange($event)"
-    multiTemplateDataRows
   >
     <ng-container matColumnDef="action">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'auditLog.tables.action' | translate }}</th>
@@ -46,8 +45,8 @@
     <ng-container matColumnDef="entity">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'auditLog.tables.entity' | translate }}</th>
       <td mat-cell *matCellDef="let row">
-        <span class="cell-strong">{{ row.entityName | enumTranslate:'EntityName' }}</span>
-        <span class="cell-sub">{{ row.entityId }}</span>
+        <span class="cell-strong">{{ row.entityDisplay ?? (row.entityName | enumTranslate:'EntityName') }}</span>
+        <span class="cell-sub">{{ row.entityName | enumTranslate:'EntityName' }} · #{{ shortId(row.entityId) }}</span>
       </td>
     </ng-container>
 
@@ -61,46 +60,13 @@
       <td mat-cell *matCellDef="let row">{{ row.changedAt | riyadhDate: 'yyyy-MM-dd HH:mm' }}</td>
     </ng-container>
 
-    <ng-container matColumnDef="expand">
-      <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
-      <td mat-cell *matCellDef="let row" class="col-actions">
-        @if (row.changes.length > 0) {
-          <button mat-icon-button [matTooltip]="'auditLog.tooltip.toggle' | translate" (click)="$event.stopPropagation(); toggleDetails(row.id)">
-            <mat-icon>{{ expandedId() === row.id ? 'expand_less' : 'expand_more' }}</mat-icon>
-          </button>
-        }
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="expandedDetail">
-      <td mat-cell *matCellDef="let row" [attr.colspan]="displayedColumns.length">
-        @if (expandedId() === row.id) {
-          <div class="detail-panel">
-            <div class="detail-grid">
-              @for (change of row.changes; track change.property) {
-                <div class="detail-item">
-                  <div class="detail-property">{{ change.property | enumTranslate:'AuditProperty' }}</div>
-                  <div class="detail-values">
-                    <span class="value old">{{ change.oldValue ? (change.oldValue | enumTranslate:'PrescriptionStatus') : '—' }}</span>
-                    <mat-icon class="value-arrow">arrow_forward</mat-icon>
-                    <span class="value new">{{ change.newValue ? (change.newValue | enumTranslate:'PrescriptionStatus') : '—' }}</span>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </td>
-    </ng-container>
-
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr
       mat-row
       *matRowDef="let row; columns: displayedColumns"
       class="data-row clickable-row"
-      (click)="toggleDetails(row.id)"
+      (click)="openDetails(row)"
     ></tr>
-    <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="expanded-detail-row"></tr>
   </table>
 
   @if (!audit.isLoading() && audit.value().items.length === 0) {

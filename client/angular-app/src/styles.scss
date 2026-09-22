@@ -266,6 +266,30 @@ select:-webkit-autofill {
   background: var(--paper) !important;
 }
 
+// قائمة المستخدم (تغيير كلمة السر / تسجيل الخروج) بنفس روح التصميم
+.user-menu-panel {
+  min-width: 220px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 12px 32px rgba(30, 43, 34, 0.14) !important;
+  overflow: hidden !important;
+}
+
+.user-menu-panel .mat-mdc-menu-item {
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
+  font-size: 13.5px !important;
+  transition: background 0.15s ease;
+}
+
+// هوفر ملوّن بلون الهوية بدل الأبيض - الأكثر شيوعاً في القوائم الحديثة
+.user-menu-panel .mat-mdc-menu-item:hover {
+  background: rgba(40, 57, 47, 0.07) !important;
+}
+
+.user-menu-panel .mat-mdc-menu-item.logout-item:hover {
+  background: rgba(166, 63, 50, 0.08) !important;
+}
+
 // تسجيل خروج بالاحمر مع الأيقونة - في الـ dropdown
 .mat-mdc-menu-item.logout-item,
 .mat-mdc-menu-item.logout-item .mat-icon,

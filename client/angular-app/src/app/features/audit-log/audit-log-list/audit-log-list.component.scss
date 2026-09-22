@@ -40,11 +40,6 @@ td.mat-mdc-cell {
   word-break: break-all;
 }
 
-.col-actions {
-  text-align: right;
-  width: 48px;
-}
-
 .badge {
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
@@ -74,71 +69,4 @@ td.mat-mdc-cell {
 
 .clickable-row {
   cursor: pointer;
-}
-
-.expanded-detail-row > td {
-  padding: 0;
-  border-bottom-width: 0;
-}
-
-.detail-panel {
-  padding: 0.75rem 1rem 1rem;
-  background: var(--bg);
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.75rem;
-}
-
-.detail-item {
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  background: var(--paper);
-}
-
-.detail-property {
-  font-size: 0.7rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.6;
-  margin-bottom: 0.3rem;
-  word-break: break-all;
-}
-
-.detail-values {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.value {
-  flex: 1;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  word-break: break-all;
-
-  &.old {
-    background: var(--line);
-    color: var(--mat-sys-on-surface-variant);
-  }
-
-  &.new {
-    background: var(--mat-sys-primary-container);
-    color: var(--mat-sys-on-primary-container);
-  }
-}
-
-.value-arrow {
-  font-size: 1rem;
-  height: 1rem;
-  width: 1rem;
-  opacity: 0.5;
-
-  :host-context([dir='rtl']) & {
-    transform: scaleX(-1);
-  }
 }

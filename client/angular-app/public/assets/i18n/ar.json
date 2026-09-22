@@ -430,7 +430,9 @@
       "dispensingRecord": "سجل صرف",
       "dispensingRecordItem": "صنف مصروف",
       "inventoryAdjustment": "المخزون",
-      "notification": "إشعار"
+      "notification": "إشعار",
+      "genericName": "اسم علمي",
+      "fileAttachment": "ملف"
     },
     "properties": {
       "Id": "المعرّف",
@@ -455,14 +457,80 @@
       "BatchNumber": "رقم الدفعة",
       "ExpiryDate": "تاريخ الانتهاء",
       "UnitCost": "سعر الوحدة",
-      "SupplierName": "المورد"
+      "SupplierName": "المورد",
+      "nameAr": "الاسم بالعربية",
+      "categoryEnum": "التصنيف",
+      "genericNameId": "الاسم العلمي",
+      "isControlled": "خاضع للرقابة",
+      "isActive": "نشط",
+      "medicineId": "الدواء",
+      "form": "الشكل",
+      "unit": "الوحدة",
+      "strength": "العيار",
+      "manufactureDate": "تاريخ التصنيع",
+      "diagnosis": "التشخيص",
+      "issuedDate": "تاريخ الإصدار",
+      "status": "الحالة",
+      "prescribedQuantity": "الكمية الموصوفة",
+      "dispensedQuantity": "الكمية المصروفة",
+      "dosageInstructions": "تعليمات الجرعة",
+      "isRefillable": "قابل لإعادة الصرف",
+      "refillsAllowed": "مرات إعادة الصرف المسموحة",
+      "refillsUsed": "مرات إعادة الصرف المستخدمة",
+      "refillIntervalDays": "الفاصل بين الصرف (يوم)",
+      "lastDispensedAt": "آخر صرف",
+      "pharmacistId": "الصيدلي",
+      "dispensedAt": "تاريخ الصرف",
+      "notes": "ملاحظات",
+      "dispensingRecordId": "سجل الصرف",
+      "prescriptionItemId": "الصنف الموصوف",
+      "quantity": "الكمية",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "dateOfBirth": "تاريخ الميلاد",
+      "phoneNumber": "الهاتف",
+      "userId": "المستخدم",
+      "specialization": "التخصص",
+      "licenseNumber": "رقم الترخيص",
+      "entityType": "نوع الكيان",
+      "entityId": "معرف الكيان",
+      "fileName": "اسم الملف",
+      "contentType": "نوع المحتوى",
+      "sizeBytes": "الحجم",
+      "blobPath": "مسار التخزين",
+      "value": "القيمة",
+      "amount": "المبلغ",
+      "currency": "العملة",
+      "baseUnitName": "الوحدة الأساسية",
+      "packageUnitName": "وحدة العبوة",
+      "unitsPerPackage": "وحدات العبوة",
+      "isDivisible": "قابل للتقسيم"
+    },
+    "values": {
+      "true": "نعم",
+      "false": "لا"
     },
     "empty": {
       "message": "لا توجد سجلات تدقيق",
       "hint": "جرّب تعديل البحث أو الفلاتر."
     },
     "tooltip": {
-      "toggle": "عرض التفاصيل"
+      "toggle": "عرض التفاصيل",
+      "copyId": "نسخ المعرف الكامل"
+    },
+    "referenceId": "المرجع",
+    "copied": "تم نسخ المعرف",
+    "summary": {
+      "units": "وحدة"
+    },
+    "details": {
+      "changes": "التغييرات",
+      "eventInfo": "معلومات الحدث",
+      "field": "الحقل",
+      "before": "قبل",
+      "after": "بعد",
+      "value": "القيمة",
+      "performedBy": "نفّذ بواسطة"
     }
   },
   "files": {

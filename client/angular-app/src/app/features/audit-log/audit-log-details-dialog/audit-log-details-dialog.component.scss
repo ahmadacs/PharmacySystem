@@ -1,0 +1,154 @@
+.summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.summary-sub {
+  font-size: 0.82rem;
+  opacity: 0.65;
+  margin-top: 0.15rem;
+}
+
+.summary-delta {
+  text-align: end;
+}
+
+.delta-main {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta-pos {
+  color: var(--mat-sys-primary);
+}
+
+.delta-neg {
+  color: var(--mat-sys-error);
+}
+
+.delta-range {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  margin-top: 0.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.55;
+  margin: 1rem 0 0.5rem;
+}
+
+.changes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.changes-table th {
+  text-align: start;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.changes-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.changes-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.changes-table .num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.changes-table .field {
+  opacity: 0.75;
+}
+
+.changes-table .before {
+  opacity: 0.6;
+}
+
+.changes-table .after {
+  font-weight: 600;
+}
+
+.changes-table .empty {
+  opacity: 0.35;
+  font-weight: 400;
+}
+
+.info-list {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.info-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.3rem 0;
+}
+
+.info-row dt {
+  flex: 0 0 130px;
+  opacity: 0.55;
+}
+
+.info-row dd {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ref-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ref-code {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font-family: monospace;
+}
+
+@media (max-width: 600px) {
+  .info-row {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .info-row dt {
+    flex: none;
+  }
+}

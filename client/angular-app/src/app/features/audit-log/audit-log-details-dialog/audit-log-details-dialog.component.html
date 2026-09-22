@@ -1,0 +1,81 @@
+<h2 mat-dialog-title>{{ summaryTitle() }}</h2>
+<mat-dialog-content>
+  <div class="summary">
+    <div class="summary-main">
+      <div class="summary-title">{{ row.entityDisplay ?? (row.entityName | enumTranslate:'EntityName') }}</div>
+      <div class="summary-sub">{{ row.entityName | enumTranslate:'EntityName' }} · #{{ shortId(row.entityId) }}</div>
+    </div>
+    @if (headline(); as h) {
+      <div class="summary-delta">
+        <div class="delta-main" [class.delta-pos]="h.delta > 0" [class.delta-neg]="h.delta < 0">
+          <bdi>{{ deltaText(h) }} {{ 'auditLog.summary.units' | translate }}</bdi>
+        </div>
+        <div class="delta-range" dir="ltr">{{ h.beforeText }} → {{ h.afterText }}</div>
+      </div>
+    }
+  </div>
+
+  @if (tableRows(); as rows) {
+    @if (rows.length > 0) {
+      <div class="section-title">{{ 'auditLog.details.changes' | translate }}</div>
+      <table class="changes-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'auditLog.details.field' | translate }}</th>
+            @if (!hideBefore(rows)) {
+              <th scope="col" class="num">{{ 'auditLog.details.before' | translate }}</th>
+            }
+            <th scope="col" class="num">
+              {{ (hideBefore(rows) ? 'auditLog.details.value' : 'auditLog.details.after') | translate }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (change of rows; track change.property) {
+            <tr>
+              <td class="field">{{ propertyLabel(change.property) }}</td>
+              @if (!hideBefore(rows)) {
+                <td class="num before" [class.empty]="!change.oldValue">
+                  {{ valueLabel(change.oldValue, change.oldValueDisplay) }}
+                </td>
+              }
+              <td class="num after" [class.empty]="!change.newValue">
+                {{ valueLabel(change.newValue, change.newValueDisplay) }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+
+  <div class="section-title">{{ 'auditLog.details.eventInfo' | translate }}</div>
+  <dl class="info-list">
+    <div class="info-row">
+      <dt>{{ 'auditLog.details.performedBy' | translate }}</dt>
+      <dd>{{ row.changedByName ?? ('common.system' | translate) }}</dd>
+    </div>
+    <div class="info-row">
+      <dt>{{ 'auditLog.tables.date' | translate }}</dt>
+      <dd>{{ row.changedAt | riyadhDate: 'yyyy-MM-dd HH:mm' }}</dd>
+    </div>
+    @if (reasonText(); as reason) {
+      <div class="info-row">
+        <dt>{{ 'Reason' | enumTranslate:'AuditProperty' }}</dt>
+        <dd>{{ reason }}</dd>
+      </div>
+    }
+    <div class="info-row">
+      <dt>{{ 'auditLog.referenceId' | translate }}</dt>
+      <dd class="ref-cell">
+        <code class="ref-code">#{{ shortId(row.entityId) }}</code>
+        <button mat-icon-button (click)="copyId(row.entityId)" [attr.aria-label]="'auditLog.tooltip.copyId' | translate">
+          <mat-icon>content_copy</mat-icon>
+        </button>
+      </dd>
+    </div>
+  </dl>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="true">{{ 'common.close' | translate }}</button>
+</mat-dialog-actions>

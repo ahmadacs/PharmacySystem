@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IAuditRepository, AuditRepository>();
+        services.AddScoped<IAuditDisplayNameResolver, AuditDisplayNameResolver>();
 
         services.AddScoped<IUserManager, UserManagerService>();
         services.AddScoped<ITokenService, JwtTokenService>();

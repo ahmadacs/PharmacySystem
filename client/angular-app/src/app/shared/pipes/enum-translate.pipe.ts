@@ -1,5 +1,4 @@
-import { ChangeDetectorRef, DestroyRef, Pipe, PipeTransform, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Pipe, PipeTransform, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { CategoryEnum, MedicineForm, MedicineUnit } from '../../core/models/api.models';
 
@@ -38,20 +37,14 @@ function toTranslationKey(enumName: string): string {
 @Pipe({
   name: 'enumTranslate',
   standalone: true,
-  // Pure + explicit refresh on language change: avoids the per-CD cost of
-  // pure:false while still updating when the user switches en<->ar.
-  pure: true,
+  // Must stay impure: a pure pipe caches by input, so markForCheck() on
+  // language change can never bust the cache and labels would stay stuck in
+  // the previous language. instant() is a cheap sync lookup, so per-CD cost
+  // is negligible.
+  pure: false,
 })
 export class EnumTranslatePipe implements PipeTransform {
   private readonly translate = inject(TranslateService);
-  private readonly cdr = inject(ChangeDetectorRef);
-  private readonly destroyRef = inject(DestroyRef);
-
-  constructor() {
-    this.translate.onLangChange.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.cdr.markForCheck();
-    });
-  }
 
   transform(value: number | string | null | undefined, enumType: string): string {
     if (value === null || value === undefined || value === '') return '';

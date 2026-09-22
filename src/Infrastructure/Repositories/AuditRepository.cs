@@ -17,7 +17,7 @@ public sealed class AuditRepository : IAuditRepository
         _db = db;
     }
 
-    public async Task<PagedList<AuditEntry>> ListAsync(
+    public async Task<PagedList<AuditEntryWithAuthor>> ListAsync(
         PagedQuery paging,
         AuditAction? action,
         string? entity,
@@ -73,7 +73,7 @@ public sealed class AuditRepository : IAuditRepository
         var items = await data
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => x.Entry)
+            .Select(x => new AuditEntryWithAuthor(x.Entry, x.AuthorName))
             .ToListAsync(cancellationToken);
 
         return items.ToPagedList(page, pageSize, totalCount);
