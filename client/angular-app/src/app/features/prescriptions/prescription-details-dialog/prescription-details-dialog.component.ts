@@ -100,6 +100,14 @@ export class PrescriptionDetailsDialogComponent {
     return this.authStore.hasPermission(Permissions.PrescriptionsManageOwn);
   }
 
+  protected canViewAttachments(): boolean {
+    return (
+      this.authStore.hasPermission(Permissions.PrescriptionsView) ||
+      this.authStore.hasPermission(Permissions.PrescriptionsManageAll) ||
+      this.authStore.hasPermission(Permissions.PrescriptionsManageOwn)
+    );
+  }
+
   protected canRefillItem(item: PrescriptionItemDto): boolean {
     return (
       this.canManage() &&

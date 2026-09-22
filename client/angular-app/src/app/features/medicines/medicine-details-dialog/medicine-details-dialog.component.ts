@@ -25,6 +25,8 @@ import { currentLanguage } from '../../../core/utils/localized-name.utils';
 import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
 import { FileEntityType } from '../../../core/services/file.service';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { Permissions } from '../../../core/constants/permissions';
 
 @Component({
   selector: 'app-medicine-details-dialog',
@@ -65,10 +67,27 @@ export class MedicineDetailsDialogComponent {
   private readonly viewer = inject(AttachmentViewerService);
   private readonly dialogRef = inject(MatDialogRef<MedicineDetailsDialogComponent>);
   protected readonly translate = inject(TranslateService);
+  protected readonly authStore = inject(AuthStore);
 
   readonly medicineId = inject<string>(MAT_DIALOG_DATA);
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
-  readonly batchColumns = ['batchNumber', 'expiry', 'supplier', 'attachments'];
+
+  protected canViewMedicineAttachments(): boolean {
+    return this.authStore.hasPermission(Permissions.MedicinesView);
+  }
+
+  protected canViewBatchAttachments(): boolean {
+    return (
+      this.authStore.hasPermission(Permissions.InventoryView) ||
+      this.authStore.hasPermission(Permissions.InventoryAdjust)
+    );
+  }
+
+  get batchColumns(): string[] {
+    const cols = ['batchNumber', 'expiry', 'supplier'];
+    if (this.canViewBatchAttachments()) cols.push('attachments');
+    return cols;
+  }
 
   constructor() {
     void this.medicinesService.get(this.medicineId).then((details) => this.medicine.set(details));

@@ -19,10 +19,12 @@
         </div>
 
         <div class="details__actions">
+          @if (canViewMedicineAttachments()) {
           <button mat-stroked-button type="button" (click)="openImages('Medicine', medicineId)">
             <mat-icon>image</mat-icon>
             {{ 'dialogs.medicineDetails.viewAttachments' | translate }}
           </button>
+          }
         </div>
 
         <mat-accordion class="variants" [multi]="true">
@@ -72,12 +74,14 @@
                   <ng-container matColumnDef="attachments">
                     <th mat-header-cell *matHeaderCellDef>{{ 'dialogs.medicineDetails.attachments' | translate }}</th>
                     <td mat-cell *matCellDef="let b">
+                      @if (canViewBatchAttachments()) {
                       <button mat-icon-button type="button"
                               (click)="openImages('Batch', b.id)"
                               [matTooltip]="'dialogs.medicineDetails.viewAttachments' | translate"
                               [attr.aria-label]="'dialogs.medicineDetails.viewAttachments' | translate">
                         <mat-icon>image</mat-icon>
                       </button>
+                      }
                     </td>
                   </ng-container>
 

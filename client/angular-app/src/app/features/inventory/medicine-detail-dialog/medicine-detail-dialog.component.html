@@ -13,10 +13,12 @@
     </div>
 
     <div class="details__actions">
-      <button mat-stroked-button type="button" (click)="openImages('Medicine', data.id)">
-        <mat-icon>image</mat-icon>
-        {{ 'dialogs.medicineDetailInventory.viewAttachments' | translate }}
-      </button>
+      @if (canViewMedicineAttachments()) {
+        <button mat-stroked-button type="button" (click)="openImages('Medicine', data.id)">
+          <mat-icon>image</mat-icon>
+          {{ 'dialogs.medicineDetailInventory.viewAttachments' | translate }}
+        </button>
+      }
     </div>
 
     @for (variant of details.variants; track variant.id) {
@@ -49,7 +51,9 @@
                 <th>{{ 'dialogs.medicineDetailInventory.unitCost' | translate }}</th>
                 <th>{{ 'dialogs.medicineDetailInventory.supplier' | translate }}</th>
                 <th>{{ 'dialogs.medicineDetailInventory.status' | translate }}</th>
-                <th>{{ 'dialogs.medicineDetailInventory.attachments' | translate }}</th>
+                @if (canViewBatchAttachments()) {
+                  <th>{{ 'dialogs.medicineDetailInventory.attachments' | translate }}</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -72,11 +76,13 @@
                     </span>
                   </td>
                   <td>
+                    @if (canViewBatchAttachments()) {
                     <button mat-icon-button type="button" (click)="openImages('Batch', batch.id)"
                             [matTooltip]="'dialogs.medicineDetailInventory.viewAttachments' | translate"
                             [attr.aria-label]="'dialogs.medicineDetailInventory.viewAttachments' | translate">
                       <mat-icon>image</mat-icon>
                     </button>
+                    }
                   </td>
                 </tr>
               }

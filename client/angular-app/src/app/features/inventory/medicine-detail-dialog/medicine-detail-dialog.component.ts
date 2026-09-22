@@ -14,6 +14,8 @@ import { TranslateService } from '@ngx-translate/core';
 import { currentLanguage } from '../../../core/utils/localized-name.utils';
 import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
 import { FileEntityType } from '../../../core/services/file.service';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { Permissions } from '../../../core/constants/permissions';
 
 export interface MedicineDetailDialogData {
   id: string;
@@ -45,6 +47,7 @@ export class MedicineDetailDialogComponent {
   private readonly medicinesService = inject(MedicinesService);
   private readonly viewer = inject(AttachmentViewerService);
   protected readonly translate = inject(TranslateService);
+  protected readonly authStore = inject(AuthStore);
 
   readonly data = inject<MedicineDetailDialogData>(MAT_DIALOG_DATA);
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
@@ -58,6 +61,17 @@ export class MedicineDetailDialogComponent {
 
   displayName(details: MedicineDetailsDto): string { return this.lang() === 'ar' && details.nameAr ? details.nameAr : details.name; }
   genericDisplay(details: MedicineDetailsDto): string { return this.lang() === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName; }
+
+  protected canViewMedicineAttachments(): boolean {
+    return this.authStore.hasPermission(Permissions.MedicinesView);
+  }
+
+  protected canViewBatchAttachments(): boolean {
+    return (
+      this.authStore.hasPermission(Permissions.InventoryView) ||
+      this.authStore.hasPermission(Permissions.InventoryAdjust)
+    );
+  }
 
   protected openImages(entityType: FileEntityType, entityId: string): void {
     this.viewer.open(entityType, entityId);
