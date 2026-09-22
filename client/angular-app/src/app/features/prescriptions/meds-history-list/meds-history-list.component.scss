@@ -7,10 +7,10 @@
 }
 
 .meds-panel {
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px;
-  padding: 0.5rem 0.5rem 0.75rem;
-  background: var(--mat-sys-surface);
+  border: none;
+  border-radius: 0;
+  padding: 0.25rem 0 0.5rem;
+  background: transparent;
 }
 .meds-toggle {
   width: 100%;
@@ -83,10 +83,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 10px;
-  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
-  background: var(--mat-sys-surface);
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 0.5rem 0.25rem;
+  background: transparent;
 }
 .med-info {
   display: flex;
@@ -104,4 +105,8 @@
 }
 .med-dose {
   font-size: 0.8rem;
+}
+.med-dispense {
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
 }

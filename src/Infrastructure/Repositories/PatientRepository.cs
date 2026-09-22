@@ -12,6 +12,11 @@ public sealed class PatientRepository : BaseRepository<Patient>, IPatientReposit
     }
 
     public async Task<Patient?> FindByPhoneAsync(string phoneNumber, CancellationToken cancellationToken = default)
-        => await Db.Set<Patient>()
-            .FirstOrDefaultAsync(p => p.PhoneNumber == phoneNumber.Trim().Replace(" ", "").Replace("-", ""), cancellationToken);
+    {
+        // Normalized on the client side (custom methods are not translatable
+        // to SQL); stored numbers are canonical (+966...), so plain equality.
+        var normalized = Domain.Common.PhoneNumbers.NormalizeSaudiPhone(phoneNumber);
+        return await Db.Set<Patient>()
+            .FirstOrDefaultAsync(p => p.PhoneNumber == normalized, cancellationToken);
+    }
 }

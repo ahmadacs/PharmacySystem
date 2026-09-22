@@ -12,7 +12,7 @@ public sealed class GetPatientByPhoneQueryHandler : IRequestHandler<GetPatientBy
 
     public async Task<Result<PatientDto?>> Handle(GetPatientByPhoneQuery request, CancellationToken cancellationToken)
     {
-        var normalized = request.PhoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        var normalized = Domain.Common.PhoneNumbers.NormalizeSaudiPhone(request.PhoneNumber);
         var patient = await _patients.FindByPhoneAsync(normalized, cancellationToken);
         return Result<PatientDto?>.Success(patient?.ToDto());
     }

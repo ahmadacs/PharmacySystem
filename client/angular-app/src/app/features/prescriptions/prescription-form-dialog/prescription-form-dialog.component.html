@@ -6,7 +6,7 @@
         <div class="row">
           <mat-form-field appearance="outline" class="grow">
             <mat-label>{{ 'dialogs.prescriptionForm.phoneNumber' | translate }}</mat-label>
-            <input matInput formControlName="patientPhoneNumber" [placeholder]="'dialogs.prescriptionForm.phonePlaceholder' | translate" />
+            <input matInput formControlName="patientPhoneNumber" dir="ltr" class="phone-input" [placeholder]="'dialogs.prescriptionForm.phonePlaceholder' | translate" />
             <mat-error>{{ 'dialogs.prescriptionForm.phoneRequired' | translate }}</mat-error>
             @if (phoneHintKey(); as hintKey) {
               @if (form.controls.patientPhoneNumber.untouched) {
@@ -30,17 +30,19 @@
             </div>
           </div>
         }
-        @if (patientState().kind === 'found') {
-          <app-meds-history-list
-            [history]="medsHistory()"
-            [loading]="medsLoading()"
-            [expanded]="medsExpanded()"
-            [lookback]="medsLookback()"
-            [lookbackOptions]="lookbackOptions"
-            (expandedChange)="medsExpanded.set($event)"
-            (lookbackChange)="setLookback($event)"
-            (add)="addMedToForm($event)"
-          />
+        @if (foundPatient(); as patient) {
+          <div class="found-patient-bar">
+            <mat-icon class="bar-icon">verified_user</mat-icon>
+            <div class="bar-text">
+              <strong>{{ patient.firstName }} {{ patient.lastName }}</strong>
+              <span dir="ltr">{{ patient.phoneNumber }}</span>
+            </div>
+            <span class="bar-spacer"></span>
+            <button mat-flat-button type="button" class="history-btn" (click)="openPatientDetails()" [disabled]="medsLoading()">
+              <mat-icon>history</mat-icon>
+              {{ 'dialogs.prescriptionForm.patientHistory' | translate:{count: medsCount()} }}
+            </button>
+          </div>
         }
 
         <div class="row">
@@ -96,7 +98,7 @@
                   <mat-autocomplete #medicineAuto="matAutocomplete" [displayWith]="displayMedicineName" (optionSelected)="onMedicineSelected($event, i)">
                     @for (medicine of filteredMedicines(i); track medicine.id) {
                       <mat-option [value]="medicine">
-                        {{ isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name }} ({{ isArabic() && medicine.genericNameAr ? medicine.genericNameAr : medicine.genericName }})
+                        {{ displayMedicineName(medicine) }} ({{ displayMedicineGenericName(medicine) }})
                       </mat-option>
                     }
                   </mat-autocomplete>

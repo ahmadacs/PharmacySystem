@@ -23,7 +23,7 @@ public sealed class GetPatientPrescriptionsQueryHandler
     public async Task<Result<IReadOnlyList<PatientPrescriptionHistoryDto>>> Handle(
         GetPatientPrescriptionsQuery request, CancellationToken cancellationToken)
     {
-        var lookback = Math.Clamp(request.LookbackDays <= 0 ? 180 : request.LookbackDays, 30, 365);
+        var lookback = Math.Clamp(request.LookbackDays <= 0 ? 90 : request.LookbackDays, 30, 365);
         var today = DateOnly.FromDateTime(DateTime.Today);
         var cutoff = today.AddDays(-lookback);
 

@@ -873,6 +873,7 @@
       "newPatientTitle": "مريض جديد",
       "newPatientHint": "يرجى إدخال اسم المريض الكامل وتاريخ ميلاده للمتابعة.",
       "previousPrescriptions": "وصفات سابقة ({{count}}):",
+      "patientHistory": "تاريخ صرف المريض ({{count}})",
       "medsHistory": {
         "title": "السجل الدوائي ({{count}})",
         "lookback": "النطاق الزمني",
@@ -882,6 +883,8 @@
         "empty": "لا توجد وصفات في هذه الفترة.",
         "current": "يأخذها حالياً ({{count}})",
         "previous": "سابقة ({{count}})",
+        "lastDispensed": "آخر صرف",
+        "neverDispensed": "لم يُصرف بعد",
         "refillLeft": "تجديد {{used}}/{{allowed}}",
         "dueIn": "مستحق بعد {{count}} يوم",
         "refillsDone": "انتهت التجديدات",
@@ -931,6 +934,15 @@
       "removeFile": "إزالة الملف",
       "cancel": "إلغاء",
       "create": "إنشاء"
+    },
+    "patientDetails": {
+      "lastVisit": "آخر زيارة",
+      "lastDispense": "آخر صرف",
+      "activeMeds": "أدوية نشطة",
+      "prescriptions": "الوصفات",
+      "none": "-",
+      "neverDispensed": "أبداً",
+      "close": "إغلاق"
     },
     "prescriptionDetails": {
       "title": "وصفة #{{id}}",

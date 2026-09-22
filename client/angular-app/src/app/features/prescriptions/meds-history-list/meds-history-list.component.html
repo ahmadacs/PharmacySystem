@@ -26,34 +26,7 @@
         <div class="meds-list">
           @for (med of activeMeds(); track med.prescriptionItemId) {
             <div class="med-row">
-              <div class="med-info">
-                <span class="med-name">{{ displayName(med) }}</span>
-                <span class="med-meta">
-                  @if (med.form) {
-                    {{ med.form | enumTranslate:'MedicineForm' }} {{ med.strength }} {{ med.unit | enumTranslate:'MedicineUnit' }}
-                  } @else {
-                    {{ med.variantName }}
-                  }
-                  · {{ med.issuedDate }} · {{ med.prescriptionStatus | enumTranslate:'PrescriptionStatus' }}</span>
-                @if (med.dosageInstructions) {
-                  <span class="med-dose">{{ med.dosageInstructions }}</span>
-                }
-                <mat-chip-set>
-                  @if (med.isRefillable && med.refillsUsed < med.refillsAllowed) {
-                    <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillLeft' | translate:{used: med.refillsUsed, allowed: med.refillsAllowed} }}</mat-chip>
-                    @if (dueInDays(med); as due) {
-                      <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.dueIn' | translate:{count: due} }}</mat-chip>
-                    }
-                  } @else if (med.isRefillable) {
-                    <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillsDone' | translate }}</mat-chip>
-                  } @else {
-                    <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.noRefill' | translate }}</mat-chip>
-                  }
-                </mat-chip-set>
-              </div>
-              <button mat-icon-button type="button" (click)="add.emit(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
-                <mat-icon>add_circle</mat-icon>
-              </button>
+              <ng-container [ngTemplateOutlet]="medInfo" [ngTemplateOutletContext]="{ med: med }" />
             </div>
           }
         </div>
@@ -63,19 +36,7 @@
         <div class="meds-list muted">
           @for (med of pastMeds(); track med.prescriptionItemId) {
             <div class="med-row">
-              <div class="med-info">
-                <span class="med-name">{{ displayName(med) }}</span>
-                <span class="med-meta">
-                  @if (med.form) {
-                    {{ med.form | enumTranslate:'MedicineForm' }} {{ med.strength }} {{ med.unit | enumTranslate:'MedicineUnit' }}
-                  } @else {
-                    {{ med.variantName }}
-                  }
-                  · {{ med.issuedDate }} · {{ med.prescriptionStatus | enumTranslate:'PrescriptionStatus' }}</span>
-              </div>
-              <button mat-icon-button type="button" (click)="add.emit(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
-                <mat-icon>add_circle</mat-icon>
-              </button>
+              <ng-container [ngTemplateOutlet]="medInfo" [ngTemplateOutletContext]="{ med: med }" />
             </div>
           }
         </div>
@@ -83,3 +44,44 @@
     }
   }
 </div>
+
+<!-- Single row template: every medicine from any section shows the same full
+     info (variant, prescription date + status, dosage, last dispense, refill
+     state) with an add button that copies it into the prescription form. -->
+<ng-template #medInfo let-med="med">
+  <div class="med-info">
+    <span class="med-name">{{ displayName(med) }}</span>
+    <span class="med-meta">
+      @if (med.form) {
+        {{ med.form | enumTranslate:'MedicineForm' }} {{ med.strength }} {{ med.unit | enumTranslate:'MedicineUnit' }}
+      } @else {
+        {{ med.variantName }}
+      }
+      · {{ med.issuedDate }} · {{ med.prescriptionStatus | enumTranslate:'PrescriptionStatus' }}</span>
+    @if (med.dosageInstructions) {
+      <span class="med-dose">{{ med.dosageInstructions }}</span>
+    }
+    <span class="med-dispense">
+      @if (med.lastDispensedAt) {
+        {{ 'dialogs.prescriptionForm.medsHistory.lastDispensed' | translate }}: {{ med.lastDispensedAt }}
+      } @else {
+        {{ 'dialogs.prescriptionForm.medsHistory.neverDispensed' | translate }}
+      }
+    </span>
+    <mat-chip-set>
+      @if (med.isRefillable && med.refillsUsed < med.refillsAllowed) {
+        <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillLeft' | translate:{used: med.refillsUsed, allowed: med.refillsAllowed} }}</mat-chip>
+        @if (dueInDays(med); as due) {
+          <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.dueIn' | translate:{count: due} }}</mat-chip>
+        }
+      } @else if (med.isRefillable) {
+        <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillsDone' | translate }}</mat-chip>
+      } @else {
+        <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.noRefill' | translate }}</mat-chip>
+      }
+    </mat-chip-set>
+  </div>
+  <button mat-icon-button type="button" (click)="add.emit(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
+    <mat-icon>add_circle</mat-icon>
+  </button>
+</ng-template>

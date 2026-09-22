@@ -1,0 +1,75 @@
+<h2 mat-dialog-title>
+  {{ data.patient.firstName }} {{ data.patient.lastName }}
+</h2>
+
+<mat-dialog-content class="details">
+  @if (data.loading() && data.history().length === 0) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="meta">
+    <span>
+      <mat-icon class="meta-icon">phone</mat-icon>
+      <span dir="ltr">{{ data.patient.phoneNumber }}</span>
+    </span>
+    @if (data.patient.dateOfBirth) {
+      <span>
+        <mat-icon class="meta-icon">cake</mat-icon>
+        {{ data.patient.dateOfBirth }}
+        @if (patientAge(); as age) {
+          ({{ age }} {{ 'dialogs.dispense.patientAge' | translate }})
+        }
+      </span>
+    }
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <mat-icon>event</mat-icon>
+      <div class="stat-text">
+        <span class="stat-label">{{ 'dialogs.patientDetails.lastVisit' | translate }}</span>
+        <strong>{{ lastVisit() ?? ('dialogs.patientDetails.none' | translate) }}</strong>
+      </div>
+    </div>
+    <div class="stat">
+      <mat-icon>medication</mat-icon>
+      <div class="stat-text">
+        <span class="stat-label">{{ 'dialogs.patientDetails.lastDispense' | translate }}</span>
+        <strong>{{ lastDispense() ?? ('dialogs.patientDetails.neverDispensed' | translate) }}</strong>
+      </div>
+    </div>
+    <div class="stat">
+      <mat-icon>autorenew</mat-icon>
+      <div class="stat-text">
+        <span class="stat-label">{{ 'dialogs.patientDetails.activeMeds' | translate }}</span>
+        <strong>{{ activeCount() }}</strong>
+      </div>
+    </div>
+    <div class="stat">
+      <mat-icon>receipt_long</mat-icon>
+      <div class="stat-text">
+        <span class="stat-label">{{ 'dialogs.patientDetails.prescriptions' | translate }}</span>
+        <strong>{{ prescriptionCount() }}</strong>
+      </div>
+    </div>
+  </div>
+
+  @if (data.loading() && data.history().length > 0) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <app-meds-history-list
+    [history]="data.history()"
+    [loading]="false"
+    [expanded]="expanded()"
+    [lookback]="data.lookback()"
+    [lookbackOptions]="data.lookbackOptions"
+    (expandedChange)="expanded.set($event)"
+    (lookbackChange)="data.onLookbackChange($event)"
+    (add)="data.onAdd($event)"
+  />
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="false">{{ 'dialogs.patientDetails.close' | translate }}</button>
+</mat-dialog-actions>

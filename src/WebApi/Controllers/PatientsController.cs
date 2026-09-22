@@ -31,6 +31,6 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
     [HttpGet("{id:guid}/prescriptions")]
     [Authorize(Policy = Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public Task<IActionResult> GetPrescriptions(Guid id, [FromQuery] int lookbackDays = 180, CancellationToken cancellationToken = default)
+    public Task<IActionResult> GetPrescriptions(Guid id, [FromQuery] int lookbackDays = 90, CancellationToken cancellationToken = default)
         => OkResponse(new GetPatientPrescriptionsQuery(id, lookbackDays), cancellationToken);
 }

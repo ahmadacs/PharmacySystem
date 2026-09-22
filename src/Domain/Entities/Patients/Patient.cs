@@ -44,13 +44,13 @@ public class Patient : BaseEntity
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         DateOfBirth = dateOfBirth;
-        PhoneNumber = phoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        PhoneNumber = PhoneNumbers.NormalizeSaudiPhone(phoneNumber);
     }
 
     public void UpdatePhone(string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
             throw new ArgumentException("Phone number is required.", nameof(phoneNumber));
-        PhoneNumber = phoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        PhoneNumber = PhoneNumbers.NormalizeSaudiPhone(phoneNumber);
     }
 }

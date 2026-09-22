@@ -37,6 +37,8 @@ export class PrescriptionsService {
   }
 
   create(request: CreatePrescriptionRequest): Promise<PrescriptionDetailsDto> {
+    // Sent as typed — the backend canonicalizes to +966... before
+    // find-or-create, so every spelling maps to the same patient.
     return firstValueFrom(
       this.http.post<PrescriptionDetailsDto>(this.baseUrl, request)
     );
@@ -54,7 +56,7 @@ export class PrescriptionsService {
     return firstValueFrom(this.http.post<void>(`${this.baseUrl}/${prescriptionId}/refill`, { itemIds }));
   }
 
-  patientHistory(patientId: string, lookbackDays = 180): Promise<PatientPrescriptionHistoryDto[]> {
+  patientHistory(patientId: string, lookbackDays = 90): Promise<PatientPrescriptionHistoryDto[]> {
     const params = new HttpParams().set('lookbackDays', lookbackDays);
     return firstValueFrom(
       this.http.get<PatientPrescriptionHistoryDto[]>(

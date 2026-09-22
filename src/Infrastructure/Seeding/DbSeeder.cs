@@ -212,8 +212,9 @@ public static class DbSeeder
 
     private static async Task<Patient> GetOrCreatePatientAsync(ApplicationDbContext db, string firstName, string lastName, DateOnly dateOfBirth, string phoneNumber, CancellationToken cancellationToken)
     {
+        var normalized = Domain.Common.PhoneNumbers.NormalizeSaudiPhone(phoneNumber);
         var patient = await db.Patients.FirstOrDefaultAsync(
-            p => p.PhoneNumber == phoneNumber, cancellationToken);
+            p => p.PhoneNumber == normalized, cancellationToken);
         if (patient is null)
         {
             patient = new Patient(firstName, lastName, dateOfBirth, phoneNumber);

@@ -4,5 +4,5 @@ using MediatR;
 
 namespace Application.Features.Patients.Queries.GetPatientPrescriptions;
 
-public sealed record GetPatientPrescriptionsQuery(Guid PatientId, int LookbackDays = 180)
+public sealed record GetPatientPrescriptionsQuery(Guid PatientId, int LookbackDays = 90)
     : IRequest<Result<IReadOnlyList<PatientPrescriptionHistoryDto>>>;

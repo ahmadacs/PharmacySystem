@@ -873,6 +873,7 @@
       "newPatientTitle": "New patient",
       "newPatientHint": "Please enter the patient's full name and date of birth to continue.",
       "previousPrescriptions": "Previous prescriptions ({{count}}):",
+      "patientHistory": "Patient dispense history ({{count}})",
       "medsHistory": {
         "title": "Medication history ({{count}})",
         "lookback": "Lookback window",
@@ -882,6 +883,8 @@
         "empty": "No prescriptions in this window.",
         "current": "Currently taken ({{count}})",
         "previous": "Previous ({{count}})",
+        "lastDispensed": "Last dispensed",
+        "neverDispensed": "Not dispensed yet",
         "refillLeft": "Refill {{used}}/{{allowed}}",
         "dueIn": "Due in {{count}}d",
         "refillsDone": "Refills done",
@@ -931,6 +934,15 @@
       "removeFile": "Remove file",
       "cancel": "Cancel",
       "create": "Create"
+    },
+    "patientDetails": {
+      "lastVisit": "Last visit",
+      "lastDispense": "Last dispense",
+      "activeMeds": "Active meds",
+      "prescriptions": "Prescriptions",
+      "none": "-",
+      "neverDispensed": "Never",
+      "close": "Close"
     },
     "prescriptionDetails": {
       "title": "Prescription #{{id}}",

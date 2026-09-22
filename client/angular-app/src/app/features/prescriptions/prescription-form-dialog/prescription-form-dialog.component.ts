@@ -13,7 +13,7 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
@@ -28,7 +28,7 @@ import {
   PatientPrescriptionHistoryDto
 } from '../../../core/models/api.models';
 import { startOfDay, toDateString } from '../../../core/utils/date-utils';
-import { isArabicLang } from '../../../core/utils/localized-name.utils';
+import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
 import { FileUploadDto } from '../../../core/models/inventory.models';
@@ -36,7 +36,8 @@ import { PrescriptionsService } from '../prescriptions.service';
 import { MedicineLookupService } from '../medicine-lookup.service';
 import { FoundPatient, SAUDI_PHONE_PATTERN } from '../patient-lookup.service';
 import { PatientPhoneSearchService, PatientState } from './patient-phone-search.service';
-import { MedsHistoryListComponent, MedsLookback } from '../meds-history-list/meds-history-list.component';
+import { MedsLookback } from '../meds-history-list/meds-history-list.component';
+import { PatientDetailsDialogComponent } from '../patient-details-dialog/patient-details-dialog.component';
 import { refillsAllowedValidator, notInFuture } from './prescription-item.validators';
 
 @Component({
@@ -47,7 +48,6 @@ import { refillsAllowedValidator, notInFuture } from './prescription-item.valida
     ReactiveFormsModule,
     TranslatePipe,
     EnumTranslatePipe,
-    MedsHistoryListComponent,
     MatFormField,
     MatInput,
     MatLabel,
@@ -79,6 +79,7 @@ export class PrescriptionFormDialogComponent {
   private readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionFormDialogComponent>);
+  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly translate = inject(TranslateService);
 
@@ -109,12 +110,48 @@ export class PrescriptionFormDialogComponent {
   protected readonly patientState = this.phoneSearch.patientState;
   protected readonly phoneSearching = this.phoneSearch.searching;
   protected readonly phoneHintKey = this.phoneSearch.hintKey;
-  // Medication history (two sections: currently-active + previous, server-computed IsCurrentlyActive)
+  // Medication history for the details button badge. The patient details
+  // dialog reads these same signals via dialog data (shared by reference),
+  // so one fetch serves both views with no extra state object.
   protected readonly medsHistory = signal<PatientPrescriptionHistoryDto[]>([]);
   protected readonly medsLoading = signal(false);
-  protected readonly medsExpanded = signal(false);
-  protected readonly medsLookback = signal<MedsLookback>(180);
+  protected readonly medsLookback = signal<MedsLookback>(90);
   protected readonly lookbackOptions: MedsLookback[] = [90, 180, 365];
+
+  /** The verified patient behind the current phone number, if any. */
+  protected readonly foundPatient = computed(() => {
+    const state = this.patientState();
+    return state.kind === 'found' ? state.patient : null;
+  });
+
+  /** Total prescribed lines in the loaded window — shown on the details button. */
+  protected readonly medsCount = computed(() =>
+    this.medsHistory().reduce((n, p) => n + p.items.length, 0),
+  );
+
+  /**
+   * Opens the doctor-facing patient snapshot as a dialog (same MatDialog
+   * pattern as every other dialog). History signals are shared by reference,
+   * so a lookback change fetches once in the parent and both views update.
+   * Adding a line inside the dialog copies it into this form via callback.
+   */
+  protected openPatientDetails(): void {
+    const patient = this.foundPatient();
+    if (!patient) return;
+    this.dialog.open(PatientDetailsDialogComponent, {
+      width: '920px',
+      maxWidth: '94vw',
+      data: {
+        patient,
+        history: this.medsHistory,
+        loading: this.medsLoading,
+        lookback: this.medsLookback,
+        lookbackOptions: this.lookbackOptions,
+        onAdd: (item: PatientMedicationItemDto) => void this.addMedToForm(item),
+        onLookbackChange: (days: MedsLookback) => this.setLookback(days),
+      },
+    });
+  }
 
   // Phone-first flow: the rest of the form appears only after a phone is entered and looked up
   protected readonly showRest = computed(
@@ -123,9 +160,6 @@ export class PrescriptionFormDialogComponent {
   private readonly restAnchor = viewChild<ElementRef<HTMLElement>>('restAnchor');
   /** Previous patient kind — exact transition detection over a clean emission stream. */
   private prevPatientKind: PatientState['kind'] = 'none';
-
-  // Helper for template
-  protected readonly isArabic = computed(() => isArabicLang(this.translate));
 
   // Preset refill intervals (days) the doctor picks from. 0 = no time limit.
   protected readonly refillIntervalOptions = [0, 7, 14, 15, 30, 60, 90];
@@ -210,7 +244,6 @@ export class PrescriptionFormDialogComponent {
    */
   private teardownPatientContext(): void {
     this.medsHistory.set([]);
-    this.medsExpanded.set(false);
     if (this.form.controls.patientFirstName.disabled) {
       this.form.controls.patientFirstName.setValue('');
       this.form.controls.patientLastName.setValue('');
@@ -418,14 +451,17 @@ export class PrescriptionFormDialogComponent {
 
   protected readonly displayMedicineName = (medicineIdOrString: string | MedicineListItemDto): string => {
     if (!medicineIdOrString) return '';
-    if (typeof medicineIdOrString === 'string') {
-      // Look up the medicine by ID in the medicines list
-      const medicine = this.medicineLookup.findMedicine(medicineIdOrString);
-      if (!medicine) return '';
-      return this.isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name;
-    }
-    return this.isArabic() && medicineIdOrString.nameAr ? medicineIdOrString.nameAr : medicineIdOrString.name;
+    // Look up the medicine by ID in the medicines list
+    const medicine = typeof medicineIdOrString === 'string'
+      ? this.medicineLookup.findMedicine(medicineIdOrString)
+      : medicineIdOrString;
+    if (!medicine) return '';
+    return pickLocalizedName(medicine, this.translate);
   };
+
+  protected displayMedicineGenericName(medicine: MedicineListItemDto): string {
+    return pickLocalizedGenericName(medicine, this.translate);
+  }
 
   async submit(): Promise<void> {
     // Refill correctness is enforced by refillsAllowedValidator on each item

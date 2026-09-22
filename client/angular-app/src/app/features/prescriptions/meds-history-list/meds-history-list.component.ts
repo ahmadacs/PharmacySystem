@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, input, output } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -5,7 +6,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
-import { isArabicLang } from '../../../core/utils/localized-name.utils';
+import { pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
 import {
   PatientMedicationItemDto,
   PatientPrescriptionHistoryDto,
@@ -21,7 +22,7 @@ export type MedsLookback = 90 | 180 | 365;
 @Component({
   selector: 'app-meds-history-list',
   standalone: true,
-  imports: [TranslatePipe, EnumTranslatePipe, MatButton, MatIconButton, MatIcon, MatChipsModule, MatProgressBar],
+  imports: [NgTemplateOutlet, TranslatePipe, EnumTranslatePipe, MatButton, MatIconButton, MatIcon, MatChipsModule, MatProgressBar],
   templateUrl: './meds-history-list.component.html',
   styleUrl: './meds-history-list.component.scss',
 })
@@ -31,7 +32,7 @@ export class MedsHistoryListComponent {
   readonly history = input<PatientPrescriptionHistoryDto[]>([]);
   readonly loading = input(false);
   readonly expanded = input(false);
-  readonly lookback = input<MedsLookback>(180);
+  readonly lookback = input<MedsLookback>(90);
   readonly lookbackOptions = input<MedsLookback[]>([90, 180, 365]);
 
   readonly expandedChange = output<boolean>();
@@ -54,7 +55,7 @@ export class MedsHistoryListComponent {
   );
 
   displayName(item: PatientMedicationItemDto): string {
-    return isArabicLang(this.translate) && item.medicineNameAr ? item.medicineNameAr : item.medicineName;
+    return pickLocalizedMedicineName(item, this.translate);
   }
 
   dueInDays(item: PatientMedicationItemDto): number | null {

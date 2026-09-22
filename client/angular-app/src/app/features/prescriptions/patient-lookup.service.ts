@@ -56,6 +56,8 @@ export class PatientLookupService {
    * (404 / empty payload also map to null — the caller treats both as "new").
    */
   async findByPhone(phone: string): Promise<FoundPatient | null> {
+    // Sent as typed (05... or +966...) — the backend canonicalizes to +966...
+    // before searching, so every spelling finds the same patient.
     try {
       const result = await firstValueFrom(
         this.http.get<PatientPhoneCheckResponse>(

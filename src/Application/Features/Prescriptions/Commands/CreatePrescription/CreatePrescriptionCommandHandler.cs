@@ -118,5 +118,5 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     }
 
     private static string NormalizePhone(string phoneNumber)
-        => phoneNumber.Trim().Replace(" ", "").Replace("-", "");
+        => Domain.Common.PhoneNumbers.NormalizeSaudiPhone(phoneNumber);
 }
