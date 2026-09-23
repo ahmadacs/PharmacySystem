@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Specifications;
 using Domain.Entities.Notifications;
 using Domain.Enums;
 using Infrastructure.Identity;
@@ -19,13 +20,13 @@ public sealed class NotificationService : INotificationService
     private readonly ApplicationDbContext _db;
     private readonly IHubContext<NotificationsHub> _hub;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly INotificationRepository _notifications;
+    private readonly IBaseRepository<Notification> _notifications;
 
     public NotificationService(
         ApplicationDbContext db,
         IHubContext<NotificationsHub> hub,
         UserManager<ApplicationUser> userManager,
-        INotificationRepository notifications)
+        IBaseRepository<Notification> notifications)
     {
         _db = db;
         _hub = hub;
@@ -66,7 +67,9 @@ public sealed class NotificationService : INotificationService
         if (notification.Type is not (NotificationType.LowStock or NotificationType.NearExpiry))
             return false;
 
-        return await _notifications.HasUnreadAsync(userId, notification.Type, notification.Data, cancellationToken);
+        var dupSpec = new Specification<Notification, Notification>(n => n);
+        dupSpec.Where(n => n.UserId == userId && n.Type == notification.Type && n.Data == notification.Data && !n.IsRead);
+        return await _notifications.GetAsync(dupSpec, cancellationToken) is not null;
     }
 
     private static object ToPayload(Notification entity) => new

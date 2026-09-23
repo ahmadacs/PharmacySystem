@@ -1,6 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Application.Common.Security;
+using Application.Common.Specifications;
+using Domain.Entities.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using Microsoft.AspNetCore.SignalR;
@@ -16,9 +18,9 @@ namespace Infrastructure.Notifications;
 [Authorize]
 public sealed class NotificationsHub : Hub
 {
-    private readonly Application.Common.Interfaces.INotificationRepository _notifications;
+    private readonly Application.Common.Interfaces.IBaseRepository<Notification> _notifications;
 
-    public NotificationsHub(Application.Common.Interfaces.INotificationRepository notifications)
+    public NotificationsHub(Application.Common.Interfaces.IBaseRepository<Notification> notifications)
     {
         _notifications = notifications;
     }
@@ -34,7 +36,9 @@ public sealed class NotificationsHub : Hub
 
             if (Guid.TryParse(userId, out var uid))
             {
-                var count = await _notifications.CountUnreadAsync(uid);
+                var unreadSpec = new Specification<Notification, Notification>(n => n);
+                unreadSpec.Where(n => n.UserId == uid && !n.IsRead);
+                var count = await _notifications.CountAsync(unreadSpec);
                 await Clients.Caller.SendAsync("unreadCount", count);
             }
         }

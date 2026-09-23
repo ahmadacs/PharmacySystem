@@ -50,19 +50,13 @@ public static class DependencyInjection
             .Get<NotificationOptions>() ?? new NotificationOptions());
 
         services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<INotificationRepository, NotificationRepository>();
-        services.AddScoped<IAuditRepository, AuditRepository>();
         services.AddScoped<IAuditDisplayNameResolver, AuditDisplayNameResolver>();
 
         services.AddScoped<IUserManager, UserManagerService>();
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IEmailService, MockEmailService>();
         services.AddScoped<IStaffService, StaffService>();
-        services.AddScoped<IAsyncQueryExecutor, EfQueryExecutor>();
-        services.AddScoped<IMedicineRepository, MedicineRepository>();
-        services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
-        services.AddScoped<IPatientRepository, PatientRepository>();
-        services.AddScoped<IFileAttachmentRepository, FileAttachmentRepository>();
+        services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
         services.AddScoped<IExportDataProvider, ExportDataProvider>();
         services.AddScoped<IExportService, ExportService>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

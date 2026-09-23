@@ -5,22 +5,6 @@ namespace Application.Features.Prescriptions.Dtos;
 
 public static class PrescriptionMapping
 {
-    public static PrescriptionItemDto ToDto(this PrescriptionItem item, string medicineName, string variantName)
-        => new(
-            item.Id,
-            item.MedicineVariantId,
-            medicineName,
-            variantName,
-            item.PrescribedQuantity.Value,
-            item.DispensedQuantity.Value,
-            item.RemainingQuantity.Value,
-            item.DosageInstructions,
-            item.IsRefillable,
-            item.RefillsAllowed,
-            item.RefillsUsed,
-            item.RefillIntervalDays,
-            item.LastDispensedAt);
-
     /// <summary>Maps a list-screen projection row (doctor name resolved separately).</summary>
     public static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
         => new(
@@ -36,34 +20,42 @@ public static class PrescriptionMapping
             row.ItemCount);
 
     public static PrescriptionDetailsDto ToDetailsDto(
-        this Prescription prescription,
-        string doctorName,
-        IReadOnlyDictionary<Guid, VariantInfo> variantInfosById)
+        this PrescriptionDetailsRow row,
+        string doctorName)
     {
-        var items = prescription.Items
-            .Select(i =>
-            {
-                var info = variantInfosById.TryGetValue(i.MedicineVariantId, out var value)
-                    ? value
-                    : new VariantInfo("Unknown", string.Empty);
-                return i.ToDto(info.MedicineName, info.VariantName);
-            })
+        // Remaining mirrors PrescriptionItem.RemainingQuantity
+        // (PrescribedQuantity - DispensedQuantity).
+        var items = row.Items
+            .Select(i => new PrescriptionItemDto(
+                i.Id,
+                i.MedicineVariantId,
+                i.MedicineName,
+                i.VariantName,
+                i.PrescribedQuantity,
+                i.DispensedQuantity,
+                i.PrescribedQuantity - i.DispensedQuantity,
+                i.DosageInstructions,
+                i.IsRefillable,
+                i.RefillsAllowed,
+                i.RefillsUsed,
+                i.RefillIntervalDays,
+                i.LastDispensedAt))
             .OrderBy(i => i.Id)
             .ToList();
 
         return new PrescriptionDetailsDto(
-            prescription.Id,
-            prescription.DoctorId,
+            row.Id,
+            row.DoctorId,
             doctorName,
-            prescription.Patient?.FullName ?? string.Empty,
-            prescription.Patient?.DateOfBirth ?? default,
-            prescription.Patient?.Age ?? 0,
-            prescription.Patient?.PhoneNumber,
-            prescription.Diagnosis,
-            prescription.IssuedDate,
-            prescription.Status.ToString(),
-            prescription.CreatedBy,
-            prescription.CreatedAt,
+            row.PatientName,
+            row.PatientDateOfBirth,
+            row.PatientAge,
+            row.PatientPhoneNumber,
+            row.Diagnosis,
+            row.IssuedDate,
+            row.Status,
+            row.CreatedBy,
+            row.CreatedAt,
             items);
     }
 

@@ -1,6 +1,6 @@
 ﻿namespace Domain.Common;
 
-public abstract class BaseEntity : ISoftDelete
+public abstract class BaseEntity : ISoftDelete, IEntity
 {
     private readonly List<object> _domainEvents = [];
 
@@ -13,10 +13,7 @@ public abstract class BaseEntity : ISoftDelete
     public Guid? DeletedBy { get; set; }
     public DateTime? DeletedAt { get; set; }
 
-    /// <summary>
-    /// Domain events raised by state-changing methods. Collected by the
-    /// persistence layer and dispatched (via MediatR) after a successful save.
-    /// </summary>
+    
     public IReadOnlyCollection<object> DomainEvents => _domainEvents.AsReadOnly();
 
     protected void RaiseDomainEvent(object domainEvent) => _domainEvents.Add(domainEvent);

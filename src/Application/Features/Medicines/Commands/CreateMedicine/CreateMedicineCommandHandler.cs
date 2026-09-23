@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
@@ -11,14 +12,16 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicineCommand, Result<Guid>>
 {
-    private readonly IMedicineRepository _repo;
+    private readonly IBaseRepository<Medicine> _medicines;
+    private readonly IBaseRepository<GenericName> _generics;
     private readonly IUnitOfWork _uow;
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IAttachmentUploadService attachments, IStringLocalizer<SharedResource> localizer)
+    public CreateMedicineCommandHandler(IBaseRepository<Medicine> medicines, IBaseRepository<GenericName> generics, IUnitOfWork uow, IAttachmentUploadService attachments, IStringLocalizer<SharedResource> localizer)
     {
-        _repo = repo;
+        _medicines = medicines;
+        _generics = generics;
         _uow = uow;
         _attachments = attachments;
         _localizer = localizer;
@@ -28,10 +31,12 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
     {
         var req = request.Request;
 
-        if (await _repo.MedicineNameExistsAsync(req.Name, null, cancellationToken))
+        var nameSpec = new Specification<Medicine, Medicine>(m => m);
+        nameSpec.Where(m => m.Name == req.Name.Trim());
+        if (await _medicines.CountAsync(nameSpec, cancellationToken) > 0)
             return Result<Guid>.Failure(_localizer["MedicineAlreadyExists", req.Name].Value, 409);
 
-        GenericName genericName = await MedicineMapping.ResolveGenericNameAsync(_repo, req.GenericName, req.GenericNameAr, cancellationToken);
+        GenericName genericName = await MedicineMapping.ResolveGenericNameAsync(_generics, req.GenericName, req.GenericNameAr, cancellationToken);
 
         var medicine = req.ToEntity(req.Category, genericName);
 
@@ -47,7 +52,7 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
             medicine.AddVariant(variantRequest.ToEntity(medicine.Id));
         }
 
-        _repo.Add(medicine);
+        _medicines.Add(medicine);
         await _uow.SaveChangesAsync(cancellationToken);
 
         await _attachments.UploadAsync("Medicine", medicine.Id, req.File, cancellationToken);

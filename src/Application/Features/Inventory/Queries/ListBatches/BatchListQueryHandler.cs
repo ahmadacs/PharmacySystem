@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -8,15 +9,11 @@ namespace Application.Features.Inventory.Queries;
 
 public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Result<PagedList<MedicineBatchDto>>>
 {
-    private readonly IMedicineRepository _repo;
-    private readonly IPrescriptionRepository _prescriptions;
-    private readonly IAsyncQueryExecutor _executor;
+    private readonly IBaseRepository<MedicineBatch> _batches;
 
-    public BatchListQueryHandler(IMedicineRepository repo, IPrescriptionRepository prescriptions, IAsyncQueryExecutor executor)
+    public BatchListQueryHandler(IBaseRepository<MedicineBatch> batches)
     {
-        _repo = repo;
-        _prescriptions = prescriptions;
-        _executor = executor;
+        _batches = batches;
     }
 
     public async Task<Result<PagedList<MedicineBatchDto>>> Handle(BatchListQuery request, CancellationToken cancellationToken)
@@ -24,37 +21,16 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.ExpiryStatus, asOf, request.WithinDays);
 
-        IQueryable<MedicineBatch> filtered = _repo.QueryBatches();
-
-        if (request.MedicineId.HasValue)
-            filtered = filtered.Where(b => b.MedicineVariant!.MedicineId == request.MedicineId.Value);
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            filtered = filtered.Where(b => b.BatchNumber.Contains(request.Search.Trim()));
-
-        if (expiryFrom.HasValue)
-            filtered = filtered.Where(b => b.ExpiryDate > expiryFrom.Value);
-
-        if (expiryTo.HasValue)
-            filtered = filtered.Where(b => b.ExpiryDate <= expiryTo.Value);
-
-        var ordered = request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" => SortDir(filtered, b => b.QuantityAvailable.Value, request.SortDir),
-            "batch" => SortDir(filtered, b => b.BatchNumber, request.SortDir),
-            _ => SortDir(filtered, b => b.ExpiryDate, request.SortDir)
-        };
-
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize();
 
-        var dispensingLines = _prescriptions.QueryDispensingRecordItems();
-
-        var rows = await _executor.ToListAsync(
-            ordered
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(b => new MedicineBatchRow(
+        // Pure single-entity spec: filter + ordering + paging + projection all
+        // live here in the Application layer. The dispensed total aggregates
+        // through the DispensingItems navigation (existing FK, no extra round
+        // trip, no Include — navigations inside a Select need none).
+        // COUNT + page = same 2 queries as before; the repository exposes only
+        // the generic Get/List/CountAsync and never sees a DTO shape decision.
+        var spec = new Specification<MedicineBatch, MedicineBatchRow>(b => new MedicineBatchRow(
                     b.Id,
                     b.MedicineVariant!.MedicineId,
                     b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.Name : "Unknown",
@@ -68,12 +44,32 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
                     b.UnitCost.Amount,
                     b.SupplierName,
                     b.CreatedAt,
-                    dispensingLines
-                        .Where(i => i.MedicineBatchId == b.Id)
-                        .Sum(i => (int?)i.Quantity.Value) ?? 0)),
-            cancellationToken);
+                    b.DispensingItems.Sum(i => (int?)i.Quantity.Value) ?? 0));
 
-        var totalCount = await _executor.CountAsync(filtered, cancellationToken);
+        if (request.MedicineId.HasValue)
+            spec.Where(b => b.MedicineVariant!.MedicineId == request.MedicineId.Value);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var trimmed = request.Search.Trim();
+            spec.Where(b => b.BatchNumber.Contains(trimmed));
+        }
+        if (expiryFrom.HasValue)
+            spec.Where(b => b.ExpiryDate > expiryFrom.Value);
+        if (expiryTo.HasValue)
+            spec.Where(b => b.ExpiryDate <= expiryTo.Value);
+
+        spec.Order(request.SortBy?.ToLowerInvariant() switch
+        {
+            "quantity" => SortDir(b => b.QuantityAvailable.Value, request.SortDir),
+            "batch" => SortDir(b => b.BatchNumber, request.SortDir),
+            _ => SortDir(b => b.ExpiryDate, request.SortDir)
+        });
+
+        var totalCount = await _batches.CountAsync(spec, cancellationToken);
+
+        spec.Page((page - 1) * pageSize, pageSize);
+
+        var rows = await _batches.ListAsync(spec, cancellationToken);
 
         var items = rows
             .Select(r => r.ToDto(asOf))
@@ -91,11 +87,10 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
             _ => (null, null)
         };
 
-    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
-        IQueryable<TSource> source,
-        System.Linq.Expressions.Expression<Func<TSource, TKey>> keySelector,
+    private static Func<IQueryable<MedicineBatch>, IOrderedQueryable<MedicineBatch>> SortDir<TKey>(
+        System.Linq.Expressions.Expression<Func<MedicineBatch, TKey>> keySelector,
         string sortDir)
         => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? source.OrderByDescending(keySelector)
-            : source.OrderBy(keySelector);
+            ? q => q.OrderByDescending(keySelector)
+            : q => q.OrderBy(keySelector);
 }

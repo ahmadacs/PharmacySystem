@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Dispensing.Dtos;
 using Domain.Entities.Dispensing;
 using MediatR;
@@ -8,79 +9,79 @@ namespace Application.Features.Dispensing.Queries;
 
 public sealed class DispensingRecordListQueryHandler : IRequestHandler<DispensingRecordListQuery, Result<PagedList<DispensingRecordDto>>>
 {
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<DispensingRecord> _records;
     private readonly IStaffService _staff;
-    private readonly IAsyncQueryExecutor _executor;
 
-    public DispensingRecordListQueryHandler(IPrescriptionRepository prescriptions, IStaffService staff, IAsyncQueryExecutor executor)
+    public DispensingRecordListQueryHandler(IBaseRepository<DispensingRecord> records, IStaffService staff)
     {
-        _prescriptions = prescriptions;
+        _records = records;
         _staff = staff;
-        _executor = executor;
     }
 
     public async Task<Result<PagedList<DispensingRecordDto>>> Handle(
         DispensingRecordListQuery request,
         CancellationToken cancellationToken)
     {
-        IQueryable<DispensingRecord> data = _prescriptions.QueryDispensingRecords();
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
+
+        var spec = new Specification<DispensingRecord, DispensingRecordRow>(r => new DispensingRecordRow(
+                    r.Id,
+                    r.PrescriptionId,
+                    r.Prescription != null && r.Prescription.Patient != null ? r.Prescription.Patient.FullName : string.Empty,
+                    r.PharmacistId,
+                    r.DispensedAt,
+                    r.Notes));
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim();
-            data = data.Where(r =>
+            spec.Where(r =>
                 (r.Prescription != null && r.Prescription.Patient != null &&
                  (r.Prescription.Patient.FirstName.Contains(search) || r.Prescription.Patient.LastName.Contains(search))) ||
                 (r.Notes != null && r.Notes.Contains(search)));
         }
 
         if (request.FromDate.HasValue)
-            data = data.Where(r => r.DispensedAt >= request.FromDate.Value);
+            spec.Where(r => r.DispensedAt >= request.FromDate.Value);
 
         if (request.ToDate.HasValue)
-            data = data.Where(r => r.DispensedAt <= request.ToDate.Value);
+            spec.Where(r => r.DispensedAt <= request.ToDate.Value);
 
-        var totalCount = await _executor.CountAsync(data, cancellationToken);
+        spec.Order(request.SortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
+            ? (Func<IQueryable<DispensingRecord>, IOrderedQueryable<DispensingRecord>>)(q => q.OrderByDescending(r => r.DispensedAt))
+            : q => q.OrderBy(r => r.DispensedAt));
 
-        data = SortDir(data, r => r.DispensedAt, request.SortDir);
+        var totalCount = await _records.CountAsync(spec, cancellationToken);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
+        spec.Page((page - 1) * pageSize, pageSize);
 
-        var rows = await _executor.ToListAsync(
-            data
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(r => new DispensingRecordRow(
-                    r.Id,
-                    r.PrescriptionId,
-                    r.Prescription != null && r.Prescription.Patient != null ? r.Prescription.Patient.FullName : string.Empty,
-                    r.PharmacistId,
-                    r.DispensedAt,
-                    r.Notes)),
-            cancellationToken);
+        var rows = await _records.ListAsync(spec, cancellationToken);
 
         var pharmacistIds = rows.Select(r => r.PharmacistId).Distinct().ToList();
         var pharmacistNamesById = await _staff.GetPharmacistNamesAsync(pharmacistIds, cancellationToken);
 
-        // Fetch items for the page in a separate query to avoid correlated subqueries per row
+        // Same second query as before (items for the page only — no N+1),
+        // expressed as a spec over the same set with SelectMany flattened in memory.
         var recordIds = rows.Select(r => r.Id).ToList();
+
+        var itemsSpec = new Specification<DispensingRecord, IEnumerable<DispensingRecordItemRow>>(r => r.Items
+            .Select(i => new DispensingRecordItemRow(
+                r.Id,
+                i.MedicineBatchId,
+                i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null && i.MedicineBatch.MedicineVariant.Medicine != null
+                    ? i.MedicineBatch.MedicineVariant.Medicine.Name : "Unknown",
+                i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null
+                    ? $"{i.MedicineBatch.MedicineVariant.Form} {i.MedicineBatch.MedicineVariant.Strength} {i.MedicineBatch.MedicineVariant.Unit}"
+                    : string.Empty,
+                i.MedicineBatch != null ? i.MedicineBatch.BatchNumber : string.Empty,
+                i.Quantity.Value)));
+        itemsSpec.Where(r => recordIds.Contains(r.Id));
+
         var itemsByRecord = recordIds.Count == 0
             ? new Dictionary<Guid, List<DispensingRecordItemDto>>()
-            : (await _executor.ToListAsync(
-                _prescriptions.QueryDispensingRecords()
-                    .Where(r => recordIds.Contains(r.Id))
-                    .SelectMany(r => r.Items.Select(i => new DispensingRecordItemRow(
-                        r.Id,
-                        i.MedicineBatchId,
-                        i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null && i.MedicineBatch.MedicineVariant.Medicine != null
-                            ? i.MedicineBatch.MedicineVariant.Medicine.Name : "Unknown",
-                        i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null
-                            ? $"{i.MedicineBatch.MedicineVariant.Form} {i.MedicineBatch.MedicineVariant.Strength} {i.MedicineBatch.MedicineVariant.Unit}"
-                            : string.Empty,
-                        i.MedicineBatch != null ? i.MedicineBatch.BatchNumber : string.Empty,
-                        i.Quantity.Value))),
-                cancellationToken))
+            : (await _records.ListAsync(itemsSpec, cancellationToken))
+                .SelectMany(x => x)
                 .GroupBy(x => x.RecordId)
                 .ToDictionary(g => g.Key, g => g.Select(i => i.ToDto()).ToList());
 
@@ -92,12 +93,4 @@ public sealed class DispensingRecordListQueryHandler : IRequestHandler<Dispensin
 
         return Result<PagedList<DispensingRecordDto>>.Success(items);
     }
-
-    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
-        IQueryable<TSource> source,
-        System.Linq.Expressions.Expression<Func<TSource, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? source.OrderByDescending(keySelector)
-            : source.OrderBy(keySelector);
 }

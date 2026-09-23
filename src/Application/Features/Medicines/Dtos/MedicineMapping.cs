@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Specifications;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -12,14 +13,17 @@ public static class MedicineMapping
     /// the Arabic name when it changed. Shared by the create/update medicine flows.
     /// </summary>
     public static async Task<GenericName> ResolveGenericNameAsync(
-        IMedicineRepository repo,
+        IBaseRepository<GenericName> generics,
         string name,
         string? nameAr,
         CancellationToken cancellationToken)
     {
         var trimmed = name.Trim();
         var trimmedAr = nameAr?.Trim();
-        var genericName = await repo.FindGenericNameAsync(trimmed, cancellationToken);
+        // Tracked: Rename below must persist on SaveChanges.
+        var nameSpec = new Specification<GenericName, GenericName>(g => g).Tracked();
+        nameSpec.Where(g => g.Name == trimmed);
+        var genericName = await generics.GetAsync(nameSpec, cancellationToken);
         if (genericName is not null)
         {
             if (!string.IsNullOrWhiteSpace(trimmedAr) && genericName.NameAr != trimmedAr)
@@ -28,7 +32,7 @@ public static class MedicineMapping
         }
 
         genericName = new GenericName(trimmed, trimmedAr);
-        repo.AddGenericName(genericName);
+        generics.Add(genericName);
         return genericName;
     }
 

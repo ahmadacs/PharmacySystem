@@ -1,7 +1,9 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Resources;
+using Domain.Entities.Notifications;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -11,23 +13,20 @@ public sealed record MarkAllNotificationsReadCommand : IRequest<Result>;
 
 public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<MarkAllNotificationsReadCommand, Result>
 {
-    private readonly INotificationRepository _notifications;
+    private readonly IBaseRepository<Notification> _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
-    private readonly IAsyncQueryExecutor _executor;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public MarkAllNotificationsReadCommandHandler(
-        INotificationRepository notifications,
+        IBaseRepository<Notification> notifications,
         ICurrentUserService currentUser,
         IUnitOfWork uow,
-        IAsyncQueryExecutor executor,
         IStringLocalizer<SharedResource> localizer)
     {
         _notifications = notifications;
         _currentUser = currentUser;
         _uow = uow;
-        _executor = executor;
         _localizer = localizer;
     }
 
@@ -37,9 +36,11 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
         if (authFailure is not null)
             return authFailure;
 
-        var unread = await _executor.ToListAsync(
-            _notifications.Query().Where(n => n.UserId == userId && !n.IsRead),
-            cancellationToken);
+        // Tracked read: the entities are mutated below, so no AsNoTracking.
+        var spec = new Specification<Notification, Notification>(n => n).Tracked();
+        spec.Where(n => n.UserId == userId && !n.IsRead);
+
+        var unread = await _notifications.ListAsync(spec, cancellationToken);
 
         var now = DateTime.UtcNow;
         foreach (var notification in unread)

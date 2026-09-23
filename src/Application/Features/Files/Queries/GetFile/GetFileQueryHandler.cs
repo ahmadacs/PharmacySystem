@@ -1,6 +1,9 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
+using Application.Common.Specifications;
+using Domain.Entities.Files;
+using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
@@ -11,14 +14,14 @@ namespace Application.Features.Files.Queries.GetFile;
 
 public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(Stream Content, string ContentType, string FileName)>>
 {
-    private readonly IFileAttachmentRepository _files;
+    private readonly IBaseRepository<FileAttachment> _files;
     private readonly IFileStorageService _storage;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public GetFileQueryHandler(IFileAttachmentRepository files, IFileStorageService storage, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
+    public GetFileQueryHandler(IBaseRepository<FileAttachment> files, IFileStorageService storage, ICurrentUserService currentUser, IBaseRepository<Prescription> prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
     {
         _files = files;
         _storage = storage;
@@ -30,7 +33,9 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
 
     public async Task<Result<(Stream Content, string ContentType, string FileName)>> Handle(GetFileQuery request, CancellationToken cancellationToken)
     {
-        var attachment = await _files.GetByIdAsync(request.FileId, cancellationToken);
+        var fileSpec = new Specification<FileAttachment, FileAttachment>(f => f).Tracked();
+        fileSpec.Where(f => f.Id == request.FileId);
+        var attachment = await _files.GetAsync(fileSpec, cancellationToken);
         if (attachment is null) return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["ResourceNotFound", "FileAttachment", request.FileId].Value, 404);
 
         if (attachment.EntityType == FileEntityType.Medicine)
@@ -47,7 +52,9 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
         }
         else
         {
-            var prescription = await _prescriptions.GetByIdAsync(attachment.EntityId, cancellationToken);
+            var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
+            prescriptionSpec.Where(p => p.Id == attachment.EntityId);
+            var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
             if (prescription is not null)
             {
                 await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);

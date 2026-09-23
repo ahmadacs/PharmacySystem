@@ -1,6 +1,7 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Notifications;
 using MediatR;
@@ -12,13 +13,13 @@ public sealed record MarkNotificationReadCommand(Guid NotificationId) : IRequest
 
 public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNotificationReadCommand, Result>
 {
-    private readonly INotificationRepository _notifications;
+    private readonly IBaseRepository<Notification> _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public MarkNotificationReadCommandHandler(
-        INotificationRepository notifications,
+        IBaseRepository<Notification> notifications,
         ICurrentUserService currentUser,
         IUnitOfWork uow,
         IStringLocalizer<SharedResource> localizer)
@@ -35,7 +36,9 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
         if (authFailure is not null)
             return authFailure;
 
-        var notification = await _notifications.GetByIdAsync(request.NotificationId, cancellationToken);
+        var byIdSpec = new Specification<Notification, Notification>(n => n).Tracked();
+        byIdSpec.Where(n => n.Id == request.NotificationId);
+        var notification = await _notifications.GetAsync(byIdSpec, cancellationToken);
         if (notification is null)
             return Result.Failure(_localizer["ResourceNotFound", "Notification", request.NotificationId].Value, 404);
 

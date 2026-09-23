@@ -1,4 +1,5 @@
 ﻿using Domain.Common;
+using Domain.Entities.Dispensing;
 using Domain.Events;
 using Domain.Exceptions;
 using Domain.ValueObjects;
@@ -18,6 +19,12 @@ public class MedicineBatch : BaseEntity
     public Money UnitCost { get; private set; } = Money.Zero;
     public string? SupplierName { get; private set; }
     public byte[] RowVersion { get; set; } = [];
+
+    // Inverse of DispensingRecordItem.MedicineBatch. Read-only query navigation:
+    // lets single-entity batch specs aggregate dispensed quantities through the
+    // existing FK without a second DbSet (no extra round trip, no Include).
+    private readonly List<DispensingRecordItem> _dispensingItems = new();
+    public IReadOnlyCollection<DispensingRecordItem> DispensingItems => _dispensingItems.AsReadOnly();
 
     private MedicineBatch() { }
 

@@ -3,10 +3,14 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
 using Application.Common.Security;
+using Application.Common.Specifications;
 using Application.Features.Files.Dtos;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Files;
+using Domain.Entities.Inventory;
+using Domain.Entities.Medicines;
+using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
@@ -37,18 +41,24 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
 
     private const long DefaultMaxSize = 5 * 1024 * 1024;
 
-    private readonly IFileAttachmentRepository _files;
+    private readonly IBaseRepository<FileAttachment> _files;
+    private readonly IBaseRepository<Medicine> _medicines;
+    private readonly IBaseRepository<MedicineBatch> _batches;
+    private readonly IBaseRepository<InventoryAdjustment> _adjustments;
     private readonly IFileStorageService _storage;
     private readonly IUnitOfWork _uow;
     private readonly FileStorageOptions _options;
     private readonly ICurrentUserService _currentUser;
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public UploadFileCommandHandler(IFileAttachmentRepository files, IFileStorageService storage, IUnitOfWork uow, IOptions<FileStorageOptions> options, ICurrentUserService currentUser, IPrescriptionRepository prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
+    public UploadFileCommandHandler(IBaseRepository<FileAttachment> files, IBaseRepository<Medicine> medicines, IBaseRepository<MedicineBatch> batches, IBaseRepository<InventoryAdjustment> adjustments, IFileStorageService storage, IUnitOfWork uow, IOptions<FileStorageOptions> options, ICurrentUserService currentUser, IBaseRepository<Prescription> prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
     {
         _files = files;
+        _medicines = medicines;
+        _batches = batches;
+        _adjustments = adjustments;
         _storage = storage;
         _uow = uow;
         _options = options.Value;
@@ -117,7 +127,9 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
     {
         if (entityType == FileEntityType.Prescription)
         {
-            var prescription = await _prescriptions.GetByIdAsync(entityId, cancellationToken);
+            var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
+            prescriptionSpec.Where(p => p.Id == entityId);
+            var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
             if (prescription is null)
                 return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", "Prescription", entityId].Value, 404);
             await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
@@ -128,17 +140,17 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         {
             FileEntityType.Medicine => (
                 (IReadOnlyList<string>)[Permissions.Medicines.Create, Permissions.Medicines.Update],
-                _files.MedicineExistsAsync(entityId, cancellationToken),
+                ExistsAsync(_medicines, entityId, cancellationToken),
                 "Medicine",
                 "FileUploadMedicine"),
             FileEntityType.Batch => (
                 (IReadOnlyList<string>)[Permissions.Inventory.View, Permissions.Inventory.Adjust],
-                _files.BatchExistsAsync(entityId, cancellationToken),
+                ExistsAsync(_batches, entityId, cancellationToken),
                 "MedicineBatch",
                 "FileUploadBatch"),
             _ => (
                 (IReadOnlyList<string>)[Permissions.Inventory.Adjust],
-                _files.InventoryAdjustmentExistsAsync(entityId, cancellationToken),
+                ExistsAsync(_adjustments, entityId, cancellationToken),
                 "InventoryAdjustment",
                 "FileUploadInventory")
         };
@@ -148,6 +160,15 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         if (!await exists)
             return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", resource, entityId].Value, 404);
         return null;
+    }
+
+    private static async Task<bool> ExistsAsync<TEntity>(
+        IBaseRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
+        where TEntity : Domain.Common.BaseEntity
+    {
+        var spec = new Specification<TEntity, TEntity>(e => e);
+        spec.Where(e => e.Id == id);
+        return await repo.GetAsync(spec, cancellationToken) is not null;
     }
 
     private static bool HasValidSignature(string contentType, byte[] header, int read)

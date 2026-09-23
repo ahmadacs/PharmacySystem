@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
@@ -10,12 +11,12 @@ namespace Application.Features.Prescriptions.Commands;
 
 public sealed class CancelPrescriptionCommandHandler : IRequestHandler<CancelPrescriptionCommand, Result>
 {
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CancelPrescriptionCommandHandler(
-        IPrescriptionRepository prescriptions,
+        IBaseRepository<Prescription> prescriptions,
         IUnitOfWork uow,
         IStringLocalizer<SharedResource> localizer)
     {
@@ -26,7 +27,9 @@ public sealed class CancelPrescriptionCommandHandler : IRequestHandler<CancelPre
 
     public async Task<Result> Handle(CancelPrescriptionCommand request, CancellationToken cancellationToken)
     {
-        var prescription = await _prescriptions.GetByIdAsync(request.Id, cancellationToken);
+        var byIdSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
+        byIdSpec.Where(p => p.Id == request.Id);
+        var prescription = await _prescriptions.GetAsync(byIdSpec, cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 

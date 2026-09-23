@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Inventory;
 using MediatR;
@@ -8,45 +9,23 @@ namespace Application.Features.Inventory.Queries;
 
 public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<InventoryAdjustmentListQuery, Result<PagedList<InventoryAdjustmentDto>>>
 {
-    private readonly IMedicineRepository _repo;
+    private readonly IBaseRepository<InventoryAdjustment> _repo;
     private readonly IUserManager _users;
-    private readonly IAsyncQueryExecutor _executor;
 
-    public InventoryAdjustmentListQueryHandler(IMedicineRepository repo, IUserManager users, IAsyncQueryExecutor executor)
+    public InventoryAdjustmentListQueryHandler(IBaseRepository<InventoryAdjustment> repo, IUserManager users)
     {
         _repo = repo;
         _users = users;
-        _executor = executor;
     }
 
     public async Task<Result<PagedList<InventoryAdjustmentDto>>> Handle(
         InventoryAdjustmentListQuery request,
         CancellationToken cancellationToken)
     {
-        IQueryable<InventoryAdjustment> data = _repo.QueryAdjustments();
-
-        if (request.Type.HasValue)
-            data = data.Where(a => a.Type == request.Type.Value);
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            data = data.Where(a => a.Reason.Contains(request.Search.Trim()));
-
-        var totalCount = await _executor.CountAsync(data, cancellationToken);
-
-        data = request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" => SortDir(data, a => a.QuantityChanged, request.SortDir),
-            _ => SortDir(data, a => a.AdjustedAt, request.SortDir)
-        };
-
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize();
 
-        var rows = await _executor.ToListAsync(
-            data
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(a => new InventoryAdjustmentRow(
+        var spec = new Specification<InventoryAdjustment, InventoryAdjustmentRow>(a => new InventoryAdjustmentRow(
                     a.Id,
                     a.MedicineBatchId,
                     a.MedicineBatch != null && a.MedicineBatch.MedicineVariant != null && a.MedicineBatch.MedicineVariant.Medicine != null
@@ -63,8 +42,28 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
                     a.QuantityAfter,
                     a.Reason,
                     a.AdjustedBy,
-                    a.AdjustedAt)),
-            cancellationToken);
+                    a.AdjustedAt));
+
+        if (request.Type.HasValue)
+            spec.Where(a => a.Type == request.Type.Value);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var trimmed = request.Search.Trim();
+            spec.Where(a => a.Reason.Contains(trimmed));
+        }
+
+        spec.Order(request.SortBy?.ToLowerInvariant() switch
+        {
+            "quantity" => SortDir(a => a.QuantityChanged, request.SortDir),
+            _ => SortDir(a => a.AdjustedAt, request.SortDir)
+        });
+
+        var totalCount = await _repo.CountAsync(spec, cancellationToken);
+
+        spec.Page((page - 1) * pageSize, pageSize);
+
+        var rows = await _repo.ListAsync(spec, cancellationToken);
 
         var adjustedByIds = rows
             .Where(r => r.AdjustedBy.HasValue)
@@ -80,11 +79,10 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
         return Result<PagedList<InventoryAdjustmentDto>>.Success(items);
     }
 
-    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
-        IQueryable<TSource> source,
-        System.Linq.Expressions.Expression<Func<TSource, TKey>> keySelector,
+    private static Func<IQueryable<InventoryAdjustment>, IOrderedQueryable<InventoryAdjustment>> SortDir<TKey>(
+        System.Linq.Expressions.Expression<Func<InventoryAdjustment, TKey>> keySelector,
         string sortDir)
         => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? source.OrderByDescending(keySelector)
-            : source.OrderBy(keySelector);
+            ? q => q.OrderByDescending(keySelector)
+            : q => q.OrderBy(keySelector);
 }

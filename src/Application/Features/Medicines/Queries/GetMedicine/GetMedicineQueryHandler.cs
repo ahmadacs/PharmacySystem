@@ -1,7 +1,9 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
+using Domain.Entities.Medicines;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -9,17 +11,14 @@ namespace Application.Features.Medicines.Queries;
 
 public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, Result<MedicineDetailsDto>>
 {
-    private readonly IMedicineRepository _repo;
-    private readonly IAsyncQueryExecutor _executor;
+    private readonly IBaseRepository<Medicine> _repo;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public GetMedicineQueryHandler(
-        IMedicineRepository repo,
-        IAsyncQueryExecutor executor,
+        IBaseRepository<Medicine> repo,
         IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
-        _executor = executor;
         _localizer = localizer;
     }
 
@@ -27,10 +26,7 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var row = await _executor.SingleOrDefaultAsync(
-            _repo.Query()
-                .Where(m => m.Id == request.Id)
-                .Select(m => new MedicineDetailsRow(
+        var spec = new Specification<Medicine, MedicineDetailsRow>(m => new MedicineDetailsRow(
                     m.Id,
                     m.Name,
                     m.NameAr,
@@ -73,8 +69,10 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
                                     b.CreatedAt,
                                     0))
                                 .ToList()))
-                        .ToList())),
-            cancellationToken);
+                        .ToList()));
+        spec.Where(m => m.Id == request.Id);
+
+        var row = await _repo.GetAsync(spec, cancellationToken);
 
         if (row is null)
             return Result<MedicineDetailsDto>.Failure(_localizer["ResourceNotFound", "Medicine", request.Id].Value, 404);

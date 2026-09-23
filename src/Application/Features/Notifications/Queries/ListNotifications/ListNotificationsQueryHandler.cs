@@ -1,9 +1,11 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Notifications.Dtos;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
+using Domain.Entities.Notifications;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -11,16 +13,14 @@ namespace Application.Features.Notifications.Queries;
 
 public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotificationsQuery, Result<PagedList<NotificationListItemDto>>>
 {
-    private readonly INotificationRepository _notifications;
+    private readonly IBaseRepository<Notification> _notifications;
     private readonly ICurrentUserService _currentUser;
-    private readonly IAsyncQueryExecutor _executor;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public ListNotificationsQueryHandler(INotificationRepository notifications, ICurrentUserService currentUser, IAsyncQueryExecutor executor, IStringLocalizer<SharedResource> localizer)
+    public ListNotificationsQueryHandler(IBaseRepository<Notification> notifications, ICurrentUserService currentUser, IStringLocalizer<SharedResource> localizer)
     {
         _notifications = notifications;
         _currentUser = currentUser;
-        _executor = executor;
         _localizer = localizer;
     }
 
@@ -32,20 +32,20 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
         if (authFailure is not null)
             return authFailure;
 
-        var query = _notifications.Query().Where(n => n.UserId == userId);
-        if (request.IsRead.HasValue)
-            query = query.Where(n => n.IsRead == request.IsRead.Value);
-
-        var ordered = query.OrderByDescending(n => n.CreatedAt);
-
-        var totalCount = await _executor.CountAsync(ordered, cancellationToken);
-
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize(200);
 
-        var rows = await _executor.ToListAsync(
-            ordered.Skip((page - 1) * pageSize).Take(pageSize),
-            cancellationToken);
+        var spec = new Specification<Notification, Notification>(n => n);
+        spec.Where(n => n.UserId == userId);
+        if (request.IsRead.HasValue)
+            spec.Where(n => n.IsRead == request.IsRead.Value);
+        spec.Order(q => q.OrderByDescending(n => n.CreatedAt));
+
+        var totalCount = await _notifications.CountAsync(spec, cancellationToken);
+
+        spec.Page((page - 1) * pageSize, pageSize);
+
+        var rows = await _notifications.ListAsync(spec, cancellationToken);
 
         var items = rows
             .Select(n => n.ToListItemDto())

@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Security;
+using Application.Common.Specifications;
 using Application.Features.Prescriptions.Common;
 using Domain.Entities.Prescriptions;
 using Domain.Exceptions;
@@ -18,12 +19,12 @@ public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
     private readonly ICurrentUserService _currentUser;
 
     public PrescriptionOwnershipBehavior(
-        IPrescriptionRepository prescriptions,
+        IBaseRepository<Prescription> prescriptions,
         IResourceAuthorizationService resourceAuth,
         ICurrentUserService currentUser)
     {
@@ -39,7 +40,9 @@ public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
     {
         if (request is IOwnedPrescriptionRequest owned)
         {
-            var prescription = await _prescriptions.GetByIdAsync(owned.PrescriptionId, cancellationToken)
+            var byIdSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
+            byIdSpec.Where(p => p.Id == owned.PrescriptionId);
+            var prescription = await _prescriptions.GetAsync(byIdSpec, cancellationToken)
                 ?? throw new EntityNotFoundException(typeof(Prescription), owned.PrescriptionId);
 
             try

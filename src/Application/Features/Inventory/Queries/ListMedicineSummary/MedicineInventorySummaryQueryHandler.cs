@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -10,13 +11,11 @@ namespace Application.Features.Inventory.Queries;
 public sealed class MedicineInventorySummaryQueryHandler
     : IRequestHandler<MedicineInventorySummaryQuery, Result<PagedList<MedicineInventorySummaryDto>>>
 {
-    private readonly IMedicineRepository _repo;
-    private readonly IAsyncQueryExecutor _executor;
+    private readonly IBaseRepository<Medicine> _repo;
 
-    public MedicineInventorySummaryQueryHandler(IMedicineRepository repo, IAsyncQueryExecutor executor)
+    public MedicineInventorySummaryQueryHandler(IBaseRepository<Medicine> repo)
     {
         _repo = repo;
-        _executor = executor;
     }
 
     public async Task<Result<PagedList<MedicineInventorySummaryDto>>> Handle(
@@ -25,43 +24,10 @@ public sealed class MedicineInventorySummaryQueryHandler
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        IQueryable<Medicine> data = _repo.Query();
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            var search = request.Search.Trim();
-            data = data.Where(m =>
-                m.Name.Contains(search) ||
-                (m.NameAr != null && m.NameAr.Contains(search)) ||
-                (m.GenericName != null && m.GenericName.Name.Contains(search)) ||
-                (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)));
-        }
-
-        data = request.StockStatus?.ToLowerInvariant() switch
-        {
-            "instock" or "in_stock" => data.Where(HasStock(asOf)).Where(HasNoLowVariant(asOf)),
-            "low" or "lowstock" or "low_stock" => data.Where(HasStock(asOf)).Where(HasLowVariant(asOf)),
-            "out" or "outofstock" or "out_of_stock" => data.Where(HasNoStock(asOf)),
-            _ => data
-        };
-
-        var sorted = request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" or "available" or "totalquantity" => SortDir(data, TotalQuantity(asOf), request.SortDir),
-            "reorder" or "reorderlevel" => SortDir(data, ReorderLevelSum(), request.SortDir),
-            "nearestExpiry" or "expiry" => SortDir(data, NearestExpiry(asOf), request.SortDir),
-            "variantCount" or "variants" => SortDir(data, m => m.Variants.Count(v => v.IsActive), request.SortDir),
-            _ => SortDir(data, m => m.Name, request.SortDir)
-        };
-
-        var totalCount = await _executor.CountAsync(sorted, cancellationToken);
-
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize(100);
 
-        var rows = await _executor.ToListAsync(
-            sorted.Skip((page - 1) * pageSize).Take(pageSize)
-                .Select(m => new MedicineInventorySummaryRow(
+        var spec = new Specification<Medicine, MedicineInventorySummaryRow>(m => new MedicineInventorySummaryRow(
                     m.Id,
                     m.Name,
                     m.NameAr,
@@ -77,8 +43,45 @@ public sealed class MedicineInventorySummaryQueryHandler
                     m.Variants
                         .Min(v => v.Batches.Where(b => b.ExpiryDate >= asOf).Min(b => (DateOnly?)b.ExpiryDate)),
                     m.Variants
-                        .Sum(v => (int?)v.Batches.Count(b => b.ExpiryDate > asOf && b.QuantityAvailable.Value > 0)) ?? 0)),
-            cancellationToken);
+                        .Sum(v => (int?)v.Batches.Count(b => b.ExpiryDate > asOf && b.QuantityAvailable.Value > 0)) ?? 0));
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim();
+            spec.Where(m =>
+                m.Name.Contains(search) ||
+                (m.NameAr != null && m.NameAr.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.Name.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)));
+        }
+
+        switch (request.StockStatus?.ToLowerInvariant())
+        {
+            case "instock" or "in_stock":
+                spec.Where(HasStock(asOf)).Where(HasNoLowVariant(asOf));
+                break;
+            case "low" or "lowstock" or "low_stock":
+                spec.Where(HasStock(asOf)).Where(HasLowVariant(asOf));
+                break;
+            case "out" or "outofstock" or "out_of_stock":
+                spec.Where(HasNoStock(asOf));
+                break;
+        }
+
+        spec.Order(request.SortBy?.ToLowerInvariant() switch
+        {
+            "quantity" or "available" or "totalquantity" => SortDir(TotalQuantity(asOf), request.SortDir),
+            "reorder" or "reorderlevel" => SortDir(ReorderLevelSum(), request.SortDir),
+            "nearestExpiry" or "expiry" => SortDir(NearestExpiry(asOf), request.SortDir),
+            "variantCount" or "variants" => SortDir(m => m.Variants.Count(v => v.IsActive), request.SortDir),
+            _ => SortDir(m => m.Name, request.SortDir)
+        });
+
+        var totalCount = await _repo.CountAsync(spec, cancellationToken);
+
+        spec.Page((page - 1) * pageSize, pageSize);
+
+        var rows = await _repo.ListAsync(spec, cancellationToken);
 
         var items = rows
             .Select(r => r.ToDto())
@@ -117,11 +120,10 @@ public sealed class MedicineInventorySummaryQueryHandler
         => m => !m.Variants.Where(v => v.IsActive).Any(v =>
                 v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
 
-    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
-        IQueryable<TSource> source,
-        Expression<Func<TSource, TKey>> keySelector,
+    private static Func<IQueryable<Medicine>, IOrderedQueryable<Medicine>> SortDir<TKey>(
+        Expression<Func<Medicine, TKey>> keySelector,
         string sortDir)
         => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? source.OrderByDescending(keySelector)
-            : source.OrderBy(keySelector);
+            ? q => q.OrderByDescending(keySelector)
+            : q => q.OrderBy(keySelector);
 }

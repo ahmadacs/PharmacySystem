@@ -1,12 +1,5 @@
 namespace Domain.Common;
 
-/// <summary>
-/// Canonical Saudi mobile handling. The canonical stored/searched form is
-/// always <c>+9665XXXXXXXX</c>, so <c>05XXXXXXXX</c>, <c>5XXXXXXXX</c>,
-/// <c>009665XXXXXXXX</c> and <c>+9665XXXXXXXX</c> all resolve to the same
-/// patient instead of creating duplicates. BCL only (Domain rule).
-/// Non-Saudi-looking input is returned cleaned but untouched.
-/// </summary>
 public static class PhoneNumbers
 {
     public static string NormalizeSaudiPhone(string? phoneNumber)

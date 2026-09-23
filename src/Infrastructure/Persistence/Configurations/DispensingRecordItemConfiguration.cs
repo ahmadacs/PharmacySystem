@@ -17,7 +17,7 @@ public class DispensingRecordItemConfiguration : IEntityTypeConfiguration<Dispen
         });
 
         builder.HasOne(i => i.MedicineBatch)
-            .WithMany()
+            .WithMany(b => b.DispensingItems)
             .HasForeignKey(i => i.MedicineBatchId)
             .OnDelete(DeleteBehavior.Restrict);
 

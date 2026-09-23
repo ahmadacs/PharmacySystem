@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -9,11 +10,11 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class DeleteMedicineCommandHandler : IRequestHandler<DeleteMedicineCommand, Result>
 {
-    private readonly IMedicineRepository _repo;
+    private readonly IBaseRepository<Medicine> _repo;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public DeleteMedicineCommandHandler(IMedicineRepository repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public DeleteMedicineCommandHandler(IBaseRepository<Medicine> repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;
@@ -22,7 +23,9 @@ public sealed class DeleteMedicineCommandHandler : IRequestHandler<DeleteMedicin
 
     public async Task<Result> Handle(DeleteMedicineCommand request, CancellationToken cancellationToken)
     {
-        var medicine = await _repo.GetByIdAsync(request.Id, cancellationToken);
+        var byIdSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
+        byIdSpec.Where(m => m.Id == request.Id);
+        var medicine = await _repo.GetAsync(byIdSpec, cancellationToken);
         if (medicine is null)
             return Result.Failure(_localizer["ResourceNotFound", "Medicine", request.Id].Value, 404);
 

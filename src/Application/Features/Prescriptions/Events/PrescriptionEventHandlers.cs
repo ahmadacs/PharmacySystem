@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Application.Common.Interfaces;
 using Application.Common.Security;
+using Application.Common.Specifications;
+using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using Domain.Events;
 using MediatR;
@@ -38,12 +40,12 @@ public sealed record PrescriptionDispensedNotification(
 public sealed class PrescriptionCreatedNotificationHandler : INotificationHandler<PrescriptionCreatedNotification>
 {
     private readonly ILogger<PrescriptionCreatedNotificationHandler> _logger;
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
     private readonly INotificationService _notifications;
 
     public PrescriptionCreatedNotificationHandler(
         ILogger<PrescriptionCreatedNotificationHandler> logger,
-        IPrescriptionRepository prescriptions,
+        IBaseRepository<Prescription> prescriptions,
         INotificationService notifications)
     {
         _logger = logger;
@@ -56,18 +58,17 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
         _logger.LogInformation("Prescription {PrescriptionId} created at {OccurredAtUtc}",
             notification.PrescriptionId, notification.OccurredAtUtc);
 
-        var prescription = await _prescriptions.GetByIdWithItemsAndDoctorAsync(notification.PrescriptionId, cancellationToken);
-        if (prescription is null)
+        var row = await _prescriptions.GetAsync(NotificationRowSpecs.ById(notification.PrescriptionId), cancellationToken);
+        if (row is null)
             return;
 
-        var patientName = prescription.Patient?.FullName ?? "Unknown patient";
         var create = new NotificationCreate(
             NotificationType.PrescriptionCreated,
             "New prescription",
-            $"A new prescription for {patientName} ({prescription.Items.Count} item(s)) has been created.",
-            Data: JsonSerializer.Serialize(new { prescriptionId = prescription.Id }),
+            $"A new prescription for {row.PatientName} ({row.ItemCount} item(s)) has been created.",
+            Data: JsonSerializer.Serialize(new { prescriptionId = row.Id }),
             LocalizationKey: "notifications.newPrescription",
-            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName, count = prescription.Items.Count }));
+            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName = row.PatientName, count = row.ItemCount }));
 
         await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
     }
@@ -116,12 +117,12 @@ public sealed class PrescriptionRefilledNotificationHandler : INotificationHandl
 public sealed class PrescriptionDispensedNotificationHandler : INotificationHandler<PrescriptionDispensedNotification>
 {
     private readonly ILogger<PrescriptionDispensedNotificationHandler> _logger;
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
     private readonly INotificationService _notifications;
 
     public PrescriptionDispensedNotificationHandler(
         ILogger<PrescriptionDispensedNotificationHandler> logger,
-        IPrescriptionRepository prescriptions,
+        IBaseRepository<Prescription> prescriptions,
         INotificationService notifications)
     {
         _logger = logger;
@@ -135,23 +136,43 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
             "Prescription {PrescriptionId} dispensed ({TotalDispensedQuantity} units) at {OccurredAtUtc}",
             notification.PrescriptionId, notification.TotalDispensedQuantity, notification.OccurredAtUtc);
 
-        var prescription = await _prescriptions.GetByIdWithItemsAndDoctorAsync(notification.PrescriptionId, cancellationToken);
-        if (prescription is null)
+        var row = await _prescriptions.GetAsync(NotificationRowSpecs.ById(notification.PrescriptionId), cancellationToken);
+        if (row is null)
             return;
 
-        var patientName = prescription.Patient?.FullName ?? "Unknown patient";
         var create = new NotificationCreate(
             NotificationType.PrescriptionDispensed,
             "Prescription dispensed",
-            $"Prescription for {patientName} has been dispensed.",
-            Data: JsonSerializer.Serialize(new { prescriptionId = prescription.Id }),
+            $"Prescription for {row.PatientName} has been dispensed.",
+            Data: JsonSerializer.Serialize(new { prescriptionId = row.Id }),
             LocalizationKey: "notifications.dispensed",
-            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName }));
+            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName = row.PatientName }));
 
         await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
 
-        var doctorUserId = prescription.Doctor?.UserId;
-        if (doctorUserId.HasValue)
-            await _notifications.SendToUserAsync(doctorUserId.Value, create, cancellationToken);
+        if (row.DoctorUserId.HasValue)
+            await _notifications.SendToUserAsync(row.DoctorUserId.Value, create, cancellationToken);
     }
+}
+
+/// <summary>
+/// Read-only projection shared by the notification handlers: exactly the
+/// fields notifications need (patient display name with the same
+/// "Unknown patient" fallback, item count, doctor user id). Single query,
+/// no Include — navigations inside a Select need none.
+/// </summary>
+file static class NotificationRowSpecs
+{
+    public static Specification<Prescription, NotificationPrescriptionRow> ById(Guid prescriptionId)
+    {
+        var spec = new Specification<Prescription, NotificationPrescriptionRow>(p => new NotificationPrescriptionRow(
+            p.Id,
+            p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName).Trim() : "Unknown patient",
+            p.Items.Count(),
+            p.Doctor != null ? (Guid?)p.Doctor.UserId : null));
+        spec.Where(p => p.Id == prescriptionId);
+        return spec;
+    }
+
+    public sealed record NotificationPrescriptionRow(Guid Id, string PatientName, int ItemCount, Guid? DoctorUserId);
 }

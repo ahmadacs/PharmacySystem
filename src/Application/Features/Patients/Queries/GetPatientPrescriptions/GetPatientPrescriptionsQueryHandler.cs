@@ -1,6 +1,8 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Patients.Dtos;
+using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using MediatR;
 
@@ -9,15 +11,11 @@ namespace Application.Features.Patients.Queries.GetPatientPrescriptions;
 public sealed class GetPatientPrescriptionsQueryHandler
     : IRequestHandler<GetPatientPrescriptionsQuery, Result<IReadOnlyList<PatientPrescriptionHistoryDto>>>
 {
-    private readonly IPrescriptionRepository _prescriptions;
-    private readonly IAsyncQueryExecutor _executor;
+    private readonly IBaseRepository<Prescription> _prescriptions;
 
-    public GetPatientPrescriptionsQueryHandler(
-        IPrescriptionRepository prescriptions,
-        IAsyncQueryExecutor executor)
+    public GetPatientPrescriptionsQueryHandler(IBaseRepository<Prescription> prescriptions)
     {
         _prescriptions = prescriptions;
-        _executor = executor;
     }
 
     public async Task<Result<IReadOnlyList<PatientPrescriptionHistoryDto>>> Handle(
@@ -27,13 +25,7 @@ public sealed class GetPatientPrescriptionsQueryHandler
         var today = DateOnly.FromDateTime(DateTime.Today);
         var cutoff = today.AddDays(-lookback);
 
-        var rows = await _executor.ToListAsync(
-            _prescriptions.Query()
-                .Where(p => p.PatientId == request.PatientId)
-                .Where(p => p.Status != PrescriptionStatus.Cancelled && p.Status != PrescriptionStatus.Expired)
-                .Where(p => p.IssuedDate >= cutoff)
-                .OrderByDescending(p => p.IssuedDate)
-                .Select(p => new PatientPrescriptionHistoryRow(
+        var spec = new Specification<Prescription, PatientPrescriptionHistoryRow>(p => new PatientPrescriptionHistoryRow(
                     p.Id,
                     p.IssuedDate,
                     p.Status,
@@ -56,8 +48,13 @@ public sealed class GetPatientPrescriptionsQueryHandler
                             i.RefillsUsed,
                             i.RefillIntervalDays,
                             i.LastDispensedAt))
-                        .ToList())),
-            cancellationToken);
+                        .ToList()));
+        spec.Where(p => p.PatientId == request.PatientId);
+        spec.Where(p => p.Status != PrescriptionStatus.Cancelled && p.Status != PrescriptionStatus.Expired);
+        spec.Where(p => p.IssuedDate >= cutoff);
+        spec.Order(q => q.OrderByDescending(p => p.IssuedDate));
+
+        var rows = await _prescriptions.ListAsync(spec, cancellationToken);
 
         return Result<IReadOnlyList<PatientPrescriptionHistoryDto>>.Success(
             rows.Select(r => r.ToDto(cutoff)).ToList());

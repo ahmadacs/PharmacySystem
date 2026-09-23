@@ -1,8 +1,12 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
+using Application.Common.Specifications;
 using Application.Features.Dashboard.Dtos;
 using Application.Features.Prescriptions.Dtos;
+using Domain.Entities.Dispensing;
+using Domain.Entities.Medicines;
+using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using MediatR;
 
@@ -10,23 +14,29 @@ namespace Application.Features.Dashboard.Queries.GetDashboardSummary;
 
 public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSummaryQuery, Result<DashboardSummaryDto>>
 {
-    private readonly IPrescriptionRepository _prescriptions;
-    private readonly IMedicineRepository _medicines;
+    /// <summary>Presentation decision owned by the Application layer.</summary>
+    private const int LatestTake = 5;
+
+    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IBaseRepository<DispensingRecord> _dispensing;
+    private readonly IBaseRepository<MedicineVariant> _variants;
+    private readonly IBaseRepository<MedicineBatch> _batches;
     private readonly IStaffService _staff;
-    private readonly IAsyncQueryExecutor _executor;
     private readonly NotificationOptions _notificationOptions;
 
     public GetDashboardSummaryQueryHandler(
-        IPrescriptionRepository prescriptions,
-        IMedicineRepository medicines,
+        IBaseRepository<Prescription> prescriptions,
+        IBaseRepository<DispensingRecord> dispensing,
+        IBaseRepository<MedicineVariant> variants,
+        IBaseRepository<MedicineBatch> batches,
         IStaffService staff,
-        IAsyncQueryExecutor executor,
         NotificationOptions notificationOptions)
     {
         _prescriptions = prescriptions;
-        _medicines = medicines;
+        _dispensing = dispensing;
+        _variants = variants;
+        _batches = batches;
         _staff = staff;
-        _executor = executor;
         _notificationOptions = notificationOptions;
     }
 
@@ -38,90 +48,57 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
         var asOf = DateOnly.FromDateTime(now);
         var expiringLimit = asOf.AddDays(_notificationOptions.ExpiryWarningDays);
 
-        // Raw sets only: repositories expose data, every rule below lives here
-        // in the Application layer (same predicates as the list-query handlers).
         // NOTE: no IsDeleted guard anywhere below — the EF global query filter
         // (ApplicationDbContext.ApplySoftDeleteFilters) already excludes
         // soft-deleted rows from every database query.
-        var dispensing = _prescriptions.QueryDispensingRecords();
-        var prescriptions = _prescriptions.Query();
-        var medicines = _medicines.Query();
-        var batches = _medicines.QueryBatches();
+        //
+        // Pure specs: every counter and list below is an independent spec query
+        // (no bespoke repository method, no DTO built inside any repo).
+        // Sequential awaits are deliberate — one scoped DbContext is shared and
+        // EF Core does not allow concurrent operations on it, so Task.WhenAll
+        // over specs would throw. Each query is a tiny indexed COUNT/TOP read.
+        // An empty database needs no fallback branch: every count below is
+        // naturally 0 and both lists naturally empty.
 
-        // Anchor: one prescription row, so every aggregate below runs as a
-        // subquery of a SINGLE SELECT (EF needs a keyed parent to shape the
-        // TOP(5) collection subqueries). Pure plumbing: no thresholds, no statuses.
-        // Empty-prescriptions case is handled by the fallback below.
-        var anchor = prescriptions.Take(1);
+        // Same predicate as DispensingRecordListQueryHandler (inclusive range).
+        var dispensedTodaySpec = new Specification<DispensingRecord, DispensingRecord>(r => r);
+        dispensedTodaySpec.Where(r => r.DispensedAt >= today && r.DispensedAt <= tomorrow);
+        var dispensedToday = await _dispensing.CountAsync(dispensedTodaySpec, cancellationToken);
 
-        // Query 1/2: all counters as scalar subqueries + both TOP(5) lists.
+        var pendingSpec = new Specification<Prescription, Prescription>(p => p);
+        pendingSpec.Where(p => p.Status == PrescriptionStatus.Pending);
+        var pending = await _prescriptions.CountAsync(pendingSpec, cancellationToken);
+
+        var createdTodaySpec = new Specification<Prescription, Prescription>(p => p);
+        createdTodaySpec.Where(p => p.IssuedDate == asOf);
+        var createdToday = await _prescriptions.CountAsync(createdTodaySpec, cancellationToken);
+
+        var fragmentedSpec = new Specification<Prescription, Prescription>(p => p);
+        fragmentedSpec.Where(p => p.Status == PrescriptionStatus.PartiallyDispensed);
+        var fragmented = await _prescriptions.CountAsync(fragmentedSpec, cancellationToken);
+
+        // Same rule as ListLowStockQueryHandler: available non-expired stock at
+        // or below the variant reorder level.
+        var lowStockSpec = new Specification<MedicineVariant, MedicineVariant>(v => v);
+        lowStockSpec.Where(v => v.IsActive && v.Medicine!.IsActive);
+        lowStockSpec.Where(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
+        var lowStock = await _variants.CountAsync(lowStockSpec, cancellationToken);
+
+        // Same window as the near-expiry domain rule (NotificationOptions.ExpiryWarningDays).
+        var expiringSpec = new Specification<MedicineBatch, MedicineBatch>(b => b);
+        expiringSpec.Where(b => b.ExpiryDate > asOf && b.ExpiryDate <= expiringLimit);
+        var expiringSoon = await _batches.CountAsync(expiringSpec, cancellationToken);
+
         // Doctor names stay out: Identity tables are invisible to this layer,
         // so names resolve with ONE batched lookup below (no N+1).
-        var snapshot = await _executor.SingleOrDefaultAsync(
-            from _ in anchor
-            select new DashboardSummarySnapshot(
-                // Same predicate as DispensingRecordListQueryHandler (inclusive range).
-                DispensedToday: dispensing
-                    .Count(r => r.DispensedAt >= today && r.DispensedAt <= tomorrow),
-                Pending: prescriptions
-                    .Count(p => p.Status == PrescriptionStatus.Pending),
-                CreatedToday: prescriptions
-                    .Count(p => p.IssuedDate == asOf),
-                // Same rule as ListLowStockQueryHandler: available non-expired
-                // stock at or below the variant reorder level.
-                LowStock: medicines
-                    .Where(m => m.IsActive)
-                    .SelectMany(m => m.Variants
-                        .Where(v => v.IsActive)
-                        .Select(v => new
-                        {
-                            Available = v.Batches
-                                .Where(b => b.ExpiryDate > asOf)
-                                .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
-                            ReorderLevel = v.ReorderLevel.Value
-                        }))
-                    .Count(x => x.Available <= x.ReorderLevel),
-                // Same window as the near-expiry domain rule (NotificationOptions.ExpiryWarningDays).
-                ExpiringSoon: batches
-                    .Count(b => b.ExpiryDate > asOf && b.ExpiryDate <= expiringLimit),
-                Fragmented: prescriptions
-                    .Count(p => p.Status == PrescriptionStatus.PartiallyDispensed),
-                // Written out twice because EF cannot translate a helper-method
-                // call inside the expression tree.
-                LatestPending: (from p in prescriptions
-                                where p.Status == PrescriptionStatus.Pending
-                                orderby p.IssuedDate descending
-                                select new DashboardPrescriptionRow(
-                                    p.Id,
-                                    p.DoctorId,
-                                    string.Empty,
-                                    p.Patient == null ? string.Empty : (p.Patient.FirstName + " " + p.Patient.LastName).Trim(),
-                                    p.Patient != null ? p.Patient.DateOfBirth : default,
-                                    p.Patient != null ? p.Patient.PhoneNumber : null,
-                                    p.IssuedDate,
-                                    p.Status,
-                                    p.Items.Count))
-                    .Take(5)
-                    .ToList(),
-                LatestFragmented: (from p in prescriptions
-                                   where p.Status == PrescriptionStatus.PartiallyDispensed
-                                   orderby p.IssuedDate descending
-                                   select new DashboardPrescriptionRow(
-                                       p.Id,
-                                       p.DoctorId,
-                                       string.Empty,
-                                       p.Patient == null ? string.Empty : (p.Patient.FirstName + " " + p.Patient.LastName).Trim(),
-                                       p.Patient != null ? p.Patient.DateOfBirth : default,
-                                       p.Patient != null ? p.Patient.PhoneNumber : null,
-                                       p.IssuedDate,
-                                       p.Status,
-                                       p.Items.Count))
-                    .Take(5)
-                    .ToList()),
-            cancellationToken)
-            ?? await PrescriptionlessFallbackAsync(cancellationToken);
+        var latestPending = await _prescriptions.ListAsync(LatestSpec(PrescriptionStatus.Pending), cancellationToken);
+        var latestFragmented = await _prescriptions.ListAsync(LatestSpec(PrescriptionStatus.PartiallyDispensed), cancellationToken);
 
-        // Query 2/2: every distinct doctor of both lists with one WHERE IN.
+        var snapshot = new DashboardSummarySnapshot(
+            dispensedToday, pending, createdToday, lowStock, expiringSoon, fragmented,
+            latestPending, latestFragmented);
+
+        // Every distinct doctor of both lists with one WHERE IN.
         var doctorIds = snapshot.LatestPending.Select(r => r.DoctorId)
             .Concat(snapshot.LatestFragmented.Select(r => r.DoctorId))
             .Distinct()
@@ -134,41 +111,22 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
             now));
     }
 
-    /// <summary>
-    /// Only runs when the prescriptions table is empty (fresh/wiped database).
-    /// Every prescription-derived number is 0 by construction and dispensing is
-    /// 0 (records cannot exist without a prescription FK), so only stock/expiry
-    /// are computed — anchored on medicines. If that table is empty too, all
-    /// counters are genuinely 0: no medicines means no variants (low-stock 0)
-    /// and no batches (FK chain), hence expiring-soon 0.
-    /// </summary>
-    private async Task<DashboardSummarySnapshot> PrescriptionlessFallbackAsync(CancellationToken cancellationToken)
+    private static Specification<Prescription, DashboardPrescriptionRow> LatestSpec(PrescriptionStatus status)
     {
-        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
-        var expiringLimit = asOf.AddDays(_notificationOptions.ExpiryWarningDays);
-
-        var rest = await _executor.SingleOrDefaultAsync(
-            from _ in _medicines.Query().Take(1)
-            select new
-            {
-                LowStock = _medicines.Query()
-                    .Where(m => m.IsActive)
-                    .SelectMany(m => m.Variants
-                        .Where(v => v.IsActive)
-                        .Select(v => new
-                        {
-                            Available = v.Batches
-                                .Where(b => b.ExpiryDate > asOf)
-                                .Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
-                            ReorderLevel = v.ReorderLevel.Value
-                        }))
-                    .Count(x => x.Available <= x.ReorderLevel),
-                ExpiringSoon = _medicines.QueryBatches()
-                    .Count(b => b.ExpiryDate > asOf && b.ExpiryDate <= expiringLimit)
-            },
-            cancellationToken);
-
-        return new DashboardSummarySnapshot(0, 0, 0, rest?.LowStock ?? 0, rest?.ExpiringSoon ?? 0, 0, [], []);
+        var spec = new Specification<Prescription, DashboardPrescriptionRow>(p => new DashboardPrescriptionRow(
+            p.Id,
+            p.DoctorId,
+            string.Empty,
+            p.Patient == null ? string.Empty : (p.Patient.FirstName + " " + p.Patient.LastName).Trim(),
+            p.Patient != null ? p.Patient.DateOfBirth : default,
+            p.Patient != null ? p.Patient.PhoneNumber : null,
+            p.IssuedDate,
+            p.Status,
+            p.Items.Count()));
+        spec.Where(p => p.Status == status);
+        spec.Order(q => q.OrderByDescending(p => p.IssuedDate));
+        spec.Page(0, LatestTake);
+        return spec;
     }
 
     private static IReadOnlyList<PrescriptionListItemDto> Map(

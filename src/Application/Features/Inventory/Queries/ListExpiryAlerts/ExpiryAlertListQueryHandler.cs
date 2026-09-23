@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -11,13 +12,11 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
     private const int CriticalWithinDays = 30;
     private const int WarningWithinDays = 90;
 
-    private readonly IMedicineRepository _repo;
-    private readonly IAsyncQueryExecutor _executor;
+    private readonly IBaseRepository<MedicineBatch> _repo;
 
-    public ExpiryAlertListQueryHandler(IMedicineRepository repo, IAsyncQueryExecutor executor)
+    public ExpiryAlertListQueryHandler(IBaseRepository<MedicineBatch> repo)
     {
         _repo = repo;
-        _executor = executor;
     }
 
     public async Task<Result<PagedList<ExpiryAlertDto>>> Handle(ExpiryAlertListQuery request, CancellationToken cancellationToken)
@@ -25,37 +24,10 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.Status, asOf);
 
-        IQueryable<MedicineBatch> data = _repo.QueryBatches();
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            var search = request.Search.Trim();
-            data = data.Where(b =>
-                b.BatchNumber.Contains(search) ||
-                b.MedicineVariant!.Medicine!.Name.Contains(search));
-        }
-
-        if (expiryFrom.HasValue)
-            data = data.Where(b => b.ExpiryDate >= expiryFrom.Value);
-
-        if (expiryTo.HasValue)
-            data = data.Where(b => b.ExpiryDate < expiryTo.Value);
-
-        var sorted = request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" or "remaining" => SortDir(data, b => b.QuantityAvailable.Value, request.SortDir),
-            "batch" or "batchnumber" => SortDir(data, b => b.BatchNumber, request.SortDir),
-            _ => SortDir(data, b => b.ExpiryDate, request.SortDir)
-        };
-
-        var totalCount = await _executor.CountAsync(sorted, cancellationToken);
-
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize(100);
 
-        var rows = await _executor.ToListAsync(
-            sorted.Skip((page - 1) * pageSize).Take(pageSize)
-                .Select(b => new ExpiryAlertRow(
+        var spec = new Specification<MedicineBatch, ExpiryAlertRow>(b => new ExpiryAlertRow(
                     b.Id,
                     b.MedicineVariant!.Medicine!.Name,
                     b.MedicineVariant!.Medicine!.NameAr,
@@ -65,8 +37,34 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
                     b.BatchNumber,
                     b.ExpiryDate,
                     b.ExpiryDate.DayNumber - asOf.DayNumber,
-                    b.QuantityAvailable.Value)),
-            cancellationToken);
+                    b.QuantityAvailable.Value));
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim();
+            spec.Where(b =>
+                b.BatchNumber.Contains(search) ||
+                b.MedicineVariant!.Medicine!.Name.Contains(search));
+        }
+
+        if (expiryFrom.HasValue)
+            spec.Where(b => b.ExpiryDate >= expiryFrom.Value);
+
+        if (expiryTo.HasValue)
+            spec.Where(b => b.ExpiryDate < expiryTo.Value);
+
+        spec.Order(request.SortBy?.ToLowerInvariant() switch
+        {
+            "quantity" or "remaining" => SortDir(b => b.QuantityAvailable.Value, request.SortDir),
+            "batch" or "batchnumber" => SortDir(b => b.BatchNumber, request.SortDir),
+            _ => SortDir(b => b.ExpiryDate, request.SortDir)
+        });
+
+        var totalCount = await _repo.CountAsync(spec, cancellationToken);
+
+        spec.Page((page - 1) * pageSize, pageSize);
+
+        var rows = await _repo.ListAsync(spec, cancellationToken);
 
         var items = rows
             .Select(r => r.ToDto())
@@ -85,11 +83,10 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
             _ => (null, null)
         };
 
-    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
-        IQueryable<TSource> source,
-        System.Linq.Expressions.Expression<Func<TSource, TKey>> keySelector,
+    private static Func<IQueryable<MedicineBatch>, IOrderedQueryable<MedicineBatch>> SortDir<TKey>(
+        System.Linq.Expressions.Expression<Func<MedicineBatch, TKey>> keySelector,
         string sortDir)
         => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? source.OrderByDescending(keySelector)
-            : source.OrderBy(keySelector);
+            ? q => q.OrderByDescending(keySelector)
+            : q => q.OrderBy(keySelector);
 }

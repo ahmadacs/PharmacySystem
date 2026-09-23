@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -8,51 +9,21 @@ namespace Application.Features.Medicines.Queries;
 
 public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQuery, Result<PagedList<MedicineListItemDto>>>
 {
-    private readonly IMedicineRepository _repo;
-    private readonly IAsyncQueryExecutor _executor;
+    private readonly IBaseRepository<Medicine> _repo;
 
-    public ListMedicinesQueryHandler(IMedicineRepository repo, IAsyncQueryExecutor executor)
+    public ListMedicinesQueryHandler(IBaseRepository<Medicine> repo)
     {
         _repo = repo;
-        _executor = executor;
     }
 
     public async Task<Result<PagedList<MedicineListItemDto>>> Handle(ListMedicinesQuery request, CancellationToken cancellationToken)
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        IQueryable<Medicine> baseQuery = _repo.Query();
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize(100);
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            var search = request.Search.Trim();
-            baseQuery = baseQuery.Where(m =>
-                m.Name.Contains(search) ||
-                (m.NameAr != null && m.NameAr.Contains(search)) ||
-                (m.GenericName != null && m.GenericName.Name.Contains(search)) ||
-                (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)) ||
-                m.CategoryEnum.ToString().Contains(search));
-        }
-
-        if (request.CategoryId.HasValue)
-            baseQuery = baseQuery.Where(m => (int)m.CategoryEnum == request.CategoryId.Value);
-
-        if (request.Form.HasValue)
-            baseQuery = baseQuery.Where(m => m.Variants.Any(v => v.Form == request.Form.Value));
-
-        if (request.IsActive.HasValue)
-            baseQuery = baseQuery.Where(m => m.IsActive == request.IsActive.Value);
-
-        baseQuery = request.SortBy?.ToLowerInvariant() switch
-        {
-            "createdat" => SortDir(baseQuery, m => m.CreatedAt, request.SortDir),
-            "category" => SortDir(baseQuery, m => m.CategoryEnum, request.SortDir),
-            "form" => SortDir(baseQuery, m => m.Variants.OrderBy(v => v.Form).Select(v => v.Form).FirstOrDefault(), request.SortDir),
-            _ => SortDir(baseQuery, m => m.Name, request.SortDir)
-        };
-
-        var projected = baseQuery
-            .Select(m => new MedicineRow(
+        var spec = new Specification<Medicine, MedicineRow>(m => new MedicineRow(
                 m.Id,
                 m.Name,
                 m.NameAr,
@@ -78,14 +49,40 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
                     .ToList(),
                 m.Variants.Count(v => v.IsActive)));
 
-        var totalCount = await _executor.CountAsync(projected, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var search = request.Search.Trim();
+            spec.Where(m =>
+                m.Name.Contains(search) ||
+                (m.NameAr != null && m.NameAr.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.Name.Contains(search)) ||
+                (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)) ||
+                m.CategoryEnum.ToString().Contains(search));
+        }
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
+        if (request.CategoryId.HasValue)
+            spec.Where(m => (int)m.CategoryEnum == request.CategoryId.Value);
 
-        var rows = await _executor.ToListAsync(
-            projected.Skip((page - 1) * pageSize).Take(pageSize),
-            cancellationToken);
+        if (request.Form.HasValue)
+            spec.Where(m => m.Variants.Any(v => v.Form == request.Form.Value));
+
+        if (request.IsActive.HasValue)
+            spec.Where(m => m.IsActive == request.IsActive.Value);
+
+        spec.Order(request.SortBy?.ToLowerInvariant() switch
+        {
+            "createdat" => SortDir(m => m.CreatedAt, request.SortDir),
+            "category" => SortDir(m => m.CategoryEnum, request.SortDir),
+            "form" => SortDir(m => m.Variants.OrderBy(v => v.Form).Select(v => v.Form).FirstOrDefault(), request.SortDir),
+            _ => SortDir(m => m.Name, request.SortDir)
+        });
+
+        // COUNT ignores ordering/paging/selector: same single COUNT query as before.
+        var totalCount = await _repo.CountAsync(spec, cancellationToken);
+
+        spec.Page((page - 1) * pageSize, pageSize);
+
+        var rows = await _repo.ListAsync(spec, cancellationToken);
 
         var items = rows
             .Select(r => r.ToDto())
@@ -94,11 +91,10 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
         return Result<PagedList<MedicineListItemDto>>.Success(items);
     }
 
-    private static IOrderedQueryable<TSource> SortDir<TSource, TKey>(
-        IQueryable<TSource> source,
-        System.Linq.Expressions.Expression<Func<TSource, TKey>> keySelector,
+    private static Func<IQueryable<Medicine>, IOrderedQueryable<Medicine>> SortDir<TKey>(
+        System.Linq.Expressions.Expression<Func<Medicine, TKey>> keySelector,
         string sortDir)
         => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? source.OrderByDescending(keySelector)
-            : source.OrderBy(keySelector);
+            ? q => q.OrderByDescending(keySelector)
+            : q => q.OrderBy(keySelector);
 }

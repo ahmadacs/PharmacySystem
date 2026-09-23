@@ -3,8 +3,11 @@ using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
+using Application.Common.Specifications;
 using Application.Features.Dispensing.Dtos;
 using Application.Resources;
+using Domain.Entities.Dispensing;
+using Domain.Entities.Medicines;
 using Domain.Entities.Prescriptions;
 using Domain.Services;
 using MediatR;
@@ -14,8 +17,12 @@ namespace Application.Features.Dispensing.Commands;
 
 public sealed class DispensePrescriptionCommandHandler : IRequestHandler<DispensePrescriptionCommand, Result<DispensePrescriptionResponse>>
 {
-    private readonly IPrescriptionRepository _prescriptions;
-    private readonly IMedicineRepository _medicines;
+    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IBaseRepository<PrescriptionItem> _items;
+    private readonly IBaseRepository<MedicineVariant> _variants;
+    private readonly IBaseRepository<MedicineBatch> _batches;
+    private readonly IBaseRepository<Medicine> _medicines;
+    private readonly IBaseRepository<DispensingRecord> _records;
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
@@ -24,8 +31,12 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public DispensePrescriptionCommandHandler(
-        IPrescriptionRepository prescriptions,
-        IMedicineRepository medicines,
+        IBaseRepository<Prescription> prescriptions,
+        IBaseRepository<PrescriptionItem> items,
+        IBaseRepository<MedicineVariant> variants,
+        IBaseRepository<MedicineBatch> batches,
+        IBaseRepository<Medicine> medicines,
+        IBaseRepository<DispensingRecord> records,
         ICurrentUserService currentUser,
         IStaffService staff,
         IUnitOfWork uow,
@@ -34,7 +45,11 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
+        _items = items;
+        _variants = variants;
+        _batches = batches;
         _medicines = medicines;
+        _records = records;
         _currentUser = currentUser;
         _staff = staff;
         _uow = uow;
@@ -46,9 +61,21 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
     public async Task<Result<DispensePrescriptionResponse>> Handle(DispensePrescriptionCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var prescription = await _prescriptions.GetByIdWithItemsAsync(req.PrescriptionId, cancellationToken);
+
+        // Tracked loads assembled by EF relationship fix-up (no Include):
+        // the root first, then each collection; fix-up populates
+        // prescription.Items, variant.Batches and variant.Medicine in memory.
+        // Everything below mutates, so all loads are tracked.
+        var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
+        prescriptionSpec.Where(p => p.Id == req.PrescriptionId);
+        var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
         if (prescription is null)
             return Result<DispensePrescriptionResponse>.Failure(_localizer["ResourceNotFound", nameof(Prescription), req.PrescriptionId].Value, 404);
+
+        var itemsSpec = new Specification<PrescriptionItem, PrescriptionItem>(i => i).Tracked();
+        itemsSpec.Where(i => i.PrescriptionId == req.PrescriptionId);
+        itemsSpec.Order(q => q.OrderBy(i => i.Id));
+        await _items.ListAsync(itemsSpec, cancellationToken);
 
         var authFailure = AuthGuard.RequireUserId<DispensePrescriptionResponse>(_currentUser, _localizer, out var userId);
         if (authFailure is not null)
@@ -60,7 +87,20 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         var pharmacistId = pharmacist.Value.Id;
 
         var variantIds = prescription.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
-        var variants = await _medicines.GetForDispensingAsync(variantIds, cancellationToken);
+
+        var variantsSpec = new Specification<MedicineVariant, MedicineVariant>(v => v).Tracked();
+        variantsSpec.Where(v => variantIds.Contains(v.Id));
+        var variants = await _variants.ListAsync(variantsSpec, cancellationToken);
+
+        var batchesSpec = new Specification<MedicineBatch, MedicineBatch>(b => b).Tracked();
+        batchesSpec.Where(b => variantIds.Contains(b.MedicineVariantId));
+        await _batches.ListAsync(batchesSpec, cancellationToken);
+
+        var medicineIds = variants.Select(v => v.MedicineId).Distinct().ToList();
+        var medicinesSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
+        medicinesSpec.Where(m => medicineIds.Contains(m.Id));
+        await _medicines.ListAsync(medicinesSpec, cancellationToken);
+
         var byId = variants.ToDictionary(m => m.Id);
 
         // Total units targeted by this dispense (remaining across pending items).
@@ -78,7 +118,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
             batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
         record.SetNotes(req.Notes);
-        _prescriptions.AddDispensingRecord(record);
+        _records.Add(record);
 
         await _uow.SaveChangesAsync(cancellationToken);
 

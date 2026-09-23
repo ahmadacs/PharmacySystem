@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
@@ -11,13 +12,15 @@ namespace Application.Features.Prescriptions.Commands;
 
 public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPrescriptionCommand, Result>
 {
-    private readonly IPrescriptionRepository _prescriptions;
+    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IBaseRepository<PrescriptionItem> _items;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public RefillPrescriptionCommandHandler(IPrescriptionRepository prescriptions, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public RefillPrescriptionCommandHandler(IBaseRepository<Prescription> prescriptions, IBaseRepository<PrescriptionItem> items, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
+        _items = items;
         _uow = uow;
         _localizer = localizer;
     }
@@ -27,9 +30,19 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         if (request.ItemIds is null || request.ItemIds.Count == 0)
             return Result.Failure(_localizer["RefillItemRequired"].Value, 400);
 
-        var prescription = await _prescriptions.GetByIdWithItemsAsync(request.Id, cancellationToken);
+        // Tracked root + tracked items: EF relationship fix-up assembles
+        // prescription.Items from the two loads (no Include). Both mutations
+        // below (RegisterItemsRefill) persist on SaveChanges.
+        var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
+        prescriptionSpec.Where(p => p.Id == request.Id);
+        var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
+
+        var itemsSpec = new Specification<PrescriptionItem, PrescriptionItem>(i => i).Tracked();
+        itemsSpec.Where(i => i.PrescriptionId == request.Id);
+        itemsSpec.Order(q => q.OrderBy(i => i.Id));
+        await _items.ListAsync(itemsSpec, cancellationToken);
 
         // Localized pre-checks mirror the domain rules: the domain still
         // re-validates as a safety net (English fallback, unreachable here).

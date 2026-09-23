@@ -1,6 +1,7 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Specifications;
 using Application.Features.Patients.Dtos;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
@@ -14,34 +15,31 @@ namespace Application.Features.Prescriptions.Commands;
 
 public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePrescriptionCommand, Result<Guid>>
 {
-    private readonly IPrescriptionRepository _prescriptions;
-    private readonly IMedicineRepository _medicines;
-    private readonly IPatientRepository _patients;
+    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IBaseRepository<MedicineVariant> _variants;
+    private readonly IBaseRepository<Patient> _patients;
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
-    private readonly IAsyncQueryExecutor _executor;
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CreatePrescriptionCommandHandler(
-        IPrescriptionRepository prescriptions,
-        IMedicineRepository medicines,
-        IPatientRepository patients,
+        IBaseRepository<Prescription> prescriptions,
+        IBaseRepository<MedicineVariant> variants,
+        IBaseRepository<Patient> patients,
         ICurrentUserService currentUser,
         IStaffService staff,
         IUnitOfWork uow,
-        IAsyncQueryExecutor executor,
         IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
-        _medicines = medicines;
+        _variants = variants;
         _patients = patients;
         _currentUser = currentUser;
         _staff = staff;
         _uow = uow;
-        _executor = executor;
         _attachments = attachments;
         _localizer = localizer;
     }
@@ -64,7 +62,9 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             var prescription = req.ToEntity(doctorId.Value, patient.Id);
 
         var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
-        var existingVariants = await _medicines.GetVariantsByIdsAsync(variantIds, cancellationToken);
+        var variantsSpec = new Specification<MedicineVariant, MedicineVariant>(v => v);
+        variantsSpec.Where(v => variantIds.Contains(v.Id));
+        var existingVariants = await _variants.ListAsync(variantsSpec, cancellationToken);
         var existingVariantIds = existingVariants.Select(v => v.Id).ToHashSet();
 
         foreach (var item in req.Items)
@@ -83,13 +83,22 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             return Result<Guid>.Success(prescription.Id);
     }
 
+    private async Task<Patient?> FindByPhoneAsync(string normalizedPhone, CancellationToken cancellationToken)
+    {
+        // Read-only: this path never mutates the patient (numbers are already
+        // normalized by the caller, so plain equality matches the old finder).
+        var phoneSpec = new Specification<Patient, Patient>(p => p);
+        phoneSpec.Where(p => p.PhoneNumber == normalizedPhone);
+        return await _patients.GetAsync(phoneSpec, cancellationToken);
+    }
+
     private async Task<Patient?> FindOrCreatePatientAsync(CreatePrescriptionRequest request, CancellationToken cancellationToken)
     {
         var firstName = request.PatientFirstName.Trim();
         var lastName = request.PatientLastName.Trim();
         var normalizedPhone = NormalizePhone(request.PatientPhoneNumber);
 
-        var patient = await _patients.FindByPhoneAsync(normalizedPhone, cancellationToken);
+        var patient = await FindByPhoneAsync(normalizedPhone, cancellationToken);
         if (patient is not null)
         {
             if (!string.Equals(patient.FirstName, firstName, StringComparison.OrdinalIgnoreCase) ||
@@ -101,10 +110,12 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             return patient;
         }
 
-        // Fallback: check by name+DOB to prevent duplicate patient with different phone
-        var byNameDob = await _executor.FirstOrDefaultAsync(
-            _patients.Query().Where(p => p.FirstName == firstName && p.LastName == lastName && p.DateOfBirth == request.PatientDateOfBirth),
-            cancellationToken);
+        // Fallback: check by name+DOB to prevent duplicate patient with different phone.
+        // Tracked read: UpdatePhone below must persist on SaveChanges
+        // (the old Query() was tracked; specs default to NoTracking).
+        var nameDobSpec = new Specification<Patient, Patient>(p => p).Tracked();
+        nameDobSpec.Where(p => p.FirstName == firstName && p.LastName == lastName && p.DateOfBirth == request.PatientDateOfBirth);
+        var byNameDob = await _patients.GetAsync(nameDobSpec, cancellationToken);
         if (byNameDob is not null)
         {
             if (byNameDob.PhoneNumber != normalizedPhone)
