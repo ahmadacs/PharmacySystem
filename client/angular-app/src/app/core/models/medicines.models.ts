@@ -118,7 +118,7 @@ export interface MedicineVariantDto {
 
 export interface MedicineBatchDto {
   id: string;
-  medicineVariantId: string;
+  medicineId: string;
   medicineName: string;
   medicineNameAr?: string;
   variantName: string;
@@ -127,6 +127,7 @@ export interface MedicineBatchDto {
   expiryDate: string;
   quantityReceived: number;
   quantityAvailable: number;
+  dispensedQuantity: number;
   unitCost: number;
   supplierName: string | null;
   isExpired: boolean;

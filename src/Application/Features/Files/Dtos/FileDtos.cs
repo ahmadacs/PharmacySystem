@@ -10,8 +10,7 @@ public sealed record FileAttachmentDto(
     string ContentType,
     long SizeBytes,
     string BlobPath,
-    DateTime CreatedAt,
-    string? Url
+    DateTime CreatedAt
 );
 
 public static class FileAttachmentMapping
@@ -33,7 +32,6 @@ public static class FileAttachmentMapping
         e.ContentType,
         e.SizeBytes,
         e.BlobPath,
-        e.CreatedAt,
-        null
+        e.CreatedAt
     );
 }

@@ -15,7 +15,6 @@ using Serilog;
 using WebApi.Authorization;
 using WebApi.Caching;
 using WebApi.Common;
-using WebApi.Middleware;
 using WebApi.Exceptions;
 using WebApi.OpenApi;
 using WebApi.Services;
@@ -46,9 +45,6 @@ services.AddScoped<ICurrentUserService, CurrentUserService>();
 // when ConnectionStrings:Redis is set; otherwise the in-memory store is used.
 services.AddPharmacyOutputCache(builder.Configuration);
 
-// ---------------------------------------------------------------------------
-// MVC. Model validation failures flow through the standard error envelope.
-// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // MVC. Model validation failures flow through the standard error envelope.
 // ---------------------------------------------------------------------------
@@ -213,9 +209,6 @@ services.AddHealthChecks().AddCheck<WebApi.HealthChecks.RedisHealthCheck>("redis
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
-
-// Request timing middleware: logs slow requests (threshold configurable).
-app.UseMiddleware<RequestTimingMiddleware>();
 
 // Request culture from Accept-Language (frontend sends the UI language):
 // drives IStringLocalizer messages per request. Must run BEFORE

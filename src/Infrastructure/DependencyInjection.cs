@@ -38,8 +38,7 @@ public static class DependencyInjection
             })
             .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddDefaultTokenProviders()
-            .AddErrorDescriber<LocalizedIdentityErrorDescriber>();
+            .AddDefaultTokenProviders();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));

@@ -116,7 +116,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
         var spec = new Specification<Prescription, DashboardPrescriptionRow>(p => new DashboardPrescriptionRow(
             p.Id,
             p.DoctorId,
-            string.Empty,
             p.Patient == null ? string.Empty : (p.Patient.FirstName + " " + p.Patient.LastName).Trim(),
             p.Patient != null ? p.Patient.DateOfBirth : default,
             p.Patient != null ? p.Patient.PhoneNumber : null,

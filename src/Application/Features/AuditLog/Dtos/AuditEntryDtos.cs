@@ -1,3 +1,4 @@
+using Domain.Entities.Audit;
 using Domain.Enums;
 
 namespace Application.Features.AuditLog.Dtos;
@@ -19,3 +20,22 @@ public sealed record AuditEntryDto(
     string? ChangedByName,
     DateTime ChangedAt,
     IReadOnlyList<AuditChangeDto> Changes);
+
+public static class AuditMapping
+{
+    public static AuditEntryDto ToDto(
+        this AuditEntry entry,
+        string? authorName,
+        IReadOnlyList<AuditChangeDto> changes,
+        string? entityDisplay = null)
+        => new(
+            entry.Id,
+            entry.EntityName,
+            entry.EntityId,
+            entityDisplay,
+            entry.Action,
+            entry.ChangedBy,
+            authorName,
+            entry.ChangedAt,
+            changes);
+}

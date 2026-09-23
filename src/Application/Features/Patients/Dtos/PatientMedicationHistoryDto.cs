@@ -84,7 +84,7 @@ public static class PatientMedicationMapping
     ///   otherwise an abandoned drug is never shown as current even if a
     ///   refill is theoretically left.
     /// </summary>
-    public static bool IsActive(
+    private static bool IsActive(
         string status,
         bool isRefillable,
         int refillsUsed,
@@ -105,7 +105,7 @@ public static class PatientMedicationMapping
         };
     }
 
-    public static DateOnly? NextEligible(DateOnly? lastDispensedAt, int intervalDays)
+    private static DateOnly? NextEligible(DateOnly? lastDispensedAt, int intervalDays)
         => lastDispensedAt.HasValue && intervalDays > 0
             ? lastDispensedAt.Value.AddDays(intervalDays)
             : null;

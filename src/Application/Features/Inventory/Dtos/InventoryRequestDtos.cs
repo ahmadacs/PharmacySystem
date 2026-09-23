@@ -64,6 +64,10 @@ public sealed record ReceiveInventoryRequest
     [StringLength(200)]
     public string? SupplierName { get; init; }
 
+    /// <summary>Inbound movement type recorded in the audit trail (Increase/TransferIn).</summary>
+    [EnumDataType(typeof(InventoryAdjustmentType))]
+    public InventoryAdjustmentType AdjustmentType { get; init; } = InventoryAdjustmentType.Increase;
+
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
 

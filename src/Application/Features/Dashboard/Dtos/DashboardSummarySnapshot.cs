@@ -9,7 +9,6 @@ namespace Application.Features.Dashboard.Dtos;
 public sealed record DashboardPrescriptionRow(
     Guid Id,
     Guid DoctorId,
-    string DoctorName,
     string PatientName,
     DateOnly PatientDateOfBirth,
     string? PatientPhoneNumber,

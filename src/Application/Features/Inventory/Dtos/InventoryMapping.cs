@@ -22,6 +22,7 @@ public static class InventoryMapping
             PackagesReceived = request.PackagesReceived,
             UnitCost = request.UnitCost,
             SupplierName = request.SupplierName,
+            AdjustmentType = request.AdjustmentType,
             File = request.File
         };
 

@@ -1,5 +1,3 @@
-using Domain.Enums;
-
 namespace Application.Features.Dispensing.Dtos;
 
 public sealed record DispensingRecordItemDto(
@@ -56,9 +54,6 @@ public sealed record DispensePrescriptionResponse(
 
 public static class DispensingMapping
 {
-    public static string GetVariantDisplayName(MedicineForm form, MedicineUnit unit, decimal strength)
-        => $"{form} {strength} {unit}";
-
     /// <summary>Maps a dispensed-line projection row.</summary>
     public static DispensingRecordItemDto ToDto(this DispensingRecordItemRow i)
         => new(i.MedicineBatchId, i.MedicineName, i.VariantName, i.BatchNumber, i.Quantity);

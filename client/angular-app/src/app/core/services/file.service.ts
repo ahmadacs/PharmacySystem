@@ -12,7 +12,6 @@ export interface FileAttachmentDto {
   sizeBytes: number;
   blobPath: string;
   createdAt: string;
-  url: string | null;
 }
 
 export type FileEntityType = 'Medicine' | 'Prescription' | 'Batch' | 'InventoryAdjustment';

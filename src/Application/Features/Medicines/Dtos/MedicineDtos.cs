@@ -139,7 +139,7 @@ public sealed record MedicineDetailsDto(
 
 public sealed record MedicineBatchDto(
     Guid Id,
-    Guid MedicineVariantId,
+    Guid MedicineId,
     string MedicineName,
     string? MedicineNameAr,
     string VariantName,
