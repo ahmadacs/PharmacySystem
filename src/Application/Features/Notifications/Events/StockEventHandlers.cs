@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Application.Common.Interfaces;
-using Application.Common.Security;
 using Domain.Enums;
 using Domain.Events;
 using MediatR;
@@ -59,13 +58,7 @@ public sealed class MedicineLowStockNotificationHandler : INotificationHandler<M
             LocalizationKey: "notifications.lowStock",
             LocalizationParamsJson: JsonSerializer.Serialize(new { medicineName = $"{notification.MedicineName} {notification.VariantName}", availableStock = notification.AvailableStock, reorderLevel = notification.ReorderLevel }));
 
-        return SendToStaffAsync(create, cancellationToken);
-    }
-
-    private async Task SendToStaffAsync(NotificationCreate create, CancellationToken cancellationToken)
-    {
-        await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
-        await _notifications.SendToRoleAsync(Roles.Admin, create, cancellationToken);
+        return NotificationFanout.SendToStaffAsync(_notifications, create, cancellationToken);
     }
 }
 
@@ -97,12 +90,6 @@ public sealed class MedicineBatchNearExpiryNotificationHandler : INotificationHa
             LocalizationKey: "notifications.nearExpiry",
             LocalizationParamsJson: JsonSerializer.Serialize(new { batchNumber = notification.BatchNumber, expiryDate = notification.ExpiryDate.ToString("dd/MM/yyyy") }));
 
-        return SendToStaffAsync(create, cancellationToken);
-    }
-
-    private async Task SendToStaffAsync(NotificationCreate create, CancellationToken cancellationToken)
-    {
-        await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
-        await _notifications.SendToRoleAsync(Roles.Admin, create, cancellationToken);
+        return NotificationFanout.SendToStaffAsync(_notifications, create, cancellationToken);
     }
 }

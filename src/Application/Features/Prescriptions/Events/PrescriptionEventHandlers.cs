@@ -74,12 +74,14 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
     }
 }
 
-/// <summary>Logs prescription cancellations.</summary>
-public sealed class PrescriptionCancelledNotificationHandler : INotificationHandler<PrescriptionCancelledNotification>
+/// <summary>Logs prescription cancellations and refills (no staff notification).</summary>
+public sealed class PrescriptionLifecycleLoggingHandler
+    : INotificationHandler<PrescriptionCancelledNotification>,
+      INotificationHandler<PrescriptionRefilledNotification>
 {
-    private readonly ILogger<PrescriptionCancelledNotificationHandler> _logger;
+    private readonly ILogger<PrescriptionLifecycleLoggingHandler> _logger;
 
-    public PrescriptionCancelledNotificationHandler(ILogger<PrescriptionCancelledNotificationHandler> logger)
+    public PrescriptionLifecycleLoggingHandler(ILogger<PrescriptionLifecycleLoggingHandler> logger)
     {
         _logger = logger;
     }
@@ -89,17 +91,6 @@ public sealed class PrescriptionCancelledNotificationHandler : INotificationHand
         _logger.LogInformation("Prescription {PrescriptionId} cancelled at {OccurredAtUtc}",
             notification.PrescriptionId, notification.OccurredAtUtc);
         return Task.CompletedTask;
-    }
-}
-
-/// <summary>Logs prescription refills.</summary>
-public sealed class PrescriptionRefilledNotificationHandler : INotificationHandler<PrescriptionRefilledNotification>
-{
-    private readonly ILogger<PrescriptionRefilledNotificationHandler> _logger;
-
-    public PrescriptionRefilledNotificationHandler(ILogger<PrescriptionRefilledNotificationHandler> logger)
-    {
-        _logger = logger;
     }
 
     public Task Handle(PrescriptionRefilledNotification notification, CancellationToken cancellationToken)

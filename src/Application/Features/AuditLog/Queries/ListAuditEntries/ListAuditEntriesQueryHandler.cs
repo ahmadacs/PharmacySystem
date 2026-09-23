@@ -4,6 +4,8 @@ using Application.Common.Models;
 using Application.Common.Specifications;
 using Application.Features.AuditLog.Dtos;
 using Domain.Entities.Audit;
+using Domain.Entities.Patients;
+using Domain.Entities.Prescriptions;
 using MediatR;
 
 namespace Application.Features.AuditLog.Queries;
@@ -16,14 +18,20 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
     };
 
     private readonly IBaseRepository<AuditEntry> _audit;
-    private readonly IAuditDisplayNameResolver _displays;
+    private readonly IUserManager _users;
+    private readonly IBaseRepository<Patient> _patients;
+    private readonly IStaffService _staff;
 
     public ListAuditEntriesQueryHandler(
         IBaseRepository<AuditEntry> audit,
-        IAuditDisplayNameResolver displays)
+        IUserManager users,
+        IBaseRepository<Patient> patients,
+        IStaffService staff)
     {
         _audit = audit;
-        _displays = displays;
+        _users = users;
+        _patients = patients;
+        _staff = staff;
     }
 
     public async Task<Result<PagedList<AuditEntryDto>>> Handle(
@@ -69,11 +77,8 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
 
         var changesById = entries.ToDictionary(e => e.Id, e => DeserializeChanges(e.ChangesJson));
 
-        // One batched pass: entry labels, FK value labels and user names
-        // (author display names come from here now, keyed by ChangedBy).
-        var resolved = await _displays.ResolvePageAsync(
-            entries,
-            CollectValueRefs(changesById.Values.SelectMany(c => c)),
+        // One batched users lookup for author display names (keyed by ChangedBy).
+        var userNames = await _users.GetDisplayNamesAsync(
             entries.Select(e => e.ChangedBy)
                 .Where(id => id.HasValue)
                 .Select(id => id!.Value)
@@ -81,14 +86,87 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
                 .ToList(),
             cancellationToken);
 
+        // Prescription entries: resolve DoctorId/PatientId change values to
+        // display names with LINQ (batched: one staff lookup + one patient
+        // query per page, no N+1). Other entities keep raw values.
+        var prescriptionChanges = entries
+            .Where(e => e.EntityName == nameof(Prescription))
+            .SelectMany(e => changesById[e.Id])
+            .ToList();
+
+        var doctorIds = ChangeIdsFor(prescriptionChanges, nameof(Prescription.DoctorId));
+        var patientIds = ChangeIdsFor(prescriptionChanges, nameof(Prescription.PatientId));
+
+        var doctorNames = doctorIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _staff.GetDoctorNamesAsync(doctorIds, cancellationToken);
+
+        IReadOnlyDictionary<Guid, string> patientNames = new Dictionary<Guid, string>();
+        if (patientIds.Count > 0)
+        {
+            var patientSpec = new Specification<Patient, Patient>(p => p);
+            patientSpec.Where(p => patientIds.Contains(p.Id));
+            patientNames = (await _patients.ListAsync(patientSpec, cancellationToken))
+                .ToDictionary(p => p.Id, p => $"{p.FirstName} {p.LastName}".Trim());
+        }
+
+        var prescriptionEntryIds = entries
+            .Where(e => e.EntityName == nameof(Prescription))
+            .Select(e => e.Id)
+            .ToHashSet();
+
         var items = entries
-            .Select(e => e.ToDto(
-                e.ChangedBy.HasValue ? resolved.UserNames.GetValueOrDefault(e.ChangedBy.Value) : null,
-                AttachValueDisplays(changesById[e.Id], resolved.ValueDisplays),
-                resolved.EntryDisplays.GetValueOrDefault(e.Id)))
+            .Select(e =>
+            {
+                var changes = changesById[e.Id];
+                if (prescriptionEntryIds.Contains(e.Id))
+                    changes = changes
+                        .Select(c => c with
+                        {
+                            OldValueDisplay = ResolveDisplay(c.Property, c.OldValue, doctorNames, patientNames)
+                                ?? c.OldValueDisplay,
+                            NewValueDisplay = ResolveDisplay(c.Property, c.NewValue, doctorNames, patientNames)
+                                ?? c.NewValueDisplay,
+                        })
+                        .ToList();
+
+                return e.ToDto(
+                    e.ChangedBy.HasValue ? userNames.GetValueOrDefault(e.ChangedBy.Value) : null,
+                    changes);
+            })
             .ToPagedList(page, pageSize, totalCount);
 
         return Result<PagedList<AuditEntryDto>>.Success(items);
+    }
+
+    /// <summary>Distinct referenced ids carried by one change property (LINQ).</summary>
+    private static List<Guid> ChangeIdsFor(IEnumerable<AuditChangeDto> changes, string property)
+        => changes
+            .Where(c => c.Property == property)
+            .SelectMany(c => new[] { c.OldValue, c.NewValue })
+            .Select(v => Guid.TryParse(v, out var id) ? (Guid?)id : null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+    /// <summary>Display name for a DoctorId/PatientId change value (LINQ lookups).</summary>
+    private static string? ResolveDisplay(
+        string property,
+        string? value,
+        IReadOnlyDictionary<Guid, string> doctorNames,
+        IReadOnlyDictionary<Guid, string> patientNames)
+    {
+        if (value is null || !Guid.TryParse(value, out var id))
+            return null;
+
+        if (property == nameof(Prescription.DoctorId))
+            return doctorNames.GetValueOrDefault(id);
+
+        if (property == nameof(Prescription.PatientId))
+            return patientNames.GetValueOrDefault(id);
+
+        return null;
     }
 
     private static Func<IQueryable<AuditEntry>, IOrderedQueryable<AuditEntry>> SortDir<TKey>(
@@ -97,43 +175,6 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
         => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
             ? q => q.OrderByDescending(keySelector)
             : q => q.OrderBy(keySelector);
-
-    /// <summary>Collects every GUID change value that may reference another entity.</summary>
-    private static IReadOnlyCollection<AuditValueRef> CollectValueRefs(
-        IEnumerable<AuditChangeDto> changes)
-    {
-        var refs = new HashSet<AuditValueRef>();
-        foreach (var c in changes)
-        {
-            if (Guid.TryParse(c.OldValue, out var oldId))
-                refs.Add(new AuditValueRef(c.Property, oldId));
-            if (Guid.TryParse(c.NewValue, out var newId))
-                refs.Add(new AuditValueRef(c.Property, newId));
-        }
-        return refs;
-    }
-
-    private static IReadOnlyList<AuditChangeDto> AttachValueDisplays(
-        IReadOnlyList<AuditChangeDto> changes,
-        IReadOnlyDictionary<AuditValueRef, string> displays)
-    {
-        if (displays.Count == 0)
-            return changes;
-
-        return changes
-            .Select(c => c with
-            {
-                OldValueDisplay = c.OldValue is not null
-                    && Guid.TryParse(c.OldValue, out var oldId)
-                    && displays.TryGetValue(new AuditValueRef(c.Property, oldId), out var oldDisplay)
-                    ? oldDisplay : c.OldValueDisplay,
-                NewValueDisplay = c.NewValue is not null
-                    && Guid.TryParse(c.NewValue, out var newId)
-                    && displays.TryGetValue(new AuditValueRef(c.Property, newId), out var newDisplay)
-                    ? newDisplay : c.NewValueDisplay,
-            })
-            .ToList();
-    }
 
     private static IReadOnlyList<AuditChangeDto> DeserializeChanges(string? json)
     {

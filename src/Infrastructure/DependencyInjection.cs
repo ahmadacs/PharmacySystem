@@ -49,7 +49,6 @@ public static class DependencyInjection
             .Get<NotificationOptions>() ?? new NotificationOptions());
 
         services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<IAuditDisplayNameResolver, AuditDisplayNameResolver>();
 
         services.AddScoped<IUserManager, UserManagerService>();
         services.AddScoped<ITokenService, JwtTokenService>();

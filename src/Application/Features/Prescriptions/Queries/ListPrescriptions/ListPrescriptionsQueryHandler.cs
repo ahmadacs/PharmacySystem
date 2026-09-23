@@ -1,8 +1,8 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Security;
 using Application.Common.Specifications;
-using Application.Features.Prescriptions.Common;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
@@ -36,7 +36,9 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
     {
         Guid? restrictedToDoctorId = null;
 
-        if (PrescriptionAccess.CanManageOwn(_currentUser) && !PrescriptionAccess.CanViewAll(_currentUser))
+        // Doctors without the View permission see only their own prescriptions.
+        if (_currentUser.Permissions.Contains(Permissions.Prescriptions.ManageOwn)
+            && !_currentUser.Permissions.Contains(Permissions.Prescriptions.View))
         {
             var authFailure = AuthGuard.RequireUserId<PagedList<PrescriptionListItemDto>>(_currentUser, _localizer, out var userId);
             if (authFailure is not null)
