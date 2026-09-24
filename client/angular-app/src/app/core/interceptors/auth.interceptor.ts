@@ -4,7 +4,6 @@ import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { AuthStore } from '../auth/auth.store';
 import { TokenStore } from '../auth/token.store';
-import { readStoredCulture } from '../constants/storage-keys';
 import { SignalrService } from '../services/signalr.service';
 
 const AUTH_SKIP_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
@@ -30,13 +29,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const withToken = (request: typeof req): typeof req => {
     const token = tokenStore.accessToken();
-    const headers: Record<string, string> = {};
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      return request.clone({ setHeaders: { Authorization: `Bearer ${token}` }, withCredentials: true });
     }
-    const lang = readStoredCulture();
-    if (lang) headers['Accept-Language'] = lang;
-    return request.clone({ setHeaders: headers, withCredentials: true });
+    return request.clone({ withCredentials: true });
   };
 
   return next(withToken(req)).pipe(

@@ -2,7 +2,7 @@ import { HttpParams, httpResource } from '@angular/common/http';
 import { DestroyRef, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { debounceTime, map } from 'rxjs';
 import { PagedResult } from '../models/api.models';
@@ -107,6 +107,3 @@ export function createPagedResource<T>(request: () => PagedRequest | undefined) 
   const totalCount = computed(() => resource.value()?.totalCount ?? 0);
   return Object.assign(resource, { totalCount });
 }
-
-export { MatPaginator };
-export type { PageEvent as PagedTablePageEvent };

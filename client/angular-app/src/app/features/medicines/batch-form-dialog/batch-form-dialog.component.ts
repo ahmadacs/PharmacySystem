@@ -13,21 +13,8 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { FileService } from '../../../core/services/file.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { MedicinesService } from '../medicines.service';
-
-function startOfDay(value: Date): Date {
-  return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
-}
-
-function toDateString(date: Date | null): string | null {
-  if (!date) {
-    return null;
-  }
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 
 function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
   const value = control.value as Date | null;
@@ -130,14 +117,9 @@ export class BatchFormDialogComponent {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-      if (!allowedTypes.includes(file.type)) {
-        this.toast.show('Only PDF, JPG, and PNG files are allowed.', 'error');
-        return;
-      }
-      if (file.size > maxSize) {
-        this.toast.show('File size must be less than 5MB.', 'error');
+      const error = this.fileService.validateUpload(file);
+      if (error) {
+        this.toast.show(error, 'error');
         return;
       }
       this.file.set(file);

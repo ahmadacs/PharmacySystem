@@ -3,6 +3,7 @@
  * to the application.
  */
 export const CULTURE_STORAGE_KEY = 'PharmacySystem.CultureName';
+export const THEME_STORAGE_KEY = 'PharmacySystem.Theme';
 
 export function readStoredCulture(): string | null {
   return localStorage.getItem(CULTURE_STORAGE_KEY);

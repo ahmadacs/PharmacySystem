@@ -31,6 +31,7 @@ import { Permissions } from '../../../core/constants/permissions';
 import { CategoryEnum, MedicineForm, MedicineListItemDto } from '../../../core/models/api.models';
 import { ExportService } from '../../../core/services/export.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -136,6 +137,9 @@ export class MedicinesListComponent {
     if (isControlled) return this.translate.instant('dictionary.status.controlled');
     return this.translate.instant('dictionary.status.active');
   }
+
+  displayName(row: MedicineListItemDto): string { return pickLocalizedName(row, this.translate); }
+  displayGenericName(row: MedicineListItemDto): string { return pickLocalizedGenericName(row, this.translate); }
 
   onSortChange(sort: Sort): void {
     this.table.onSortChange(sort);

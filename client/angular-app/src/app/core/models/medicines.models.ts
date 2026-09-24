@@ -158,7 +158,6 @@ export interface MedicineListItemDto {
   genericName: string;
   genericNameAr?: string;
   category: number;
-  categoryAr?: string;
   variants: MedicineVariantSummaryDto[];
   isControlled: boolean;
   isActive: boolean;
@@ -174,15 +173,8 @@ export interface MedicineDetailsDto {
   genericName: string;
   genericNameAr?: string;
   category: number;
-  categoryAr?: string;
   isControlled: boolean;
   isActive: boolean;
   availableQuantity: number;
   variants: MedicineVariantDto[];
-}
-
-export interface CategoryDto {
-  id: number;
-  name: string;
-  nameAr?: string;
 }

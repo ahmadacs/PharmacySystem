@@ -64,12 +64,7 @@ export class AttachmentViewerDialogComponent implements OnDestroy {
   protected async download(file: FileAttachmentDto): Promise<void> {
     try {
       const blob = await this.fileService.downloadBlob(file.id);
-      const url = URL.createObjectURL(new Blob([blob], { type: file.contentType }));
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = file.fileName;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      this.fileService.downloadBlobAsFile(blob, file.fileName, file.contentType);
     } catch {
       // error toast already shown by the error interceptor
     }

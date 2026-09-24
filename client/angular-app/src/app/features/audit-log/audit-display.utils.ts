@@ -28,7 +28,7 @@ export function isGuidValue(value: string): boolean {
   return value.includes('-') && /^[0-9a-fA-F]{32}$/.test(compact);
 }
 
-export function toAuditNumber(value: string | null | undefined): number | null {
+function toAuditNumber(value: string | null | undefined): number | null {
   if (value === null || value === undefined || value === '') return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;

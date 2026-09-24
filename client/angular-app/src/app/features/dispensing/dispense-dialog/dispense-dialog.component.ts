@@ -9,6 +9,7 @@ import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { DispensePrescriptionResponse, PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
+import { daysFromToday } from '../../../core/utils/date-utils';
 import { PrescriptionsService } from '../../prescriptions/prescriptions.service';
 import { DispensingService } from '../dispensing.service';
 
@@ -58,11 +59,8 @@ export class DispenseDialogComponent {
     if (!item.refillIntervalDays || item.refillIntervalDays <= 0) return null;
     if (!item.lastDispensedAt || item.remainingQuantity <= 0) return null;
     const [y, m, d] = item.lastDispensedAt.split('-').map(Number);
-    const due = new Date(y, m - 1, d + item.refillIntervalDays);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
-    return diff > 0 ? diff : null;
+    if (!y || !m || !d) return null;
+    return daysFromToday(new Date(y, m - 1, d + item.refillIntervalDays));
   }
 
   async dispense(id: string): Promise<void> {

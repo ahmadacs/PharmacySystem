@@ -26,8 +26,8 @@
             <mat-autocomplete #medicineAuto="matAutocomplete" [displayWith]="displayMedicineName" (optionSelected)="onMedicineSelected($event)">
               @for (medicine of filteredMedicines(); track medicine.id) {
                 <mat-option [value]="medicine">
-                  {{ isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name }}
-                  ({{ isArabic() && medicine.genericNameAr ? medicine.genericNameAr : medicine.genericName }})
+                  {{ displayMedicine(medicine) }}
+                  ({{ displayMedicineGeneric(medicine) }})
                 </mat-option>
               }
             </mat-autocomplete>

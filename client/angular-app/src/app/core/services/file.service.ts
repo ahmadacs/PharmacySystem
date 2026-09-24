@@ -41,10 +41,6 @@ export class FileService {
     return firstValueFrom(this.http.get<FileAttachmentDto[]>(`${this.baseUrl}/${entityType}/${entityId}/list`));
   }
 
-  downloadUrl(fileId: string): string {
-    return `${this.baseUrl}/${fileId}/download`;
-  }
-
   /** Authenticated blob fetch (carries the JWT via the auth interceptor) for <img> previews and downloads. */
   downloadBlob(fileId: string): Promise<Blob> {
     return firstValueFrom(this.http.get(`${this.baseUrl}/${fileId}/download`, { responseType: 'blob' }));
@@ -92,6 +88,16 @@ export class FileService {
       return 'File size must be less than 5MB.';
     }
     return null;
+  }
+
+  /** Single place that turns a Blob into a browser download (replaces 3 copies). */
+  downloadBlobAsFile(blob: Blob, fileName: string, contentType: string): void {
+    const url = URL.createObjectURL(new Blob([blob], { type: contentType }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   fileToBase64(file: File): Promise<string> {

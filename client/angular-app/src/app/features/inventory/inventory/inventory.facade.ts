@@ -1,8 +1,5 @@
-import { HttpParams, httpResource } from '@angular/common/http';
+import { HttpParams } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { effect } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import {
   ExpiryAlertDto,
@@ -15,17 +12,16 @@ import {
   PagedResult,
   StockStatus,
 } from '../../../core/models/api.models';
-import { emptyPage } from '../../../core/utils/empty-page';
-import { createPagedTable } from '../../../core/utils/paged-table.utils';
+import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
 
 export type BatchExpiryStatus = 'All' | 'Valid' | 'ExpiringSoon' | 'Expired';
 export type StockFilter = 'All' | StockStatus;
 export type StatusFilter = 'All' | ExpiryStatus;
 
 /**
- * Data facade extracted from the 366-line InventoryComponent.
- * Owns all 7 httpResources + search/sort/page state; the component keeps
- * only columns, display helpers and dialog wiring so the template is untouched.
+ * Data facade for the inventory tabs.
+ * All 5 paged lists share createPagedResource (typed empty-page + totalCount);
+ * badge counters reuse the same helper with fixed params.
  */
 @Injectable()
 export class InventoryFacade {
@@ -33,116 +29,94 @@ export class InventoryFacade {
   readonly summaryTable = createPagedTable({ defaultSortBy: 'name' });
   readonly stockStatus = signal<StockFilter>('All');
 
-  readonly summary = httpResource<PagedResult<MedicineInventorySummaryDto>>(
-    () => {
-      const params = new HttpParams()
-        .set('page', this.summaryTable.page())
-        .set('pageSize', this.summaryTable.pageSize())
-        .set('search', this.summaryTable.search())
-        .set('stockStatus', this.stockStatus())
-        .set('sortBy', this.summaryTable.sortBy())
-        .set('sortDir', this.summaryTable.sortDir());
-      return { url: `${environment.apiUrl}/inventory/summary`, params };
-    },
-    { defaultValue: emptyPage<MedicineInventorySummaryDto>() },
-  );
-  readonly summaryCount = computed(() => this.summary.value()?.totalCount ?? 0);
+  readonly summary = createPagedResource<MedicineInventorySummaryDto>(() => {
+    const params = new HttpParams()
+      .set('page', this.summaryTable.page())
+      .set('pageSize', this.summaryTable.pageSize())
+      .set('search', this.summaryTable.search())
+      .set('stockStatus', this.stockStatus())
+      .set('sortBy', this.summaryTable.sortBy())
+      .set('sortDir', this.summaryTable.sortDir());
+    return { url: `${environment.apiUrl}/inventory/summary`, params };
+  });
+  readonly summaryCount = this.summary.totalCount;
 
   // ---- Batches tab ----
   readonly batchTable = createPagedTable({ defaultSortBy: 'expiryDate' });
   readonly expiryStatus = signal<BatchExpiryStatus>('All');
 
-  readonly batches = httpResource<PagedResult<MedicineBatchDto>>(
-    () => {
-      const params = new HttpParams()
-        .set('page', this.batchTable.page())
-        .set('pageSize', this.batchTable.pageSize())
-        .set('search', this.batchTable.search())
-        .set('expiryStatus', this.expiryStatus())
-        .set('withinDays', 30)
-        .set('sortBy', this.batchTable.sortBy())
-        .set('sortDir', this.batchTable.sortDir());
-      return { url: `${environment.apiUrl}/inventory/batches`, params };
-    },
-    { defaultValue: emptyPage<MedicineBatchDto>() },
-  );
-  readonly batchCount = computed(() => this.batches.value()?.totalCount ?? 0);
+  readonly batches = createPagedResource<MedicineBatchDto>(() => {
+    const params = new HttpParams()
+      .set('page', this.batchTable.page())
+      .set('pageSize', this.batchTable.pageSize())
+      .set('search', this.batchTable.search())
+      .set('expiryStatus', this.expiryStatus())
+      .set('withinDays', 30)
+      .set('sortBy', this.batchTable.sortBy())
+      .set('sortDir', this.batchTable.sortDir());
+    return { url: `${environment.apiUrl}/inventory/batches`, params };
+  });
+  readonly batchCount = this.batches.totalCount;
 
   // ---- Expiry alerts tab ----
   readonly alertTable = createPagedTable({ defaultSortBy: 'expiryDate' });
   readonly status = signal<StatusFilter>('All');
 
-  readonly alerts = httpResource<PagedResult<ExpiryAlertDto>>(
-    () => {
-      const params = new HttpParams()
-        .set('page', this.alertTable.page())
-        .set('pageSize', this.alertTable.pageSize())
-        .set('search', this.alertTable.search())
-        .set('status', this.status())
-        .set('sortBy', this.alertTable.sortBy())
-        .set('sortDir', this.alertTable.sortDir());
-      return { url: `${environment.apiUrl}/inventory/expiry-alerts`, params };
-    },
-    { defaultValue: emptyPage<ExpiryAlertDto>() },
-  );
-  readonly alertCount = computed(() => this.alerts.value()?.totalCount ?? 0);
+  readonly alerts = createPagedResource<ExpiryAlertDto>(() => {
+    const params = new HttpParams()
+      .set('page', this.alertTable.page())
+      .set('pageSize', this.alertTable.pageSize())
+      .set('search', this.alertTable.search())
+      .set('status', this.status())
+      .set('sortBy', this.alertTable.sortBy())
+      .set('sortDir', this.alertTable.sortDir());
+    return { url: `${environment.apiUrl}/inventory/expiry-alerts`, params };
+  });
+  readonly alertCount = this.alerts.totalCount;
 
-  // Live Critical + Warning batch counts for the tab badge (independent of the
-  // current filter/page so the badge always shows the global count).
-  readonly criticalAlerts = httpResource<PagedResult<ExpiryAlertDto>>(
-    () => ({
-      url: `${environment.apiUrl}/inventory/expiry-alerts`,
-      params: new HttpParams().set('status', 'Critical').set('pageSize', 1),
-    }),
-    { defaultValue: emptyPage<ExpiryAlertDto>() },
-  );
-  readonly warningAlerts = httpResource<PagedResult<ExpiryAlertDto>>(
-    () => ({
-      url: `${environment.apiUrl}/inventory/expiry-alerts`,
-      params: new HttpParams().set('status', 'Warning').set('pageSize', 1),
-    }),
-    { defaultValue: emptyPage<ExpiryAlertDto>() },
-  );
+  // Live badge counters (fixed params, no table state).
+  readonly criticalAlerts = createPagedResource<ExpiryAlertDto>(() => ({
+    url: `${environment.apiUrl}/inventory/expiry-alerts`,
+    params: new HttpParams().set('status', 'Critical').set('pageSize', 1),
+  }));
+  readonly warningAlerts = createPagedResource<ExpiryAlertDto>(() => ({
+    url: `${environment.apiUrl}/inventory/expiry-alerts`,
+    params: new HttpParams().set('status', 'Warning').set('pageSize', 1),
+  }));
   readonly alertBadgeCount = computed(
-    () => (this.criticalAlerts.value()?.totalCount ?? 0) + (this.warningAlerts.value()?.totalCount ?? 0),
+    () => this.criticalAlerts.totalCount() + this.warningAlerts.totalCount(),
   );
 
   // ---- Adjustments tab ----
   readonly adjTable = createPagedTable({ defaultSortBy: 'adjustedAt', defaultSortDir: 'desc' });
   readonly adjType = signal<InventoryAdjustmentType | null>(null);
 
-  readonly adjustments = httpResource<PagedResult<InventoryAdjustmentDto>>(
-    () => {
-      let params = new HttpParams()
-        .set('page', this.adjTable.page())
-        .set('pageSize', this.adjTable.pageSize())
-        .set('search', this.adjTable.search())
-        .set('sortBy', this.adjTable.sortBy())
-        .set('sortDir', this.adjTable.sortDir());
-      if (this.adjType()) {
-        params = params.set('type', this.adjType()!);
-      }
-      return { url: `${environment.apiUrl}/inventory/adjustments`, params };
-    },
-    { defaultValue: emptyPage<InventoryAdjustmentDto>() },
-  );
-  readonly adjCount = computed(() => this.adjustments.value()?.totalCount ?? 0);
+  readonly adjustments = createPagedResource<InventoryAdjustmentDto>(() => {
+    let params = new HttpParams()
+      .set('page', this.adjTable.page())
+      .set('pageSize', this.adjTable.pageSize())
+      .set('search', this.adjTable.search())
+      .set('sortBy', this.adjTable.sortBy())
+      .set('sortDir', this.adjTable.sortDir());
+    if (this.adjType()) {
+      params = params.set('type', this.adjType()!);
+    }
+    return { url: `${environment.apiUrl}/inventory/adjustments`, params };
+  });
+  readonly adjCount = this.adjustments.totalCount;
 
   // ---- Low stock tab ----
   readonly lowStockTable = createPagedTable({ defaultSortBy: 'medicineName' });
 
-  readonly lowStock = httpResource<PagedResult<LowStockDto>>(
-    () => {
-      const params = new HttpParams()
-        .set('page', this.lowStockTable.page())
-        .set('pageSize', this.lowStockTable.pageSize())
-        .set('sortBy', this.lowStockTable.sortBy())
-        .set('sortDir', this.lowStockTable.sortDir());
-      return { url: `${environment.apiUrl}/inventory/low-stock`, params };
-    },
-    { defaultValue: emptyPage<LowStockDto>() },
-  );
-  readonly lowStockBadgeCount = computed(() => this.lowStock.value()?.totalCount ?? 0);
+  readonly lowStock = createPagedResource<LowStockDto>(() => {
+    const params = new HttpParams()
+      .set('page', this.lowStockTable.page())
+      .set('pageSize', this.lowStockTable.pageSize())
+      .set('sortBy', this.lowStockTable.sortBy())
+      .set('sortDir', this.lowStockTable.sortDir());
+    return { url: `${environment.apiUrl}/inventory/low-stock`, params };
+  });
+  readonly lowStockBadgeCount = this.lowStock.totalCount;
 
   reloadAfterAdjust(): void {
     if (this.adjTable.page() === 1) {
@@ -161,4 +135,3 @@ export class InventoryFacade {
 
 // Re-exported for components that still import the types from the old location.
 export type { PagedResult };
-export { FormControl, toSignal, effect };

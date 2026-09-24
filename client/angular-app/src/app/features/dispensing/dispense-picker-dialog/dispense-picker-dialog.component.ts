@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Component, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
@@ -12,6 +11,7 @@ import {
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { PrescriptionListItemDto } from '../../../core/models/api.models';
 import { PrescriptionsService } from '../../prescriptions/prescriptions.service';
+import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 
 @Component({
   selector: 'app-dispense-picker-dialog',
@@ -23,7 +23,7 @@ import { PrescriptionsService } from '../../prescriptions/prescriptions.service'
     MatDialogClose,
     MatButton,
     MatProgressBar,
-    DatePipe,
+    RiyadhDatePipe,
     TranslatePipe
   ],
   templateUrl: './dispense-picker-dialog.component.html',

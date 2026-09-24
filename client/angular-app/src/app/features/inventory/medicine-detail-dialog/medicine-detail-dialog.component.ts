@@ -11,7 +11,7 @@ import { CategoryEnum, MedicineDetailsDto, MedicineForm, MedicineUnit } from '..
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 import { MedicinesService } from '../../medicines/medicines.service';
 import { TranslateService } from '@ngx-translate/core';
-import { currentLanguage } from '../../../core/utils/localized-name.utils';
+import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
 import { FileEntityType } from '../../../core/services/file.service';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -51,7 +51,6 @@ export class MedicineDetailDialogComponent {
 
   readonly data = inject<MedicineDetailDialogData>(MAT_DIALOG_DATA);
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
-  private lang(): string { return currentLanguage(this.translate); }
 
   constructor() {
     void this.medicinesService
@@ -59,8 +58,8 @@ export class MedicineDetailDialogComponent {
       .then((details) => this.medicine.set(details));
   }
 
-  displayName(details: MedicineDetailsDto): string { return this.lang() === 'ar' && details.nameAr ? details.nameAr : details.name; }
-  genericDisplay(details: MedicineDetailsDto): string { return this.lang() === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName; }
+  displayName(details: MedicineDetailsDto): string { return pickLocalizedName(details, this.translate); }
+  genericDisplay(details: MedicineDetailsDto): string { return pickLocalizedGenericName(details, this.translate); }
 
   protected canViewMedicineAttachments(): boolean {
     return this.authStore.hasPermission(Permissions.MedicinesView);

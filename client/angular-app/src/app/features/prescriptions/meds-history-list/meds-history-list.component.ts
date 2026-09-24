@@ -7,6 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
+import { daysUntil } from '../../../core/utils/date-utils';
 import {
   PatientMedicationItemDto,
   PatientPrescriptionHistoryDto,
@@ -59,17 +60,6 @@ export class MedsHistoryListComponent {
   }
 
   dueInDays(item: PatientMedicationItemDto): number | null {
-    if (!item.nextEligibleDate) {
-      return null;
-    }
-    const [y, m, d] = item.nextEligibleDate.split('-').map(Number);
-    if (!y || !m || !d) {
-      return null;
-    }
-    const due = new Date(y, m - 1, d);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
-    return diff > 0 ? diff : null;
+    return daysUntil(item.nextEligibleDate);
   }
 }

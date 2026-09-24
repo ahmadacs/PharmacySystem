@@ -16,6 +16,7 @@ import {
   isGuidValue,
   shortAuditId,
 } from '../audit-display.utils';
+import { translateLookup } from '../../../core/utils/translate-lookup';
 
 /** Dictionaries tried (in order) when translating an audit change value. */
 const VALUE_PREFIXES = [
@@ -86,7 +87,7 @@ export class AuditLogDetailsDialogComponent {
   /** Shortens raw GUID change-values (FK ids) to #XXXXXXXX; leaves real values untouched. */
   protected displayValue(value: string | null): string {
     if (!value) return '—';
-    if (isGuidValue(value)) return `#${value.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
+    if (isGuidValue(value)) return `#${shortAuditId(value)}`;
     return value;
   }
 
@@ -124,18 +125,8 @@ export class AuditLogDetailsDialogComponent {
     return short;
   }
 
-  /** Same 3-step lookup as EnumTranslatePipe: camelCase, lowercase, original. */
   private lookup(prefix: string, name: string): string | null {
-    const candidates = [
-      `${prefix}.${name.charAt(0).toLowerCase() + name.slice(1)}`,
-      `${prefix}.${name.toLowerCase()}`,
-      `${prefix}.${name}`,
-    ];
-    for (const key of candidates) {
-      const translated = this.translate.instant(key);
-      if (translated !== key) return translated;
-    }
-    return null;
+    return translateLookup(this.translate, prefix, name);
   }
 
   protected async copyId(id: string): Promise<void> {

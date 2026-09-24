@@ -11,7 +11,7 @@
           <button class="candidate" mat-button (click)="select(candidate)">
             <span class="candidate__patient">{{ candidate.patientName }}</span>
             <span class="candidate__meta">
-              {{ candidate.doctorName }} · {{ candidate.issuedDate | date: 'mediumDate' }} ·
+              {{ candidate.doctorName }} · {{ candidate.issuedDate | riyadhDate: 'mediumDate' }} ·
               {{ candidate.status }} · {{ candidate.itemCount }} item(s)
             </span>
           </button>

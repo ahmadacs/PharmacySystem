@@ -26,10 +26,6 @@ export class AuthStore {
     return this.permissions().includes(permission);
   }
 
-  hasRole(role: string): boolean {
-    return this.role() === role;
-  }
-
   /**
    * Restores the session on application startup. The in-memory access token is
    * lost on a full page reload, so we call POST /auth/refresh directly (the

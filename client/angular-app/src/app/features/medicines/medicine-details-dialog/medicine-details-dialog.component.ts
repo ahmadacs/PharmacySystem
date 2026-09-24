@@ -21,7 +21,7 @@ import {
 import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
-import { currentLanguage } from '../../../core/utils/localized-name.utils';
+import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
 import { FileEntityType } from '../../../core/services/file.service';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
@@ -98,12 +98,10 @@ export class MedicineDetailsDialogComponent {
   }
 
   displayName(details: MedicineDetailsDto): string {
-    const lang = currentLanguage(this.translate);
-    return lang === 'ar' && details.nameAr ? details.nameAr : details.name;
+    return pickLocalizedName(details, this.translate);
   }
   genericDisplay(details: MedicineDetailsDto): string {
-    const lang = currentLanguage(this.translate);
-    return lang === 'ar' && details.genericNameAr ? details.genericNameAr : details.genericName;
+    return pickLocalizedGenericName(details, this.translate);
   }
 
   protected openImages(entityType: FileEntityType, entityId: string): void {

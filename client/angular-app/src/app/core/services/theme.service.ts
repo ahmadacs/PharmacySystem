@@ -1,6 +1,5 @@
-import { Injectable, inject, signal } from '@angular/core';
-
-const THEME_KEY = 'theme';
+import { Injectable, signal } from '@angular/core';
+import { THEME_STORAGE_KEY } from '../constants/storage-keys';
 
 /**
  * Light/dark theme toggle. The value is applied by toggling the `dark` class
@@ -18,7 +17,7 @@ export class ThemeService {
 
   toggle(): void {
     this.darkSignal.update((value) => !value);
-    localStorage.setItem(THEME_KEY, this.darkSignal() ? 'dark' : 'light');
+    localStorage.setItem(THEME_STORAGE_KEY, this.darkSignal() ? 'dark' : 'light');
     this.apply();
   }
 
@@ -29,7 +28,8 @@ export class ThemeService {
   }
 
   private loadPreference(): boolean {
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+      ?? localStorage.getItem('theme'); // migrate legacy key once
     if (stored) {
       return stored === 'dark';
     }

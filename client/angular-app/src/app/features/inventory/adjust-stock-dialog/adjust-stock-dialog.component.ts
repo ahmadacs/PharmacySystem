@@ -27,6 +27,7 @@ import {
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
 import { startOfDay, toDateString } from '../../../core/utils/date-utils';
+import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { InventoryService } from '../inventory.service';
 
 function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
@@ -90,7 +91,8 @@ export class AdjustStockDialogComponent {
   protected readonly today = startOfDay(new Date());
   protected readonly medicineSearchControl = new FormControl<string | MedicineListItemDto>('', { nonNullable: true });
   protected readonly medicineSearch = signal('');
-  protected readonly isArabic = computed(() => this.translate.currentLang() === 'ar');
+  protected displayMedicine(medicine: MedicineListItemDto): string { return pickLocalizedName(medicine, this.translate); }
+  protected displayMedicineGeneric(medicine: MedicineListItemDto): string { return pickLocalizedGenericName(medicine, this.translate); }
   protected readonly filteredMedicines = computed(() => {
     const search = this.medicineSearch().trim().toLowerCase();
     if (!search) return this.medicines();
@@ -212,9 +214,10 @@ export class AdjustStockDialogComponent {
   protected readonly displayMedicineName = (medicine: string | MedicineListItemDto): string => {
     if (!medicine) return '';
     if (typeof medicine === 'string') {
-      return this.medicines().find((item) => item.id === medicine)?.name ?? medicine;
+      const found = this.medicines().find((item) => item.id === medicine);
+      return found ? pickLocalizedName(found, this.translate) : medicine;
     }
-    return this.isArabic() && medicine.nameAr ? medicine.nameAr : medicine.name;
+    return pickLocalizedName(medicine, this.translate);
   };
 
   private applyValidators(): void {

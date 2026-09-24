@@ -8,7 +8,7 @@ export type AppLanguage = 'en' | 'ar';
 export class LocalizationService {
   private readonly translate = inject(TranslateService);
 
-  readonly currentLang = signal<AppLanguage>((readStoredCulture() as AppLanguage) ?? 'en');
+  readonly currentLang = signal<AppLanguage>(sanitizeLang(readStoredCulture()));
   readonly isRtl = computed(() => this.currentLang() === 'ar');
   readonly supportedCultures: AppLanguage[] = ['en', 'ar'];
 
@@ -29,8 +29,8 @@ export class LocalizationService {
   toggle(): void {
     this.currentLang.update(v => (v === 'en' ? 'ar' : 'en'));
   }
+}
 
-  instant(key: string, params?: Record<string, unknown>): string {
-    return this.translate.instant(key, params);
-  }
+function sanitizeLang(value: string | null): AppLanguage {
+  return value === 'ar' || value === 'en' ? value : 'en';
 }
