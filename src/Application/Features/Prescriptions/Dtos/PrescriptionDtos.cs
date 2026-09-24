@@ -16,16 +16,18 @@ public sealed record PrescriptionItemDto(
     DateOnly? LastDispensedAt);
 
 /// <summary>
-/// EF projection row for the prescriptions list.
-/// Never constructed outside queries; maps via <c>PrescriptionMapping.ToDto</c>.
+/// Internal EF projection shape for the prescriptions list.
+/// Field names mirror <see cref="PrescriptionListItemDto"/>; the doctor name
+/// is resolved separately via IStaffService and applied in
+/// <c>PrescriptionMapping.ToDto</c>.
 /// </summary>
-public sealed record PrescriptionListRow(
+internal sealed record PrescriptionListRow(
     Guid Id,
     Guid DoctorId,
     string PatientName,
     DateOnly PatientDateOfBirth,
     int PatientAge,
-    string? PatientPhone,
+    string? PatientPhoneNumber,
     DateOnly IssuedDate,
     string Status,
     int ItemCount);
@@ -58,11 +60,11 @@ public sealed record PrescriptionDetailsDto(
     IReadOnlyList<PrescriptionItemDto> Items);
 
 /// <summary>
-/// EF projection row for one prescription item in the details screen.
-/// Raw quantities only (Remaining is computed in memory); maps via
-/// <c>PrescriptionMapping.ToDto</c>. Never constructed outside queries.
+/// Internal EF projection shape for one prescription item.
+/// Raw quantities only (Remaining = Prescribed - Dispensed is computed in
+/// <c>PrescriptionMapping.ToDto</c> to keep one source of truth).
 /// </summary>
-public sealed record PrescriptionDetailsItemRow(
+internal sealed record PrescriptionDetailsItemRow(
     Guid Id,
     Guid MedicineVariantId,
     string MedicineName,
@@ -77,11 +79,9 @@ public sealed record PrescriptionDetailsItemRow(
     DateOnly? LastDispensedAt);
 
 /// <summary>
-/// Single-query projection shape for the prescription details screen:
-/// header + ordered item rows. Never constructed outside queries; maps via
-/// <c>PrescriptionMapping.ToDto</c>.
+/// Internal single-query shape for the details screen: header + ordered item rows.
 /// </summary>
-public sealed record PrescriptionDetailsRow(
+internal sealed record PrescriptionDetailsRow(
     Guid Id,
     Guid DoctorId,
     string PatientName,

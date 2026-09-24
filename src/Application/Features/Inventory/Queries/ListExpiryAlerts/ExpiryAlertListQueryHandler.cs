@@ -1,3 +1,4 @@
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -55,9 +56,9 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "remaining" => SortDir(b => b.QuantityAvailable.Value, request.SortDir),
-            "batch" or "batchnumber" => SortDir(b => b.BatchNumber, request.SortDir),
-            _ => SortDir(b => b.ExpiryDate, request.SortDir)
+            "quantity" or "remaining" => q => q.OrderByDirection(b => b.QuantityAvailable.Value, request.SortDir),
+            "batch" or "batchnumber" => q => q.OrderByDirection(b => b.BatchNumber, request.SortDir),
+            _ => q => q.OrderByDirection(b => b.ExpiryDate, request.SortDir)
         });
 
         var totalCount = await _repo.CountAsync(spec, cancellationToken);
@@ -82,11 +83,4 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
             "safe" => (asOf.AddDays(WarningWithinDays), null),
             _ => (null, null)
         };
-
-    private static Func<IQueryable<MedicineBatch>, IOrderedQueryable<MedicineBatch>> SortDir<TKey>(
-        System.Linq.Expressions.Expression<Func<MedicineBatch, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

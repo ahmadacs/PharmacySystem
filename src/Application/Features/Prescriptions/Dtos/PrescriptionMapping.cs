@@ -6,7 +6,7 @@ namespace Application.Features.Prescriptions.Dtos;
 public static class PrescriptionMapping
 {
     /// <summary>Maps a list-screen projection row (doctor name resolved separately).</summary>
-    public static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
+    internal static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
         => new(
             row.Id,
             row.DoctorId,
@@ -14,12 +14,12 @@ public static class PrescriptionMapping
             row.PatientName,
             row.PatientDateOfBirth,
             row.PatientAge,
-            row.PatientPhone,
+            row.PatientPhoneNumber,
             row.IssuedDate,
             row.Status,
             row.ItemCount);
 
-    public static PrescriptionDetailsDto ToDetailsDto(
+    internal static PrescriptionDetailsDto ToDetailsDto(
         this PrescriptionDetailsRow row,
         string doctorName)
     {

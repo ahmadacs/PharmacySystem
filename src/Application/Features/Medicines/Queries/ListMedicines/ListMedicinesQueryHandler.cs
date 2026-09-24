@@ -1,3 +1,4 @@
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -46,8 +47,7 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
                         v.UnitOfMeasure.PackageUnitName,
                         v.UnitOfMeasure.UnitsPerPackage,
                         v.UnitOfMeasure.IsDivisible))
-                    .ToList(),
-                m.Variants.Count(v => v.IsActive)));
+                    .ToList()));
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -71,10 +71,10 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "createdat" => SortDir(m => m.CreatedAt, request.SortDir),
-            "category" => SortDir(m => m.CategoryEnum, request.SortDir),
-            "form" => SortDir(m => m.Variants.OrderBy(v => v.Form).Select(v => v.Form).FirstOrDefault(), request.SortDir),
-            _ => SortDir(m => m.Name, request.SortDir)
+            "createdat" => q => q.OrderByDirection(m => m.CreatedAt, request.SortDir),
+            "category" => q => q.OrderByDirection(m => m.CategoryEnum, request.SortDir),
+            "form" => q => q.OrderByDirection(m => m.Variants.OrderBy(v => v.Form).Select(v => v.Form).FirstOrDefault(), request.SortDir),
+            _ => q => q.OrderByDirection(m => m.Name, request.SortDir)
         });
 
         // COUNT ignores ordering/paging/selector: same single COUNT query as before.
@@ -90,11 +90,4 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
 
         return Result<PagedList<MedicineListItemDto>>.Success(items);
     }
-
-    private static Func<IQueryable<Medicine>, IOrderedQueryable<Medicine>> SortDir<TKey>(
-        System.Linq.Expressions.Expression<Func<Medicine, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

@@ -1,3 +1,4 @@
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -55,8 +56,8 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" => SortDir(a => a.QuantityChanged, request.SortDir),
-            _ => SortDir(a => a.AdjustedAt, request.SortDir)
+            "quantity" => q => q.OrderByDirection(a => a.QuantityChanged, request.SortDir),
+            _ => q => q.OrderByDirection(a => a.AdjustedAt, request.SortDir)
         });
 
         var totalCount = await _repo.CountAsync(spec, cancellationToken);
@@ -78,11 +79,4 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
 
         return Result<PagedList<InventoryAdjustmentDto>>.Success(items);
     }
-
-    private static Func<IQueryable<InventoryAdjustment>, IOrderedQueryable<InventoryAdjustment>> SortDir<TKey>(
-        System.Linq.Expressions.Expression<Func<InventoryAdjustment, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

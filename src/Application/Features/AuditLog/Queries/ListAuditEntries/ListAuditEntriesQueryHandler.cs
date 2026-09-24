@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -63,10 +64,10 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "entity" => SortDir(e => e.EntityName, request.SortDir),
-            "action" => SortDir(e => e.Action, request.SortDir),
+            "entity" => q => q.OrderByDirection(e => e.EntityName, request.SortDir),
+            "action" => q => q.OrderByDirection(e => e.Action, request.SortDir),
             // No author column without the join: stable date order instead.
-            _ => SortDir(e => e.ChangedAt, request.SortDir)
+            _ => q => q.OrderByDirection(e => e.ChangedAt, request.SortDir)
         });
 
         var totalCount = await _audit.CountAsync(spec, cancellationToken);
@@ -168,13 +169,6 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
 
         return null;
     }
-
-    private static Func<IQueryable<AuditEntry>, IOrderedQueryable<AuditEntry>> SortDir<TKey>(
-        System.Linq.Expressions.Expression<Func<AuditEntry, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 
     private static IReadOnlyList<AuditChangeDto> DeserializeChanges(string? json)
     {

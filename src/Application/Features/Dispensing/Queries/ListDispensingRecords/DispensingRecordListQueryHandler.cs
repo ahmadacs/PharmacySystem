@@ -1,3 +1,4 @@
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -48,9 +49,7 @@ public sealed class DispensingRecordListQueryHandler : IRequestHandler<Dispensin
         if (request.ToDate.HasValue)
             spec.Where(r => r.DispensedAt <= request.ToDate.Value);
 
-        spec.Order(request.SortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? (Func<IQueryable<DispensingRecord>, IOrderedQueryable<DispensingRecord>>)(q => q.OrderByDescending(r => r.DispensedAt))
-            : q => q.OrderBy(r => r.DispensedAt));
+        spec.Order(q => q.OrderByDirection(r => r.DispensedAt, request.SortDir));
 
         var totalCount = await _records.CountAsync(spec, cancellationToken);
 

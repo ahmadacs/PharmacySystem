@@ -8,10 +8,10 @@ public sealed record DispensingRecordItemDto(
     int Quantity);
 
 /// <summary>
-/// EF projection row for one dispensing record in the list.
-/// Never constructed outside queries; maps via <c>DispensingMapping.ToDto</c>.
+/// Internal EF projection shape for the list. PharmacistName is resolved
+/// separately via IStaffService and applied in <c>DispensingMapping.ToDto</c>.
 /// </summary>
-public sealed record DispensingRecordRow(
+internal sealed record DispensingRecordRow(
     Guid Id,
     Guid PrescriptionId,
     string PatientName,
@@ -20,10 +20,11 @@ public sealed record DispensingRecordRow(
     string? Notes);
 
 /// <summary>
-/// EF projection row for one dispensed line.
-/// Never constructed outside queries; maps via <c>DispensingMapping.ToDto</c>.
+/// Internal EF projection shape for one dispensed line.
+/// <c>RecordId</c> exists only for in-memory grouping by record (see handler);
+/// it is not part of the API contract.
 /// </summary>
-public sealed record DispensingRecordItemRow(
+internal sealed record DispensingRecordItemRow(
     Guid RecordId,
     Guid MedicineBatchId,
     string MedicineName,
@@ -55,11 +56,11 @@ public sealed record DispensePrescriptionResponse(
 public static class DispensingMapping
 {
     /// <summary>Maps a dispensed-line projection row.</summary>
-    public static DispensingRecordItemDto ToDto(this DispensingRecordItemRow i)
+    internal static DispensingRecordItemDto ToDto(this DispensingRecordItemRow i)
         => new(i.MedicineBatchId, i.MedicineName, i.VariantName, i.BatchNumber, i.Quantity);
 
     /// <summary>Maps a record projection row (names + lines resolved separately).</summary>
-    public static DispensingRecordDto ToDto(
+    internal static DispensingRecordDto ToDto(
         this DispensingRecordRow r,
         string pharmacistName,
         IReadOnlyList<DispensingRecordItemDto> items)

@@ -5,7 +5,7 @@ namespace Application.Features.Dashboard.Dtos;
 public static class DashboardMapping
 {
     /// <summary>Maps a dashboard "latest" row (doctor name resolved separately).</summary>
-    public static PrescriptionListItemDto ToListItemDto(this DashboardPrescriptionRow row, string doctorName)
+    internal static PrescriptionListItemDto ToListItemDto(this DashboardPrescriptionRow row, string doctorName)
         => new(
             row.Id,
             row.DoctorId,
@@ -18,7 +18,7 @@ public static class DashboardMapping
             row.Status.ToString(),
             row.ItemCount);
 
-    public static DashboardSummaryDto ToDto(
+    internal static DashboardSummaryDto ToDto(
         this DashboardSummarySnapshot snapshot,
         IReadOnlyList<PrescriptionListItemDto> latestPending,
         IReadOnlyList<PrescriptionListItemDto> latestFragmented,

@@ -36,7 +36,7 @@ public static class InventoryMapping
     private const int WarningWithinDays = 90;
 
     /// <summary>Maps a low-stock projection row (display name built here).</summary>
-    public static LowStockDto ToDto(this LowStockRow r)
+    internal static LowStockDto ToDto(this LowStockRow r)
         => new(
             r.MedicineId,
             r.MedicineName,
@@ -50,7 +50,7 @@ public static class InventoryMapping
             r.Strength);
 
     /// <summary>Maps a summary projection row (stock status derived here).</summary>
-    public static MedicineInventorySummaryDto ToDto(this MedicineInventorySummaryRow r)
+    internal static MedicineInventorySummaryDto ToDto(this MedicineInventorySummaryRow r)
         => new(
             r.Id,
             r.Name,
@@ -65,7 +65,7 @@ public static class InventoryMapping
             r.ActiveBatchCount);
 
     /// <summary>Maps an expiry-alert projection row (display name + status derived here).</summary>
-    public static ExpiryAlertDto ToDto(this ExpiryAlertRow r)
+    internal static ExpiryAlertDto ToDto(this ExpiryAlertRow r)
         => new(
             r.BatchId,
             r.MedicineName,
@@ -78,7 +78,7 @@ public static class InventoryMapping
             GetExpiryStatus(r.DaysToExpiry));
 
     /// <summary>Maps an adjustment projection row (display name + adjuster name applied here).</summary>
-    public static InventoryAdjustmentDto ToDto(this InventoryAdjustmentRow r, string? adjustedByName)
+    internal static InventoryAdjustmentDto ToDto(this InventoryAdjustmentRow r, string? adjustedByName)
         => new(
             r.Id,
             r.MedicineBatchId,

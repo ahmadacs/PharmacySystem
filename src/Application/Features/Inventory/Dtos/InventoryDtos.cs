@@ -1,10 +1,10 @@
 namespace Application.Features.Inventory.Dtos;
 
 /// <summary>
-/// EF projection row for the low-stock list.
-/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// Internal EF projection shape for the low-stock list.
+/// Raw variant codes only; VariantName is built in <c>InventoryMapping.ToDto</c>.
 /// </summary>
-public sealed record LowStockRow(
+internal sealed record LowStockRow(
     Guid MedicineId,
     string MedicineName,
     string? MedicineNameAr,
@@ -16,10 +16,10 @@ public sealed record LowStockRow(
     decimal Strength);
 
 /// <summary>
-/// EF projection row for the inventory summary list.
-/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// Internal EF projection shape for the inventory summary list.
+/// StockStatus is derived in <c>InventoryMapping.ToDto</c> (not SQL-translatable).
 /// </summary>
-public sealed record MedicineInventorySummaryRow(
+internal sealed record MedicineInventorySummaryRow(
     Guid Id,
     string Name,
     string? NameAr,
@@ -33,10 +33,11 @@ public sealed record MedicineInventorySummaryRow(
     int ActiveBatchCount);
 
 /// <summary>
-/// EF projection row for the expiry-alerts list.
-/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// Internal EF projection shape for the expiry-alerts list.
+/// Status (Expired/Critical/Warning/Safe) is derived in
+/// <c>InventoryMapping.ToDto</c>.
 /// </summary>
-public sealed record ExpiryAlertRow(
+internal sealed record ExpiryAlertRow(
     Guid BatchId,
     string MedicineName,
     string? MedicineNameAr,
@@ -49,10 +50,10 @@ public sealed record ExpiryAlertRow(
     int RemainingQuantity);
 
 /// <summary>
-/// EF projection row for the adjustments list.
-/// Never constructed outside queries; maps via <c>InventoryMapping.ToDto</c>.
+/// Internal EF projection shape for the adjustments list.
+/// VariantName + adjuster name are applied in <c>InventoryMapping.ToDto</c>.
 /// </summary>
-public sealed record InventoryAdjustmentRow(
+internal sealed record InventoryAdjustmentRow(
     Guid Id,
     Guid MedicineBatchId,
     string MedicineName,

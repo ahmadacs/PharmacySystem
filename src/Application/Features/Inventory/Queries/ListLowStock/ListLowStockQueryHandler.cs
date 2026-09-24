@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -39,9 +40,9 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "available" => SortDir(AvailableStock(asOf), request.SortDir),
-            "strength" => SortDir(v => v.Strength, request.SortDir),
-            _ => SortDir(v => v.Medicine!.Name, request.SortDir)
+            "quantity" or "available" => q => q.OrderByDirection(AvailableStock(asOf), request.SortDir),
+            "strength" => q => q.OrderByDirection(v => v.Strength, request.SortDir),
+            _ => q => q.OrderByDirection(v => v.Medicine!.Name, request.SortDir)
         });
 
         var totalCount = await _repo.CountAsync(spec, cancellationToken);
@@ -60,10 +61,4 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
     private static Expression<Func<MedicineVariant, int>> AvailableStock(DateOnly asOf)
         => v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0;
 
-    private static Func<IQueryable<MedicineVariant>, IOrderedQueryable<MedicineVariant>> SortDir<TKey>(
-        Expression<Func<MedicineVariant, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

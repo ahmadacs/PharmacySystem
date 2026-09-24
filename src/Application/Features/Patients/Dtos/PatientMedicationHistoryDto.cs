@@ -42,10 +42,11 @@ public sealed record PatientPrescriptionHistoryDto(
     IReadOnlyList<PatientMedicationItemDto> Items);
 
 /// <summary>
-/// Query projection row for one prescribed line (variant info flattened).
-/// Never constructed outside queries; maps via <c>PatientMedicationMapping</c>.
+/// Internal query projection shape for one prescribed line (variant info flattened).
+/// Computed fields (Remaining, NextEligibleDate, IsCurrentlyActive) live in
+/// <c>PatientMedicationMapping</c>.
 /// </summary>
-public sealed record PatientMedicationItemRow(
+internal sealed record PatientMedicationItemRow(
     Guid Id,
     Guid MedicineVariantId,
     Guid MedicineId,
@@ -64,10 +65,9 @@ public sealed record PatientMedicationItemRow(
     DateOnly? LastDispensedAt);
 
 /// <summary>
-/// Single-query projection shape for the patient history screen.
-/// Never constructed outside queries; maps via <c>PatientMedicationMapping</c>.
+/// Internal single-query shape for the patient history screen.
 /// </summary>
-public sealed record PatientPrescriptionHistoryRow(
+internal sealed record PatientPrescriptionHistoryRow(
     Guid Id,
     DateOnly IssuedDate,
     PrescriptionStatus Status,
@@ -114,7 +114,7 @@ public static class PatientMedicationMapping
     /// Assembles the history DTO from the single-query projection rows
     /// (see GetPatientPrescriptionsQueryHandler).
     /// </summary>
-    public static PatientPrescriptionHistoryDto ToDto(this PatientPrescriptionHistoryRow r, DateOnly cutoff)
+    internal static PatientPrescriptionHistoryDto ToDto(this PatientPrescriptionHistoryRow r, DateOnly cutoff)
     {
         var status = r.Status.ToString();
         var items = r.Items.Select(i => new PatientMedicationItemDto(

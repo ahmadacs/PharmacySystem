@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
@@ -82,10 +83,10 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "createdat" => SortDir(p => p.CreatedAt, request.SortDir),
-            "patientname" => SortDir(p => p.Patient != null ? (p.Patient.LastName + " " + p.Patient.FirstName) : string.Empty, request.SortDir),
-            "status" => SortDir(p => p.Status, request.SortDir),
-            _ => SortDir(p => p.IssuedDate, request.SortDir)
+            "createdat" => q => q.OrderByDirection(p => p.CreatedAt, request.SortDir),
+            "patientname" => q => q.OrderByDirection(p => p.Patient != null ? (p.Patient.LastName + " " + p.Patient.FirstName) : string.Empty, request.SortDir),
+            "status" => q => q.OrderByDirection(p => p.Status, request.SortDir),
+            _ => q => q.OrderByDirection(p => p.IssuedDate, request.SortDir)
         });
 
         var totalCount = await _prescriptions.CountAsync(spec, cancellationToken);
@@ -103,11 +104,4 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
 
         return Result<PagedList<PrescriptionListItemDto>>.Success(items);
     }
-
-    private static Func<IQueryable<Prescription>, IOrderedQueryable<Prescription>> SortDir<TKey>(
-        System.Linq.Expressions.Expression<Func<Prescription, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

@@ -1,3 +1,4 @@
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -60,9 +61,9 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" => SortDir(b => b.QuantityAvailable.Value, request.SortDir),
-            "batch" => SortDir(b => b.BatchNumber, request.SortDir),
-            _ => SortDir(b => b.ExpiryDate, request.SortDir)
+            "quantity" => q => q.OrderByDirection(b => b.QuantityAvailable.Value, request.SortDir),
+            "batch" => q => q.OrderByDirection(b => b.BatchNumber, request.SortDir),
+            _ => q => q.OrderByDirection(b => b.ExpiryDate, request.SortDir)
         });
 
         var totalCount = await _batches.CountAsync(spec, cancellationToken);
@@ -86,11 +87,4 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
             "expired" => (null, asOf),
             _ => (null, null)
         };
-
-    private static Func<IQueryable<MedicineBatch>, IOrderedQueryable<MedicineBatch>> SortDir<TKey>(
-        System.Linq.Expressions.Expression<Func<MedicineBatch, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

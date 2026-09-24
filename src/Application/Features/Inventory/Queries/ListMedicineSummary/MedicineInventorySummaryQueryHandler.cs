@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
@@ -70,11 +71,11 @@ public sealed class MedicineInventorySummaryQueryHandler
 
         spec.Order(request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "available" or "totalquantity" => SortDir(TotalQuantity(asOf), request.SortDir),
-            "reorder" or "reorderlevel" => SortDir(ReorderLevelSum(), request.SortDir),
-            "nearestExpiry" or "expiry" => SortDir(NearestExpiry(asOf), request.SortDir),
-            "variantCount" or "variants" => SortDir(m => m.Variants.Count(v => v.IsActive), request.SortDir),
-            _ => SortDir(m => m.Name, request.SortDir)
+            "quantity" or "available" or "totalquantity" => q => q.OrderByDirection(TotalQuantity(asOf), request.SortDir),
+            "reorder" or "reorderlevel" => q => q.OrderByDirection(ReorderLevelSum(), request.SortDir),
+            "nearestExpiry" or "expiry" => q => q.OrderByDirection(NearestExpiry(asOf), request.SortDir),
+            "variantCount" or "variants" => q => q.OrderByDirection(m => m.Variants.Count(v => v.IsActive), request.SortDir),
+            _ => q => q.OrderByDirection(m => m.Name, request.SortDir)
         });
 
         var totalCount = await _repo.CountAsync(spec, cancellationToken);
@@ -120,10 +121,4 @@ public sealed class MedicineInventorySummaryQueryHandler
         => m => !m.Variants.Where(v => v.IsActive).Any(v =>
                 v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
 
-    private static Func<IQueryable<Medicine>, IOrderedQueryable<Medicine>> SortDir<TKey>(
-        Expression<Func<Medicine, TKey>> keySelector,
-        string sortDir)
-        => sortDir.Equals("desc", StringComparison.OrdinalIgnoreCase)
-            ? q => q.OrderByDescending(keySelector)
-            : q => q.OrderBy(keySelector);
 }

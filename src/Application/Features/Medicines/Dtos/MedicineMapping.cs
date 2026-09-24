@@ -37,7 +37,7 @@ public static class MedicineMapping
     }
 
     /// <summary>Maps a list-screen projection row (server-computed sums included).</summary>
-    public static MedicineVariantSummaryDto ToDto(this MedicineVariantRow v)
+    internal static MedicineVariantSummaryDto ToDto(this MedicineVariantRow v)
         => new(
             v.Id,
             v.Form,
@@ -53,7 +53,7 @@ public static class MedicineMapping
             v.IsDivisible);
 
     /// <summary>Maps a list-screen projection row (server-computed sums included).</summary>
-    public static MedicineListItemDto ToDto(this MedicineRow r)
+    internal static MedicineListItemDto ToDto(this MedicineRow r)
     {
         var variants = r.Variants.Select(v => v.ToDto()).ToList();
 
@@ -68,7 +68,7 @@ public static class MedicineMapping
             r.IsControlled,
             r.IsActive,
             variants.Sum(v => v.AvailableQuantity),
-            r.VariantCount,
+            variants.Count,
             variants.Any(v => v.IsLowStock));
     }
 
@@ -79,7 +79,7 @@ public static class MedicineMapping
     /// (see GetMedicineQueryHandler). DisplayName/IsLowStock rules are reused
     /// from the row mappings instead of being recomputed here.
     /// </summary>
-    public static MedicineDetailsDto ToDto(this MedicineDetailsRow r, DateOnly asOf)
+    internal static MedicineDetailsDto ToDto(this MedicineDetailsRow r, DateOnly asOf)
     {
         var variants = r.Variants.Select(v =>
         {
@@ -120,7 +120,7 @@ public static class MedicineMapping
     /// Same field semantics as the list screen: days-to-expiry is always the
     /// day difference (negative when expired), status is Expired/Depleted/Active.
     /// </summary>
-    public static MedicineBatchDto ToDto(this MedicineBatchRow r, DateOnly asOf)
+    internal static MedicineBatchDto ToDto(this MedicineBatchRow r, DateOnly asOf)
     {
         var isExpired = r.ExpiryDate <= asOf;
         var status = isExpired
@@ -141,12 +141,12 @@ public static class MedicineMapping
             r.QuantityReceived,
             r.QuantityAvailable,
             r.DispensedQuantity,
-            r.UnitCostAmount,
+            r.UnitCost,
             r.SupplierName,
             isExpired,
             r.ExpiryDate.DayNumber - asOf.DayNumber,
             status,
-            r.CreatedAt);
+            r.ReceivedDate);
     }
 
     public static Medicine ToEntity(this CreateMedicineRequest request, CategoryEnum categoryEnum, GenericName genericName)
