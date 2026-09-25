@@ -1,4 +1,3 @@
-import { HttpParams } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -29,7 +28,8 @@ import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions, Roles } from '../../../core/constants/permissions';
 import { PrescriptionListItemDto, PrescriptionStatus } from '../../../core/models/api.models';
-import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
+import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
+import { openForResult } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -106,13 +106,7 @@ export class PrescriptionsListComponent {
   protected readonly status = signal<PrescriptionStatus | null>(null);
 
   protected readonly prescriptions = createPagedResource<PrescriptionListItemDto>(() => {
-    let params = new HttpParams()
-      .set('page', this.table.page())
-      .set('pageSize', this.table.pageSize())
-      .set('search', this.table.search())
-      .set('sortBy', this.table.sortBy())
-      .set('sortDir', this.table.sortDir());
-    if (this.status()) params = params.set('status', this.status()!);
+    const params = buildPagedParams(this.table, { status: this.status() || null });
     return { url: `${environment.apiUrl}/prescriptions`, params };
   });
 
@@ -131,24 +125,22 @@ export class PrescriptionsListComponent {
   }
 
   private refreshPrescriptions(): void {
-    if (this.page() === 1) {
-      void this.prescriptions.reload();
-    } else {
-      this.page.set(1);
-    }
+    refreshPaged(this.table, this.prescriptions);
   }
 
   openCreate(): void {
-    const ref = this.dialog.open(PrescriptionFormDialogComponent, {
-      width: '980px',
-      maxWidth: '96vw',
-      panelClass: 'sidenav-aware-dialog'
-    });
-    ref.afterClosed().subscribe((created: boolean) => {
-      if (created) {
+    openForResult(
+      this.dialog,
+      PrescriptionFormDialogComponent,
+      {
+        width: '980px',
+        maxWidth: '96vw',
+        panelClass: 'sidenav-aware-dialog'
+      },
+      () => {
         this.refreshPrescriptions();
       }
-    });
+    );
   }
 
   openDetails(prescription: PrescriptionListItemDto): void {
@@ -156,11 +148,8 @@ export class PrescriptionsListComponent {
   }
 
   openDispense(prescription: PrescriptionListItemDto): void {
-    const ref = this.dialog.open(DispenseDialogComponent, { width: '560px', data: prescription.id });
-    ref.afterClosed().subscribe((dispensed: boolean) => {
-      if (dispensed) {
-        this.refreshPrescriptions();
-      }
+    openForResult(this.dialog, DispenseDialogComponent, { width: '560px', data: prescription.id }, () => {
+      this.refreshPrescriptions();
     });
   }
 }

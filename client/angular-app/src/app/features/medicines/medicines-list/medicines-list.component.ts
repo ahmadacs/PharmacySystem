@@ -1,4 +1,3 @@
-import { HttpParams } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -24,16 +23,16 @@ import {
 } from '@angular/material/table';
 import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
 import { CategoryEnum, MedicineForm, MedicineListItemDto } from '../../../core/models/api.models';
 import { ExportService } from '../../../core/services/export.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { confirmAndMutate, openForResult } from '../../../core/utils/dialog-helpers';
+import { numericEnumValues } from '../../../core/utils/entity-helpers';
 import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
-import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -90,9 +89,7 @@ export class MedicinesListComponent {
 
   protected readonly permissions = Permissions;
   protected readonly medicineForm = MedicineForm;
-  protected readonly forms = Object.values(MedicineForm).filter(
-    (form): form is MedicineForm => typeof form === 'number'
-  );
+  protected readonly forms = numericEnumValues(MedicineForm);
   protected readonly displayedColumns = computed(() => {
     const columns = ['name', 'category', 'variants', 'stock', 'status'];
     if (
@@ -115,18 +112,14 @@ export class MedicinesListComponent {
   protected readonly form = signal<MedicineForm | null>(null);
   protected readonly isActive = signal<boolean | null>(null);
 
-  protected readonly categories = Object.values(CategoryEnum).filter(v => typeof v === 'number');
+  protected readonly categories = numericEnumValues(CategoryEnum);
 
   protected readonly medicines = createPagedResource<MedicineListItemDto>(() => {
-    let params = new HttpParams()
-      .set('page', this.table.page())
-      .set('pageSize', this.table.pageSize())
-      .set('search', this.table.search())
-      .set('sortBy', this.table.sortBy())
-      .set('sortDir', this.table.sortDir());
-    if (this.categoryId()) params = params.set('categoryId', this.categoryId()!);
-    if (this.form()) params = params.set('form', this.form()!);
-    if (this.isActive() !== null) params = params.set('isActive', this.isActive()!);
+    const params = buildPagedParams(this.table, {
+      categoryId: this.categoryId() || null,
+      form: this.form() || null,
+      isActive: this.isActive(),
+    });
     return { url: `${environment.apiUrl}/medicines`, params };
   });
 
@@ -154,28 +147,18 @@ export class MedicinesListComponent {
   }
 
   private refreshMedicines(): void {
-    if (this.page() === 1) {
-      void this.medicines.reload();
-    } else {
-      this.page.set(1);
-    }
+    refreshPaged(this.table, this.medicines);
   }
 
   openCreate(): void {
-    const ref = this.dialog.open(MedicineFormDialogComponent, { width: '640px', data: null });
-    ref.afterClosed().subscribe((created: boolean) => {
-      if (created) {
-        this.refreshMedicines();
-      }
+    openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', data: null }, () => {
+      this.refreshMedicines();
     });
   }
 
   openEdit(medicine: MedicineListItemDto): void {
-    const ref = this.dialog.open(MedicineFormDialogComponent, { width: '640px', data: medicine });
-    ref.afterClosed().subscribe((updated: boolean) => {
-      if (updated) {
-        this.refreshMedicines();
-      }
+    openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', data: medicine }, () => {
+      this.refreshMedicines();
     });
   }
 
@@ -184,11 +167,8 @@ export class MedicinesListComponent {
   }
 
   openAddBatch(medicine: MedicineListItemDto): void {
-    const ref = this.dialog.open(BatchFormDialogComponent, { width: '520px', data: medicine.id });
-    ref.afterClosed().subscribe((added: boolean) => {
-      if (added) {
-        this.refreshMedicines();
-      }
+    openForResult(this.dialog, BatchFormDialogComponent, { width: '520px', data: medicine.id }, () => {
+      this.refreshMedicines();
     });
   }
 
@@ -197,27 +177,18 @@ export class MedicinesListComponent {
   }
 
   async deleteMedicine(medicine: MedicineListItemDto): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialog
-        .open(ConfirmDialogComponent, {
-          data: {
-            title: this.translate.instant('common.delete'),
-            message: this.translate.instant('medicines.deleteConfirm', { name: medicine.name }),
-            confirmLabel: this.translate.instant('common.delete'),
-            danger: true
-          }
-        })
-        .afterClosed()
+    await confirmAndMutate(
+      this.dialog,
+      this.toast,
+      {
+        title: this.translate.instant('common.delete'),
+        message: this.translate.instant('medicines.deleteConfirm', { name: medicine.name }),
+        confirmLabel: this.translate.instant('common.delete'),
+        danger: true
+      },
+      () => this.medicinesService.remove(medicine.id),
+      this.translate.instant('medicines.deleted'),
+      () => this.refreshMedicines()
     );
-    if (!confirmed) {
-      return;
-    }
-    try {
-      await this.medicinesService.remove(medicine.id);
-      this.toast.show(this.translate.instant('medicines.deleted'), 'success');
-      this.refreshMedicines();
-    } catch {
-      // error toast already shown by the error interceptor
-    }
   }
 }

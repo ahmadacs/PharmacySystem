@@ -1,5 +1,5 @@
 import { HttpParams, httpResource } from '@angular/common/http';
-import { DestroyRef, WritableSignal, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Signal, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { PageEvent } from '@angular/material/paginator';
@@ -52,6 +52,29 @@ export interface PagedTable {
   resetToFirstPage(): void;
 }
 
+export type PagedExtraParams = Record<string, string | number | boolean | null | undefined>;
+
+/**
+ * Builds the base paged-table params (page, pageSize, search, sortBy, sortDir)
+ * plus any caller-specific extra params. Entries whose value is null/undefined
+ * are skipped, so optional filters can be passed directly:
+ * `buildPagedParams(this.table, { status: this.status() })`.
+ */
+export function buildPagedParams(table: PagedTable, extra: PagedExtraParams = {}): HttpParams {
+  let params = new HttpParams()
+    .set('page', table.page())
+    .set('pageSize', table.pageSize())
+    .set('search', table.search())
+    .set('sortBy', table.sortBy())
+    .set('sortDir', table.sortDir());
+  for (const [key, value] of Object.entries(extra)) {
+    if (value !== null && value !== undefined) {
+      params = params.set(key, value);
+    }
+  }
+  return params;
+}
+
 export function createPagedTable(options: PagedTableOptions, destroyRef?: DestroyRef): PagedTable {
   const page = signal(1);
   const pageSize = signal(options.defaultPageSize ?? 10);
@@ -98,6 +121,19 @@ export function createPagedTable(options: PagedTableOptions, destroyRef?: Destro
 }
 
 /**
+ * Refreshes a server-side paged table: reloads in place when already on the
+ * first page, otherwise jumps back to it (which triggers a reload).
+ * Replaces the 4x identical private `refreshX()` methods in the list screens.
+ */
+export function refreshPaged(table: PagedTable, resource: { reload(): unknown }): void {
+  if (table.page() === 1) {
+    resource.reload();
+  } else {
+    table.page.set(1);
+  }
+}
+
+/**
  * Thin wrapper around `httpResource` with a typed empty-page default value.
  */
 export function createPagedResource<T>(request: () => PagedRequest | undefined) {
@@ -106,4 +142,46 @@ export function createPagedResource<T>(request: () => PagedRequest | undefined) 
   });
   const totalCount = computed(() => resource.value()?.totalCount ?? 0);
   return Object.assign(resource, { totalCount });
+}
+
+export interface PagedTab<TData, TFilter> {
+  table: PagedTable;
+  data: TData;
+  count: Signal<number>;
+  filter: WritableSignal<TFilter>;
+}
+
+export interface PagedTabWithoutFilter<TData> {
+  table: PagedTable;
+  data: TData;
+  count: Signal<number>;
+  filter?: undefined;
+}
+
+/**
+ * Generic bundle for one tab of a multi-tab screen: its table state, its
+ * paged resource, the resource's totalCount, and its optional filter signal.
+ * Generics preserve each tab's exact DTO/filter types, so template bindings
+ * (e.g. `tabs.batches.filter.set(...)`) keep full type-checking.
+ */
+export function createPagedTab<TData extends { totalCount: Signal<number> }, TFilter>(
+  table: PagedTable,
+  data: TData,
+  filter: WritableSignal<TFilter>,
+): PagedTab<TData, TFilter>;
+export function createPagedTab<TData extends { totalCount: Signal<number> }>(
+  table: PagedTable,
+  data: TData,
+): PagedTabWithoutFilter<TData>;
+export function createPagedTab(
+  table: PagedTable,
+  data: { totalCount: Signal<number> },
+  filter?: WritableSignal<unknown>,
+): {
+  table: PagedTable;
+  data: { totalCount: Signal<number> };
+  count: Signal<number>;
+  filter?: WritableSignal<unknown>;
+} {
+  return { table, data, count: data.totalCount, filter };
 }

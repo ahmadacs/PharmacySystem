@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { ResourceApi } from '../../core/api/crud-api';
 import {
   CreatePrescriptionRequest,
   PagedResult,
@@ -12,9 +13,13 @@ import {
 } from '../../core/models/api.models';
 
 @Injectable({ providedIn: 'root' })
-export class PrescriptionsService {
-  private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/prescriptions`;
+export class PrescriptionsService extends ResourceApi<
+  PrescriptionDetailsDto,
+  CreatePrescriptionRequest
+> {
+  constructor() {
+    super(inject(HttpClient), `${environment.apiUrl}/prescriptions`);
+  }
 
   list(params?: {
     page?: number;
@@ -29,18 +34,6 @@ export class PrescriptionsService {
     if (params?.status) httpParams = httpParams.set('status', params.status);
     return firstValueFrom(
       this.http.get<PagedResult<PrescriptionListItemDto>>(this.baseUrl, { params: httpParams })
-    );
-  }
-
-  get(id: string): Promise<PrescriptionDetailsDto> {
-    return firstValueFrom(this.http.get<PrescriptionDetailsDto>(`${this.baseUrl}/${id}`));
-  }
-
-  create(request: CreatePrescriptionRequest): Promise<PrescriptionDetailsDto> {
-    // Sent as typed — the backend canonicalizes to +966... before
-    // find-or-create, so every spelling maps to the same patient.
-    return firstValueFrom(
-      this.http.post<PrescriptionDetailsDto>(this.baseUrl, request)
     );
   }
 

@@ -10,6 +10,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 
 @Component({ selector: 'app-reset-password', standalone: true,   imports: [ReactiveFormsModule, TranslatePipe, MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatCardFooter, MatFormField, MatInput, MatLabel, MatError, MatButton, MatIcon, MatProgressBar, RouterLink], templateUrl: './reset-password.component.html', styleUrl: './reset-password.component.scss' })
 export class ResetPasswordComponent {
@@ -26,10 +27,11 @@ export class ResetPasswordComponent {
   });
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) { this.form.markAllAsTouched(); return; }
-    this.submitting.set(true);
-    try { await this.authService.resetPassword(this.form.getRawValue()); this.toast.show('Password reset successfully.', 'success'); await this.router.navigate(['/login']); }
-    catch { /* Error toast is shown by the error interceptor. */ }
-    finally { this.submitting.set(false); }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      () => this.authService.resetPassword(this.form.getRawValue()),
+      async () => { this.toast.show('Password reset successfully.', 'success'); await this.router.navigate(['/login']); }
+    );
   }
 }

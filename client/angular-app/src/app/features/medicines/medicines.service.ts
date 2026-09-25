@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { CrudApi } from '../../core/api/crud-api';
 import {
   CreateBatchRequest,
   CreateMedicineRequest,
@@ -11,24 +12,13 @@ import {
 } from '../../core/models/api.models';
 
 @Injectable({ providedIn: 'root' })
-export class MedicinesService {
-  private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/medicines`;
-
-  get(id: string): Promise<MedicineDetailsDto> {
-    return firstValueFrom(this.http.get<MedicineDetailsDto>(`${this.baseUrl}/${id}`));
-  }
-
-  create(request: CreateMedicineRequest): Promise<MedicineDetailsDto> {
-    return firstValueFrom(this.http.post<MedicineDetailsDto>(this.baseUrl, request));
-  }
-
-  update(id: string, request: UpdateMedicineRequest): Promise<void> {
-    return firstValueFrom(this.http.patch<void>(`${this.baseUrl}/${id}`, request));
-  }
-
-  remove(id: string): Promise<void> {
-    return firstValueFrom(this.http.delete<void>(`${this.baseUrl}/${id}`));
+export class MedicinesService extends CrudApi<
+  MedicineDetailsDto,
+  CreateMedicineRequest,
+  UpdateMedicineRequest
+> {
+  constructor() {
+    super(inject(HttpClient), `${environment.apiUrl}/medicines`);
   }
 
   addBatch(medicineId: string, request: CreateBatchRequest): Promise<MedicineBatchDto> {

@@ -17,6 +17,7 @@ import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 import { UsersService } from '../users.service';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
@@ -71,32 +72,28 @@ export class UserFormDialogComponent {
   });
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.submitting.set(true);
-    try {
-      const value = this.form.getRawValue();
-      const isDoctor = value.role === 'Doctor';
-      await this.usersService.create({
-        firstName: value.firstName,
-        lastName: value.lastName,
-        email: value.email,
-        password: value.password,
-        confirmPassword: value.confirmPassword,
-        role: value.role,
-        licenseNumber: isDoctor && value.licenseNumber ? value.licenseNumber : undefined,
-        specialization: isDoctor && value.specialization ? value.specialization : undefined,
-        phoneNumber: isDoctor && value.phoneNumber ? value.phoneNumber : undefined
-      });
-      this.toast.show('User created.', 'success');
-      this.dialogRef.close(true);
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      async () => {
+        const value = this.form.getRawValue();
+        const isDoctor = value.role === 'Doctor';
+        await this.usersService.create({
+          firstName: value.firstName,
+          lastName: value.lastName,
+          email: value.email,
+          password: value.password,
+          confirmPassword: value.confirmPassword,
+          role: value.role,
+          licenseNumber: isDoctor && value.licenseNumber ? value.licenseNumber : undefined,
+          specialization: isDoctor && value.specialization ? value.specialization : undefined,
+          phoneNumber: isDoctor && value.phoneNumber ? value.phoneNumber : undefined
+        });
+      },
+      () => {
+        this.toast.show('User created.', 'success');
+        this.dialogRef.close(true);
+      }
+    );
   }
 }

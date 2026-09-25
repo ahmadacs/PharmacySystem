@@ -17,14 +17,14 @@ import {
   MatHeaderRow,
   MatRow
 } from '@angular/material/table';
-import { firstValueFrom } from 'rxjs';
 import { Permissions } from '../../../core/constants/permissions';
 import { PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { confirmAndMutate } from '../../../core/utils/dialog-helpers';
+import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../prescriptions.service';
 import { ExportService } from '../../../core/services/export.service';
 import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
@@ -78,11 +78,7 @@ export class PrescriptionDetailsDialogComponent {
   }
 
   private async load(): Promise<void> {
-    try {
-      this.prescription.set(await this.prescriptionsService.get(this.prescriptionId));
-    } catch {
-      // error toast already shown by the error interceptor
-    }
+    await reloadDetails(this.prescription, () => this.prescriptionsService.get(this.prescriptionId));
   }
 
   protected shortId(id: string): string {
@@ -122,26 +118,19 @@ export class PrescriptionDetailsDialogComponent {
   }
 
   async cancel(id: string): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialog
-        .open(ConfirmDialogComponent, {
-          data: {
-            title: 'Cancel prescription',
-            message: 'Cancel this prescription? This cannot be undone.',
-            confirmLabel: 'Cancel prescription',
-            danger: true
-          }
-        })
-        .afterClosed()
+    await confirmAndMutate(
+      this.dialog,
+      this.toast,
+      {
+        title: 'Cancel prescription',
+        message: 'Cancel this prescription? This cannot be undone.',
+        confirmLabel: 'Cancel prescription',
+        danger: true
+      },
+      () => this.prescriptionsService.cancel(id),
+      'Prescription cancelled.',
+      () => this.dialogRef.close(true)
     );
-    if (!confirmed) return;
-    try {
-      await this.prescriptionsService.cancel(id);
-      this.toast.show('Prescription cancelled.', 'success');
-      this.dialogRef.close(true);
-    } catch {
-      // error toast already shown by the error interceptor
-    }
   }
 
   async print(): Promise<void> {
@@ -161,7 +150,7 @@ export class PrescriptionDetailsDialogComponent {
     try {
       await this.prescriptionsService.refillItem(prescriptionId, itemId);
       this.toast.show('Item refilled.', 'success');
-      this.prescription.set(await this.prescriptionsService.get(prescriptionId));
+      await reloadDetails(this.prescription, () => this.prescriptionsService.get(prescriptionId));
     } catch {
       // error toast already shown by the error interceptor
     }
@@ -173,7 +162,7 @@ export class PrescriptionDetailsDialogComponent {
     try {
       await this.prescriptionsService.refillItems(p.id, ids);
       this.toast.show('Eligible items refilled.', 'success');
-      this.prescription.set(await this.prescriptionsService.get(p.id));
+      await reloadDetails(this.prescription, () => this.prescriptionsService.get(p.id));
     } catch {
       // error toast already shown by the error interceptor
     }

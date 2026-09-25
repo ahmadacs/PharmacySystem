@@ -13,6 +13,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TokenStore } from '../../../core/auth/token.store';
 import { ToastService } from '../../../core/services/toast.service';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 
 @Component({
   selector: 'app-register',
@@ -39,21 +40,16 @@ export class RegisterComponent {
   });
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    this.submitting.set(true);
-    try {
-      const response = await this.authService.register(this.form.getRawValue());
-      this.authStore.setSession(response.user);
-      this.tokenStore.setAccessToken(response.accessToken);
-      this.toast.show('Account created successfully.', 'success');
-      await this.router.navigate(['/dashboard']);
-    } catch {
-      // Error toast is shown by the error interceptor.
-    } finally {
-      this.submitting.set(false);
-    }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      () => this.authService.register(this.form.getRawValue()),
+      async (response) => {
+        this.authStore.setSession(response.user);
+        this.tokenStore.setAccessToken(response.accessToken);
+        this.toast.show('Account created successfully.', 'success');
+        await this.router.navigate(['/dashboard']);
+      }
+    );
   }
 }

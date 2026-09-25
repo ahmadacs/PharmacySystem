@@ -29,6 +29,7 @@ import {
 } from '../../../core/models/api.models';
 import { startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
 import { FileUploadDto } from '../../../core/models/inventory.models';
@@ -467,47 +468,43 @@ export class PrescriptionFormDialogComponent {
     // Refill correctness is enforced by refillsAllowedValidator on each item
     // group — no duplicated manual check here. markAllAsTouched recurses into
     // the FormArray, so one call covers every row.
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.submitting.set(true);
-    try {
-      const value = this.form.getRawValue();
-      let fileDto: FileUploadDto | undefined;
-      if (this.file()) {
-        const selected = this.file()!;
-        fileDto = {
-          fileName: selected.name,
-          contentType: selected.type,
-          sizeBytes: selected.size,
-          base64Content: await this.fileService.fileToBase64(selected)
-        };
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      async () => {
+        const value = this.form.getRawValue();
+        let fileDto: FileUploadDto | undefined;
+        if (this.file()) {
+          const selected = this.file()!;
+          fileDto = {
+            fileName: selected.name,
+            contentType: selected.type,
+            sizeBytes: selected.size,
+            base64Content: await this.fileService.fileToBase64(selected)
+          };
+        }
+        await this.prescriptionsService.create({
+          patientFirstName: value.patientFirstName,
+          patientLastName: value.patientLastName,
+          patientDateOfBirth: toDateString(value.patientDateOfBirth)!,
+          patientPhoneNumber: value.patientPhoneNumber || undefined,
+          diagnosis: value.diagnosis || undefined,
+          issuedDate: toDateString(value.issuedDate)!,
+          items: value.items.map((item) => ({
+            medicineVariantId: item['medicineVariantId'] as string,
+            quantity: item['quantity'],
+            dosageInstructions: item['dosageInstructions'] || undefined,
+            isRefillable: item['isRefillable'] as boolean,
+            refillsAllowed: item['refillsAllowed'] as number,
+            refillIntervalDays: Number(item['refillIntervalDays']) || 0
+          })),
+          file: fileDto
+        });
+      },
+      () => {
+        this.toast.show(this.translate.instant('dialogs.prescriptionForm.created'), 'success');
+        this.dialogRef.close(true);
       }
-      await this.prescriptionsService.create({
-        patientFirstName: value.patientFirstName,
-        patientLastName: value.patientLastName,
-        patientDateOfBirth: toDateString(value.patientDateOfBirth)!,
-        patientPhoneNumber: value.patientPhoneNumber || undefined,
-        diagnosis: value.diagnosis || undefined,
-        issuedDate: toDateString(value.issuedDate)!,
-        items: value.items.map((item) => ({
-          medicineVariantId: item['medicineVariantId'] as string,
-          quantity: item['quantity'],
-          dosageInstructions: item['dosageInstructions'] || undefined,
-          isRefillable: item['isRefillable'] as boolean,
-          refillsAllowed: item['refillsAllowed'] as number,
-          refillIntervalDays: Number(item['refillIntervalDays']) || 0
-        })),
-        file: fileDto
-      });
-      this.toast.show(this.translate.instant('dialogs.prescriptionForm.created'), 'success');
-      this.dialogRef.close(true);
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+    );
   }
 }

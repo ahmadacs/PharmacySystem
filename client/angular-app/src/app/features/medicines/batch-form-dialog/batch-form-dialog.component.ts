@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
@@ -13,16 +13,10 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { FileService } from '../../../core/services/file.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { startOfDay, toDateString } from '../../../core/utils/date-utils';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { reloadDetails } from '../../../core/utils/entity-helpers';
+import { futureOrEqualDate, startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { MedicinesService } from '../medicines.service';
-
-function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
-  const value = control.value as Date | null;
-  if (!value) {
-    return null;
-  }
-  return startOfDay(value) >= startOfDay(new Date()) ? null : { pastDate: true };
-}
 
 @Component({
   selector: 'app-batch-form-dialog',
@@ -65,9 +59,8 @@ export class BatchFormDialogComponent {
   protected readonly fileUploading = signal(false);
 
   constructor() {
-    void this.medicinesService.get(this.medicineId).then((details) => {
-      this.medicine.set(details);
-      const first = details.variants[0];
+    void reloadDetails(this.medicine, () => this.medicinesService.get(this.medicineId)).then(() => {
+      const first = this.medicine()?.variants[0];
       if (first) {
         this.form.controls.medicineVariantId.setValue(first.id);
       }
@@ -131,41 +124,36 @@ export class BatchFormDialogComponent {
   }
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      return;
-    }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      async () => {
+        const value = this.form.getRawValue();
 
-    this.submitting.set(true);
-    try {
-      const value = this.form.getRawValue();
+        const batch = await this.medicinesService.addBatch(this.medicineId, {
+          medicineVariantId: value.medicineVariantId as string,
+          manufactureDate: toDateString(value.manufactureDate)!,
+          expiryDate: toDateString(value.expiryDate)!,
+          packagesReceived: value.packagesReceived,
+          unitCost: value.unitCost,
+          supplierName: value.supplierName || ''
+        });
 
-      const batch = await this.medicinesService.addBatch(this.medicineId, {
-        medicineVariantId: value.medicineVariantId as string,
-        manufactureDate: toDateString(value.manufactureDate)!,
-        expiryDate: toDateString(value.expiryDate)!,
-        packagesReceived: value.packagesReceived,
-        unitCost: value.unitCost,
-        supplierName: value.supplierName || ''
-      });
-
-      // Upload file for Batch if provided
-      if (this.file()) {
-        this.fileUploading.set(true);
-        try {
-          const file = this.file()!;
-          await this.fileService.upload('Batch', batch.id, file);
-        } finally {
-          this.fileUploading.set(false);
+        // Upload file for Batch if provided
+        if (this.file()) {
+          this.fileUploading.set(true);
+          try {
+            const file = this.file()!;
+            await this.fileService.upload('Batch', batch.id, file);
+          } finally {
+            this.fileUploading.set(false);
+          }
         }
+      },
+      () => {
+        this.toast.show('Batch added.', 'success');
+        this.dialogRef.close(true);
       }
-
-      this.toast.show('Batch added.', 'success');
-      this.dialogRef.close(true);
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+    );
   }
 }

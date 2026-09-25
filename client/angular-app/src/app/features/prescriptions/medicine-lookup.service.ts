@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { filterMedicinesByName } from '../../core/utils/localized-name.utils';
 import {
   MedicineDetailsDto,
   MedicineListItemDto,
@@ -67,16 +68,6 @@ export class MedicineLookupService {
   }
 
   filterMedicines(search: string): MedicineListItemDto[] {
-    const term = search.trim().toLowerCase();
-    if (!term) {
-      return this.medicines();
-    }
-    return this.medicines().filter(
-      (m) =>
-        m.name.toLowerCase().includes(term) ||
-        m.nameAr?.toLowerCase().includes(term) ||
-        m.genericName.toLowerCase().includes(term) ||
-        m.genericNameAr?.toLowerCase().includes(term),
-    );
+    return filterMedicinesByName(this.medicines(), search);
   }
 }

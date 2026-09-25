@@ -1,4 +1,3 @@
-import { HttpParams } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -27,15 +26,14 @@ import { environment } from '../../../../environments/environment';
 import { Permissions } from '../../../core/constants/permissions';
 import { UserDto, UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
-import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
+import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
+import { confirmAndMutate, openForResult } from '../../../core/utils/dialog-helpers';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { UsersService } from '../users.service';
 import { UserFormDialogComponent } from '../user-form-dialog/user-form-dialog.component';
-import { firstValueFrom } from 'rxjs';
 
 const USER_ROLES: UserRole[] = ['Admin', 'Pharmacist', 'Doctor'];
 
@@ -95,14 +93,10 @@ export class UsersListComponent {
   protected readonly isActive = signal<boolean | null>(null);
 
   protected readonly users = createPagedResource<UserDto>(() => {
-    let params = new HttpParams()
-      .set('page', this.table.page())
-      .set('pageSize', this.table.pageSize())
-      .set('search', this.table.search())
-      .set('sortBy', this.table.sortBy())
-      .set('sortDir', this.table.sortDir());
-    if (this.role()) params = params.set('role', this.role()!);
-    if (this.isActive() !== null) params = params.set('isActive', this.isActive()!);
+    const params = buildPagedParams(this.table, {
+      role: this.role() || null,
+      isActive: this.isActive(),
+    });
     return { url: `${environment.apiUrl}/users`, params };
   });
 
@@ -119,42 +113,28 @@ export class UsersListComponent {
   }
 
   private refreshUsers(): void {
-    if (this.page() === 1) {
-      void this.users.reload();
-    } else {
-      this.page.set(1);
-    }
+    refreshPaged(this.table, this.users);
   }
 
   openCreate(): void {
-    const ref = this.dialog.open(UserFormDialogComponent, { width: '560px' });
-    ref.afterClosed().subscribe((created: boolean) => {
-      if (created) {
-        this.refreshUsers();
-      }
+    openForResult(this.dialog, UserFormDialogComponent, { width: '560px' }, () => {
+      this.refreshUsers();
     });
   }
 
   async toggleActive(user: UserDto): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialog
-        .open(ConfirmDialogComponent, {
-          data: {
-            title: user.isActive ? 'Deactivate user' : 'Activate user',
-            message: `${user.isActive ? 'Deactivate' : 'Activate'} ${user.email}?`,
-            confirmLabel: user.isActive ? 'Deactivate' : 'Activate',
-            danger: user.isActive
-          }
-        })
-        .afterClosed()
+    await confirmAndMutate(
+      this.dialog,
+      this.toast,
+      {
+        title: user.isActive ? 'Deactivate user' : 'Activate user',
+        message: `${user.isActive ? 'Deactivate' : 'Activate'} ${user.email}?`,
+        confirmLabel: user.isActive ? 'Deactivate' : 'Activate',
+        danger: user.isActive
+      },
+      () => this.usersService.setActive(user.id, !user.isActive),
+      user.isActive ? 'User deactivated.' : 'User activated.',
+      () => this.refreshUsers()
     );
-    if (!confirmed) return;
-    try {
-      await this.usersService.setActive(user.id, !user.isActive);
-      this.toast.show(user.isActive ? 'User deactivated.' : 'User activated.', 'success');
-      this.refreshUsers();
-    } catch {
-      // error toast already shown by the error interceptor
-    }
   }
 }

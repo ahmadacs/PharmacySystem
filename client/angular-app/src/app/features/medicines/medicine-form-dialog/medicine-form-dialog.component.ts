@@ -20,6 +20,8 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { CategoryEnum, MedicineForm, MedicineListItemDto, MedicineUnit } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { numericEnumValues } from '../../../core/utils/entity-helpers';
 import { FileUploadDto } from '../../../core/models/inventory.models';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -63,12 +65,10 @@ export class MedicineFormDialogComponent {
 
   protected readonly submitting = signal(false);
   protected readonly file = signal<File | null>(null);
-  protected readonly medicineForms = Object.values(MedicineForm).filter(
-    (form): form is MedicineForm => typeof form === 'number'
-  );
+  protected readonly medicineForms = numericEnumValues(MedicineForm);
   protected readonly medicineForm = MedicineForm;
-  protected readonly medicineUnits = Object.values(MedicineUnit).filter((u): u is MedicineUnit => typeof u === 'number');
-  protected readonly categories = Object.values(CategoryEnum).filter(v => typeof v === 'number');
+  protected readonly medicineUnits = numericEnumValues(MedicineUnit);
+  protected readonly categories = numericEnumValues(CategoryEnum);
 
   protected readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
@@ -139,66 +139,62 @@ export class MedicineFormDialogComponent {
   }
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      this.variants.markAllAsTouched();
-      return;
-    }
-
-    this.submitting.set(true);
-    try {
-      const value = this.form.getRawValue();
-      const categoryValue = value.category as number; // category is required, so it won't be null when valid
-      if (this.isEdit && this.medicine) {
-        await this.medicinesService.update(this.medicine.id, {
-          id: this.medicine.id,
-          name: value.name,
-          nameAr: value.nameAr || undefined,
-          genericName: value.genericName,
-          genericNameAr: value.genericNameAr || undefined,
-          category: categoryValue,
-          isControlled: value.isControlled,
-          isActive: value.isActive
-        });
-        this.toast.show('Medicine updated.', 'success');
-      } else {
-        let fileDto: FileUploadDto | undefined;
-        if (this.file()) {
-          const selected = this.file()!;
-          fileDto = {
-            fileName: selected.name,
-            contentType: selected.type,
-            sizeBytes: selected.size,
-            base64Content: await this.fileService.fileToBase64(selected)
-          };
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      async () => {
+        const value = this.form.getRawValue();
+        const categoryValue = value.category as number; // category is required, so it won't be null when valid
+        if (this.isEdit && this.medicine) {
+          await this.medicinesService.update(this.medicine.id, {
+            id: this.medicine.id,
+            name: value.name,
+            nameAr: value.nameAr || undefined,
+            genericName: value.genericName,
+            genericNameAr: value.genericNameAr || undefined,
+            category: categoryValue,
+            isControlled: value.isControlled,
+            isActive: value.isActive
+          });
+          this.toast.show('Medicine updated.', 'success');
+        } else {
+          let fileDto: FileUploadDto | undefined;
+          if (this.file()) {
+            const selected = this.file()!;
+            fileDto = {
+              fileName: selected.name,
+              contentType: selected.type,
+              sizeBytes: selected.size,
+              base64Content: await this.fileService.fileToBase64(selected)
+            };
+          }
+          await this.medicinesService.create({
+            name: value.name,
+            nameAr: value.nameAr || undefined,
+            genericName: value.genericName,
+            genericNameAr: value.genericNameAr || undefined,
+            category: categoryValue,
+            isControlled: value.isControlled,
+            variants: value.variants.map((v) => ({
+              form: v['form'] as MedicineForm,
+              unit: v['unit'],
+              strength: v['strength'] ?? null,
+              reorderLevel: v['reorderLevel'] ?? 10,
+              baseUnitName: v['baseUnitName'],
+              packageUnitName: v['packageUnitName'],
+              unitsPerPackage: v['unitsPerPackage'],
+              isDivisible: v['isDivisible']
+            })),
+            file: fileDto
+          });
+          this.toast.show('Medicine created.', 'success');
         }
-        await this.medicinesService.create({
-          name: value.name,
-          nameAr: value.nameAr || undefined,
-          genericName: value.genericName,
-          genericNameAr: value.genericNameAr || undefined,
-          category: categoryValue,
-          isControlled: value.isControlled,
-          variants: value.variants.map((v) => ({
-            form: v['form'] as MedicineForm,
-            unit: v['unit'],
-            strength: v['strength'] ?? null,
-            reorderLevel: v['reorderLevel'] ?? 10,
-            baseUnitName: v['baseUnitName'],
-            packageUnitName: v['packageUnitName'],
-            unitsPerPackage: v['unitsPerPackage'],
-            isDivisible: v['isDivisible']
-          })),
-          file: fileDto
-        });
-        this.toast.show('Medicine created.', 'success');
-      }
-      this.dialogRef.close(true);
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+      },
+      () => {
+        this.dialogRef.close(true);
+      },
+      () => this.variants.markAllAsTouched()
+    );
   }
 
 protected compareCategory(c1: number, c2: number): boolean {

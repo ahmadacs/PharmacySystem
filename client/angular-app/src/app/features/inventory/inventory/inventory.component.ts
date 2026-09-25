@@ -28,6 +28,8 @@ import {
   MedicineInventorySummaryDto
 } from '../../../core/models/api.models';
 import { pickLocalizedGenericName, pickLocalizedMedicineName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
+import { openForResult } from '../../../core/utils/dialog-helpers';
+import type { PagedTable } from '../../../core/utils/paged-table.utils';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -100,57 +102,17 @@ export class InventoryComponent {
   protected readonly lowStockColumns = ['medicine', 'variant', 'availableQuantity', 'reorderLevel', 'status'];
   protected readonly alertColumns = ['medicine', 'batch', 'expiryDate', 'daysToExpiry', 'remainingQuantity', 'status'];
 
-  // ---- Facade delegates (template API unchanged) ----
-  // Summary tab
-  protected get summaryPage() { return this.facade.summaryTable.page; }
-  protected get summaryPageSize() { return this.facade.summaryTable.pageSize; }
-  protected get summarySearch() { return this.facade.summaryTable.search; }
-  protected get summarySortBy() { return this.facade.summaryTable.sortBy; }
-  protected get summarySortDir() { return this.facade.summaryTable.sortDir; }
-  protected get summarySearchControl() { return this.facade.summaryTable.searchControl; }
-  protected get stockStatus() { return this.facade.stockStatus; }
-  protected get summary() { return this.facade.summary; }
-  protected get summaryCount() { return this.facade.summaryCount; }
+  // ---- Tab view-models: facade bundles + presentation columns ----
+  protected readonly tabs = {
+    summary: { ...this.facade.tabs.summary, columns: this.summaryColumns },
+    batches: { ...this.facade.tabs.batches, columns: this.batchColumns },
+    alerts: { ...this.facade.tabs.alerts, columns: this.alertColumns },
+    adjustments: { ...this.facade.tabs.adjustments, columns: this.adjColumns },
+    lowStock: { ...this.facade.tabs.lowStock, columns: this.lowStockColumns },
+  };
 
-  // Batches tab
-  protected get batchPage() { return this.facade.batchTable.page; }
-  protected get batchPageSize() { return this.facade.batchTable.pageSize; }
-  protected get batchSearch() { return this.facade.batchTable.search; }
-  protected get batchSortBy() { return this.facade.batchTable.sortBy; }
-  protected get batchSortDir() { return this.facade.batchTable.sortDir; }
-  protected get batchSearchControl() { return this.facade.batchTable.searchControl; }
-  protected get expiryStatus() { return this.facade.expiryStatus; }
-  protected get batches() { return this.facade.batches; }
-  protected get batchCount() { return this.facade.batchCount; }
-
-  // Alerts tab
-  protected get alertPage() { return this.facade.alertTable.page; }
-  protected get alertPageSize() { return this.facade.alertTable.pageSize; }
-  protected get alertSearch() { return this.facade.alertTable.search; }
-  protected get alertSortBy() { return this.facade.alertTable.sortBy; }
-  protected get alertSortDir() { return this.facade.alertTable.sortDir; }
-  protected get alertSearchControl() { return this.facade.alertTable.searchControl; }
-  protected get status() { return this.facade.status; }
-  protected get alerts() { return this.facade.alerts; }
-  protected get alertCount() { return this.facade.alertCount; }
+  // Badge over the expiry-alerts tab (Critical + Warning counters).
   protected get alertBadgeCount() { return this.facade.alertBadgeCount; }
-
-  // Adjustments tab
-  protected get adjPage() { return this.facade.adjTable.page; }
-  protected get adjPageSize() { return this.facade.adjTable.pageSize; }
-  protected get adjSearch() { return this.facade.adjTable.search; }
-  protected get adjSortBy() { return this.facade.adjTable.sortBy; }
-  protected get adjSortDir() { return this.facade.adjTable.sortDir; }
-  protected get adjSearchControl() { return this.facade.adjTable.searchControl; }
-  protected get adjType() { return this.facade.adjType; }
-  protected get adjustments() { return this.facade.adjustments; }
-  protected get adjCount() { return this.facade.adjCount; }
-
-  // Low stock tab
-  protected get lowStockPage() { return this.facade.lowStockTable.page; }
-  protected get lowStockPageSize() { return this.facade.lowStockTable.pageSize; }
-  protected get lowStock() { return this.facade.lowStock; }
-  protected get lowStockBadgeCount() { return this.facade.lowStockBadgeCount; }
 
   // ---- Medicine detail dialog (medicine -> variants -> batches) ----
   protected openDetail(row: MedicineInventorySummaryDto): void {
@@ -161,48 +123,17 @@ export class InventoryComponent {
     });
   }
 
-  onSummarySort(sort: Sort): void {
-    this.facade.summaryTable.onSortChange(sort);
+  protected onSort(table: PagedTable, sort: Sort): void {
+    table.onSortChange(sort);
   }
 
-  onSummaryPage(event: PageEvent): void {
-    this.facade.summaryTable.onPage(event);
-  }
-
-  onBatchSort(sort: Sort): void {
-    this.facade.batchTable.onSortChange(sort);
-  }
-
-  onBatchPage(event: PageEvent): void {
-    this.facade.batchTable.onPage(event);
-  }
-
-  onAlertSort(sort: Sort): void {
-    this.facade.alertTable.onSortChange(sort);
-  }
-
-  onAlertPage(event: PageEvent): void {
-    this.facade.alertTable.onPage(event);
-  }
-
-  onAdjSort(sort: Sort): void {
-    this.facade.adjTable.onSortChange(sort);
-  }
-
-  onAdjPage(event: PageEvent): void {
-    this.facade.adjTable.onPage(event);
-  }
-
-  onLowStockPage(event: PageEvent): void {
-    this.facade.lowStockTable.onPage(event);
+  protected onPage(table: PagedTable, event: PageEvent): void {
+    table.onPage(event);
   }
 
   openAdjust(): void {
-    const ref = this.dialog.open(AdjustStockDialogComponent, { width: '520px' });
-    ref.afterClosed().subscribe((adjusted: boolean) => {
-      if (adjusted) {
-        this.facade.reloadAfterAdjust();
-      }
+    openForResult(this.dialog, AdjustStockDialogComponent, { width: '520px' }, () => {
+      this.facade.reloadAfterAdjust();
     });
   }
 }

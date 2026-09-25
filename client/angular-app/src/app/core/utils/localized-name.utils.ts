@@ -24,6 +24,8 @@ interface LocalizableGenericName {
   genericNameAr?: string | null;
 }
 
+type SearchableMedicine = LocalizableName & LocalizableGenericName;
+
 interface LocalizableMedicineName {
   medicineName: string;
   medicineNameAr?: string | null;
@@ -39,4 +41,18 @@ export function pickLocalizedGenericName(row: LocalizableGenericName, translate:
 
 export function pickLocalizedMedicineName(row: LocalizableMedicineName, translate: TranslateService): string {
   return isArabicLang(translate) && row.medicineNameAr ? row.medicineNameAr : row.medicineName;
+}
+
+export function filterMedicinesByName<T extends SearchableMedicine>(medicines: T[], search: string): T[] {
+  const term = search.trim().toLowerCase();
+  if (!term) {
+    return medicines;
+  }
+  return medicines.filter(
+    (medicine) =>
+      medicine.name.toLowerCase().includes(term) ||
+      medicine.nameAr?.toLowerCase().includes(term) ||
+      medicine.genericName.toLowerCase().includes(term) ||
+      medicine.genericNameAr?.toLowerCase().includes(term),
+  );
 }

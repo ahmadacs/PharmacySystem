@@ -18,6 +18,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ToastService } from '../../../core/services/toast.service';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 
 @Component({
   selector: 'app-login',
@@ -63,23 +64,18 @@ export class LoginComponent {
   }
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.submitting.set(true);
-    try {
-      const { email, password } = this.form.getRawValue();
-      await this.authStore.login(email, password);
-      this.toast.show(this.translate.instant('auth.signedInSuccess'), 'success');
-
-      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
-      await this.router.navigateByUrl(returnUrl);
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      async () => {
+        const { email, password } = this.form.getRawValue();
+        await this.authStore.login(email, password);
+      },
+      async () => {
+        this.toast.show(this.translate.instant('auth.signedInSuccess'), 'success');
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/dashboard';
+        await this.router.navigateByUrl(returnUrl);
+      }
+    );
   }
 }

@@ -10,6 +10,8 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { DispensePrescriptionResponse, PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { daysFromToday } from '../../../core/utils/date-utils';
+import { runSubmit } from '../../../core/utils/dialog-helpers';
+import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../../prescriptions/prescriptions.service';
 import { DispensingService } from '../dispensing.service';
 
@@ -44,10 +46,11 @@ export class DispenseDialogComponent {
   protected load(): void {
     this.error.set(false);
     this.prescription.set(null);
-    void this.prescriptionsService
-      .get(this.prescriptionId)
-      .then((details) => this.prescription.set(details))
-      .catch(() => this.error.set(true));
+    void reloadDetails(
+      this.prescription,
+      () => this.prescriptionsService.get(this.prescriptionId),
+      () => this.error.set(true)
+    );
   }
 
   /**
@@ -64,25 +67,23 @@ export class DispenseDialogComponent {
   }
 
   async dispense(id: string): Promise<void> {
-    if (this.submitting()) return;
-    this.submitting.set(true);
-    try {
-      const result = await this.dispensingService.dispense({
-        prescriptionId: id,
-        notes: this.notes.value.trim()
-      });
-      // Warnings force visibility: show the result panel instead of closing.
-      // Clean success keeps the previous fast flow (toast + close).
-      if (result.warnings.length > 0) {
-        this.dispenseResult.set(result);
-      } else {
-        this.toast.show('Prescription dispensed.', 'success');
-        this.dialogRef.close(true);
+    await runSubmit(
+      this.submitting,
+      () =>
+        this.dispensingService.dispense({
+          prescriptionId: id,
+          notes: this.notes.value.trim()
+        }),
+      (result) => {
+        // Warnings force visibility: show the result panel instead of closing.
+        // Clean success keeps the previous fast flow (toast + close).
+        if (result.warnings.length > 0) {
+          this.dispenseResult.set(result);
+        } else {
+          this.toast.show('Prescription dispensed.', 'success');
+          this.dialogRef.close(true);
+        }
       }
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+    );
   }
 }

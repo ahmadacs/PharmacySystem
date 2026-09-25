@@ -1,4 +1,3 @@
-import { HttpParams } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -22,7 +21,7 @@ import {
 } from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
 import { AuditAction, AuditEntryDto } from '../../../core/models/api.models';
-import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
+import { createPagedResource, createPagedTable, buildPagedParams } from '../../../core/utils/paged-table.utils';
 import { TranslatePipe } from '@ngx-translate/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -82,13 +81,7 @@ export class AuditLogListComponent {
   private readonly dialog = inject(MatDialog);
 
   protected readonly audit = createPagedResource<AuditEntryDto>(() => {
-    let params = new HttpParams()
-      .set('page', this.table.page())
-      .set('pageSize', this.table.pageSize())
-      .set('search', this.table.search())
-      .set('sortBy', this.table.sortBy())
-      .set('sortDir', this.table.sortDir());
-    if (this.action()) params = params.set('action', this.action());
+    const params = buildPagedParams(this.table, { action: this.action() || null });
     return { url: `${environment.apiUrl}/auditlog`, params };
   });
 

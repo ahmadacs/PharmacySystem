@@ -1,6 +1,16 @@
+import { AbstractControl, ValidationErrors } from '@angular/forms';
+
 /** Shared date helpers (single source of truth, replaces duplicated copies in dialogs). */
 export function startOfDay(value: Date): Date {
   return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
+}
+
+export function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as Date | null;
+  if (!value) {
+    return null;
+  }
+  return startOfDay(value) >= startOfDay(new Date()) ? null : { pastDate: true };
 }
 
 export function toDateString(date: Date | null): string | null {

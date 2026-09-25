@@ -10,6 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 
 @Component({ selector: 'app-forgot-password', standalone: true,   imports: [ReactiveFormsModule, TranslatePipe, MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatCardFooter, MatFormField, MatInput, MatLabel, MatError, MatButton, MatIcon, MatProgressBar, RouterLink], templateUrl: './forgot-password.component.html', styleUrl: './forgot-password.component.scss' })
 export class ForgotPasswordComponent {
@@ -20,10 +21,11 @@ export class ForgotPasswordComponent {
   protected readonly form = new FormGroup({ email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }) });
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) { this.form.markAllAsTouched(); return; }
-    this.submitting.set(true);
-    try { await this.authService.forgotPassword(this.form.getRawValue()); this.toast.show('If the account exists, a reset link has been sent.', 'success'); await this.router.navigate(['/login']); }
-    catch { /* Error toast is shown by the error interceptor. */ }
-    finally { this.submitting.set(false); }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      () => this.authService.forgotPassword(this.form.getRawValue()),
+      async () => { this.toast.show('If the account exists, a reset link has been sent.', 'success'); await this.router.navigate(['/login']); }
+    );
   }
 }

@@ -25,7 +25,15 @@ public static class DependencyInjection
         // still registered through the factory overload.
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            // Retry transient SQL failures (container networks blip during
+            // db restarts). Safe here: the context is the unit of work and
+            // handlers never manage explicit transactions, which retry
+            // strategies cannot replay.
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), sql =>
+                sql.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null));
             options.AddInterceptors(sp.GetRequiredService<AuditableEntitySaveChangesInterceptor>());
         });
 

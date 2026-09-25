@@ -12,7 +12,7 @@ import {
   PagedResult,
   StockStatus,
 } from '../../../core/models/api.models';
-import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
+import { buildPagedParams, createPagedResource, createPagedTab, createPagedTable } from '../../../core/utils/paged-table.utils';
 
 export type BatchExpiryStatus = 'All' | 'Valid' | 'ExpiringSoon' | 'Expired';
 export type StockFilter = 'All' | StockStatus;
@@ -30,13 +30,7 @@ export class InventoryFacade {
   readonly stockStatus = signal<StockFilter>('All');
 
   readonly summary = createPagedResource<MedicineInventorySummaryDto>(() => {
-    const params = new HttpParams()
-      .set('page', this.summaryTable.page())
-      .set('pageSize', this.summaryTable.pageSize())
-      .set('search', this.summaryTable.search())
-      .set('stockStatus', this.stockStatus())
-      .set('sortBy', this.summaryTable.sortBy())
-      .set('sortDir', this.summaryTable.sortDir());
+    const params = buildPagedParams(this.summaryTable, { stockStatus: this.stockStatus() });
     return { url: `${environment.apiUrl}/inventory/summary`, params };
   });
   readonly summaryCount = this.summary.totalCount;
@@ -46,14 +40,10 @@ export class InventoryFacade {
   readonly expiryStatus = signal<BatchExpiryStatus>('All');
 
   readonly batches = createPagedResource<MedicineBatchDto>(() => {
-    const params = new HttpParams()
-      .set('page', this.batchTable.page())
-      .set('pageSize', this.batchTable.pageSize())
-      .set('search', this.batchTable.search())
-      .set('expiryStatus', this.expiryStatus())
-      .set('withinDays', 30)
-      .set('sortBy', this.batchTable.sortBy())
-      .set('sortDir', this.batchTable.sortDir());
+    const params = buildPagedParams(this.batchTable, {
+      expiryStatus: this.expiryStatus(),
+      withinDays: 30,
+    });
     return { url: `${environment.apiUrl}/inventory/batches`, params };
   });
   readonly batchCount = this.batches.totalCount;
@@ -63,13 +53,7 @@ export class InventoryFacade {
   readonly status = signal<StatusFilter>('All');
 
   readonly alerts = createPagedResource<ExpiryAlertDto>(() => {
-    const params = new HttpParams()
-      .set('page', this.alertTable.page())
-      .set('pageSize', this.alertTable.pageSize())
-      .set('search', this.alertTable.search())
-      .set('status', this.status())
-      .set('sortBy', this.alertTable.sortBy())
-      .set('sortDir', this.alertTable.sortDir());
+    const params = buildPagedParams(this.alertTable, { status: this.status() });
     return { url: `${environment.apiUrl}/inventory/expiry-alerts`, params };
   });
   readonly alertCount = this.alerts.totalCount;
@@ -92,15 +76,7 @@ export class InventoryFacade {
   readonly adjType = signal<InventoryAdjustmentType | null>(null);
 
   readonly adjustments = createPagedResource<InventoryAdjustmentDto>(() => {
-    let params = new HttpParams()
-      .set('page', this.adjTable.page())
-      .set('pageSize', this.adjTable.pageSize())
-      .set('search', this.adjTable.search())
-      .set('sortBy', this.adjTable.sortBy())
-      .set('sortDir', this.adjTable.sortDir());
-    if (this.adjType()) {
-      params = params.set('type', this.adjType()!);
-    }
+    const params = buildPagedParams(this.adjTable, { type: this.adjType() });
     return { url: `${environment.apiUrl}/inventory/adjustments`, params };
   });
   readonly adjCount = this.adjustments.totalCount;
@@ -109,14 +85,19 @@ export class InventoryFacade {
   readonly lowStockTable = createPagedTable({ defaultSortBy: 'medicineName' });
 
   readonly lowStock = createPagedResource<LowStockDto>(() => {
-    const params = new HttpParams()
-      .set('page', this.lowStockTable.page())
-      .set('pageSize', this.lowStockTable.pageSize())
-      .set('sortBy', this.lowStockTable.sortBy())
-      .set('sortDir', this.lowStockTable.sortDir());
+    const params = buildPagedParams(this.lowStockTable);
     return { url: `${environment.apiUrl}/inventory/low-stock`, params };
   });
   readonly lowStockBadgeCount = this.lowStock.totalCount;
+
+  // Uniform per-tab bundles (table + data + count + optional filter).
+  readonly tabs = {
+    summary: createPagedTab(this.summaryTable, this.summary, this.stockStatus),
+    batches: createPagedTab(this.batchTable, this.batches, this.expiryStatus),
+    alerts: createPagedTab(this.alertTable, this.alerts, this.status),
+    adjustments: createPagedTab(this.adjTable, this.adjustments, this.adjType),
+    lowStock: createPagedTab(this.lowStockTable, this.lowStock),
+  };
 
   reloadAfterAdjust(): void {
     if (this.adjTable.page() === 1) {

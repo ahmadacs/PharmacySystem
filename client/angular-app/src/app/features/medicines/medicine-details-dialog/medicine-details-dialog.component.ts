@@ -21,6 +21,7 @@ import {
 import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
+import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
 import { FileEntityType } from '../../../core/services/file.service';
@@ -90,7 +91,7 @@ export class MedicineDetailsDialogComponent {
   }
 
   constructor() {
-    void this.medicinesService.get(this.medicineId).then((details) => this.medicine.set(details));
+    void reloadDetails(this.medicine, () => this.medicinesService.get(this.medicineId));
   }
 
   close(): void {

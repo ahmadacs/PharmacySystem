@@ -10,16 +10,16 @@
     <div class="filters">
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.summarySearch' | translate }}</mat-label>
-        <input matInput [formControl]="summarySearchControl" [placeholder]="'inventory.filters.summarySearch' | translate" />
+        <input matInput [formControl]="tabs.summary.table.searchControl" [placeholder]="'inventory.filters.summarySearch' | translate" />
       </mat-form-field>
     </div>
 
-    @if (summary.isLoading()) {
+    @if (tabs.summary.data.isLoading()) {
       <mat-progress-bar mode="indeterminate" />
     }
 
     <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="summary.value().items" matSort (matSortChange)="onSummarySort($event)">
+      <table mat-table [dataSource]="tabs.summary.data.value().items" matSort (matSortChange)="onSort(tabs.summary.table, $event)">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.medicine' | translate }}</th>
           <td mat-cell *matCellDef="let row">
@@ -53,22 +53,22 @@
           <td mat-cell *matCellDef="let row">{{ row.nearestExpiryDate || '-' }}</td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="summaryColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: summaryColumns;"
+        <tr mat-header-row *matHeaderRowDef="tabs.summary.columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tabs.summary.columns;"
           class="clickable-row"
           (click)="openDetail(row)"></tr>
       </table>
 
-      @if (!summary.isLoading() && summary.value().items.length === 0) {
+      @if (!tabs.summary.data.isLoading() && tabs.summary.data.value().items.length === 0) {
         <app-empty-state icon="inventory_2" [message]="'inventory.empty.medicines' | translate" [hint]="'inventory.empty.hint' | translate" />
       }
 
       <mat-paginator
-        [length]="summaryCount()"
-        [pageSize]="summaryPageSize()"
+        [length]="tabs.summary.count()"
+        [pageSize]="tabs.summary.table.pageSize()"
         [pageSizeOptions]="[10, 25, 50]"
-        [pageIndex]="summaryPage() - 1"
-        (page)="onSummaryPage($event)"
+        [pageIndex]="tabs.summary.table.page() - 1"
+        (page)="onPage(tabs.summary.table, $event)"
       />
     </div>
   </mat-tab>
@@ -77,12 +77,12 @@
     <div class="filters">
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.batchSearch' | translate }}</mat-label>
-        <input matInput [formControl]="batchSearchControl" [placeholder]="'inventory.filters.batchSearch' | translate" />
+        <input matInput [formControl]="tabs.batches.table.searchControl" [placeholder]="'inventory.filters.batchSearch' | translate" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.expiryStatus' | translate }}</mat-label>
-        <mat-select [value]="expiryStatus()" (selectionChange)="expiryStatus.set($event.value); batchPage.set(1)">
+        <mat-select [value]="tabs.batches.filter()" (selectionChange)="tabs.batches.filter.set($event.value); tabs.batches.table.page.set(1)">
           <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
           @for (status of expiryStatuses; track status) {
             <mat-option [value]="status">{{ status | enumTranslate:'BatchExpiryStatus' }}</mat-option>
@@ -91,12 +91,12 @@
       </mat-form-field>
     </div>
 
-    @if (batches.isLoading()) {
+    @if (tabs.batches.data.isLoading()) {
       <mat-progress-bar mode="indeterminate" />
     }
 
     <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="batches.value().items" matSort (matSortChange)="onBatchSort($event)">
+      <table mat-table [dataSource]="tabs.batches.data.value().items" matSort (matSortChange)="onSort(tabs.batches.table, $event)">
         <ng-container matColumnDef="medicineName">
           <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicineName' | translate }}</th>
           <td mat-cell *matCellDef="let row">
@@ -152,20 +152,20 @@
           </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="batchColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: batchColumns"></tr>
+        <tr mat-header-row *matHeaderRowDef="tabs.batches.columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tabs.batches.columns"></tr>
       </table>
 
-      @if (!batches.isLoading() && batches.value().items.length === 0) {
+      @if (!tabs.batches.data.isLoading() && tabs.batches.data.value().items.length === 0) {
         <app-empty-state icon="inventory_2" [message]="'inventory.empty.batches' | translate" [hint]="'inventory.empty.hint' | translate" />
       }
 
       <mat-paginator
-        [length]="batchCount()"
-        [pageSize]="batchPageSize()"
+        [length]="tabs.batches.count()"
+        [pageSize]="tabs.batches.table.pageSize()"
         [pageSizeOptions]="[10, 25, 50]"
-        [pageIndex]="batchPage() - 1"
-        (page)="onBatchPage($event)"
+        [pageIndex]="tabs.batches.table.page() - 1"
+        (page)="onPage(tabs.batches.table, $event)"
       />
     </div>
   </mat-tab>
@@ -174,12 +174,12 @@
     <div class="filters">
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.adjSearch' | translate }}</mat-label>
-        <input matInput [formControl]="adjSearchControl" [placeholder]="'inventory.filters.adjSearch' | translate" />
+        <input matInput [formControl]="tabs.adjustments.table.searchControl" [placeholder]="'inventory.filters.adjSearch' | translate" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.adjType' | translate }}</mat-label>
-        <mat-select [value]="adjType()" (selectionChange)="adjType.set($event.value ?? null); adjPage.set(1)">
+        <mat-select [value]="tabs.adjustments.filter()" (selectionChange)="tabs.adjustments.filter.set($event.value ?? null); tabs.adjustments.table.page.set(1)">
           <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
           @for (type of adjustmentTypes; track type) {
             <mat-option [value]="type">{{ type | enumTranslate:'InventoryAdjustmentType' }}</mat-option>
@@ -188,12 +188,12 @@
       </mat-form-field>
     </div>
 
-    @if (adjustments.isLoading()) {
+    @if (tabs.adjustments.data.isLoading()) {
       <mat-progress-bar mode="indeterminate" />
     }
 
     <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="adjustments.value().items" matSort (matSortChange)="onAdjSort($event)">
+      <table mat-table [dataSource]="tabs.adjustments.data.value().items" matSort (matSortChange)="onSort(tabs.adjustments.table, $event)">
         <ng-container matColumnDef="adjustedAt">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'inventory.tables.adjustedAt' | translate }}</th>
           <td mat-cell *matCellDef="let row">{{ row.adjustedAt | riyadhDate: 'yyyy-MM-dd HH:mm' }}</td>
@@ -236,20 +236,20 @@
           <td mat-cell *matCellDef="let row">{{ row.adjustedByName || ('common.system' | translate) }}</td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="adjColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: adjColumns"></tr>
+        <tr mat-header-row *matHeaderRowDef="tabs.adjustments.columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tabs.adjustments.columns"></tr>
       </table>
 
-      @if (!adjustments.isLoading() && adjustments.value().items.length === 0) {
+      @if (!tabs.adjustments.data.isLoading() && tabs.adjustments.data.value().items.length === 0) {
         <app-empty-state icon="tune" [message]="'inventory.empty.adjustments' | translate" />
       }
 
       <mat-paginator
-        [length]="adjCount()"
-        [pageSize]="adjPageSize()"
+        [length]="tabs.adjustments.count()"
+        [pageSize]="tabs.adjustments.table.pageSize()"
         [pageSizeOptions]="[10, 25, 50]"
-        [pageIndex]="adjPage() - 1"
-        (page)="onAdjPage($event)"
+        [pageIndex]="tabs.adjustments.table.page() - 1"
+        (page)="onPage(tabs.adjustments.table, $event)"
       />
     </div>
   </mat-tab>
@@ -264,12 +264,12 @@
     <div class="filters">
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.alertSearch' | translate }}</mat-label>
-        <input matInput [formControl]="alertSearchControl" [placeholder]="'inventory.filters.alertSearch' | translate" />
+        <input matInput [formControl]="tabs.alerts.table.searchControl" [placeholder]="'inventory.filters.alertSearch' | translate" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>{{ 'inventory.filters.alertStatus' | translate }}</mat-label>
-        <mat-select [value]="status()" (selectionChange)="status.set($event.value); alertPage.set(1)">
+        <mat-select [value]="tabs.alerts.filter()" (selectionChange)="tabs.alerts.filter.set($event.value); tabs.alerts.table.page.set(1)">
           <mat-option [value]="null">{{ 'common.all' | translate }}</mat-option>
           @for (level of statusFilters; track level) {
             <mat-option [value]="level">{{ level | enumTranslate:'ExpiryStatus' }}</mat-option>
@@ -278,12 +278,12 @@
       </mat-form-field>
     </div>
 
-    @if (alerts.isLoading()) {
+    @if (tabs.alerts.data.isLoading()) {
       <mat-progress-bar mode="indeterminate" />
     }
 
     <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="alerts.value().items" matSort (matSortChange)="onAlertSort($event)">
+      <table mat-table [dataSource]="tabs.alerts.data.value().items" matSort (matSortChange)="onSort(tabs.alerts.table, $event)">
         <ng-container matColumnDef="medicine">
           <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicineName' | translate }}</th>
           <td mat-cell *matCellDef="let row">
@@ -327,20 +327,20 @@
           </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="alertColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: alertColumns"></tr>
+        <tr mat-header-row *matHeaderRowDef="tabs.alerts.columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tabs.alerts.columns"></tr>
       </table>
 
-      @if (!alerts.isLoading() && alerts.value().items.length === 0) {
+      @if (!tabs.alerts.data.isLoading() && tabs.alerts.data.value().items.length === 0) {
         <app-empty-state icon="event" [message]="'inventory.empty.expiryAlerts' | translate" [hint]="'inventory.empty.allSafe' | translate" />
       }
 
       <mat-paginator
-        [length]="alertCount()"
-        [pageSize]="alertPageSize()"
+        [length]="tabs.alerts.count()"
+        [pageSize]="tabs.alerts.table.pageSize()"
         [pageSizeOptions]="[10, 25, 50]"
-        [pageIndex]="alertPage() - 1"
-        (page)="onAlertPage($event)"
+        [pageIndex]="tabs.alerts.table.page() - 1"
+        (page)="onPage(tabs.alerts.table, $event)"
       />
     </div>
   </mat-tab>
@@ -348,16 +348,16 @@
   <mat-tab>
     <ng-template mat-tab-label>
       {{ 'inventory.tabs.lowStock' | translate }}
-      @if (lowStockBadgeCount() > 0) {
-        <span class="tab-badge">{{ lowStockBadgeCount() }}</span>
+      @if (tabs.lowStock.count() > 0) {
+        <span class="tab-badge">{{ tabs.lowStock.count() }}</span>
       }
     </ng-template>
-    @if (lowStock.isLoading()) {
+    @if (tabs.lowStock.data.isLoading()) {
       <mat-progress-bar mode="indeterminate" />
     }
 
     <div class="table-card mat-elevation-z2">
-      <table mat-table [dataSource]="lowStock.value().items">
+      <table mat-table [dataSource]="tabs.lowStock.data.value().items">
         <ng-container matColumnDef="medicine">
           <th mat-header-cell *matHeaderCellDef>{{ 'inventory.tables.medicine' | translate }}</th>
           <td mat-cell *matCellDef="let row">{{ row.medicineName }}</td>
@@ -390,20 +390,20 @@
           </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="lowStockColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: lowStockColumns"></tr>
+        <tr mat-header-row *matHeaderRowDef="tabs.lowStock.columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: tabs.lowStock.columns"></tr>
       </table>
 
-      @if (!lowStock.isLoading() && lowStock.value().items.length === 0) {
+      @if (!tabs.lowStock.data.isLoading() && tabs.lowStock.data.value().items.length === 0) {
         <app-empty-state icon="check_circle" [message]="'inventory.empty.lowStock' | translate" [hint]="'inventory.empty.aboveReorder' | translate" />
       }
 
       <mat-paginator
-        [length]="lowStockBadgeCount()"
-        [pageSize]="lowStockPageSize()"
+        [length]="tabs.lowStock.count()"
+        [pageSize]="tabs.lowStock.table.pageSize()"
         [pageSizeOptions]="[10, 25, 50]"
-        [pageIndex]="lowStockPage() - 1"
-        (page)="onLowStockPage($event)"
+        [pageIndex]="tabs.lowStock.table.page() - 1"
+        (page)="onPage(tabs.lowStock.table, $event)"
       />
     </div>
   </mat-tab>

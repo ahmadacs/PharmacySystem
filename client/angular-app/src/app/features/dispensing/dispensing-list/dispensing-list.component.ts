@@ -1,4 +1,3 @@
-import { HttpParams } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
@@ -24,7 +23,8 @@ import {
 import { environment } from '../../../../environments/environment';
 import { Permissions } from '../../../core/constants/permissions';
 import { DispensingRecordDto } from '../../../core/models/api.models';
-import { createPagedResource, createPagedTable } from '../../../core/utils/paged-table.utils';
+import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
+import { openForResult } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -81,12 +81,7 @@ export class DispensingListComponent {
   protected readonly searchControl = this.table.searchControl;
 
   protected readonly records = createPagedResource<DispensingRecordDto>(() => {
-    const params = new HttpParams()
-      .set('page', this.table.page())
-      .set('pageSize', this.table.pageSize())
-      .set('search', this.table.search())
-      .set('sortBy', this.table.sortBy())
-      .set('sortDir', this.table.sortDir());
+    const params = buildPagedParams(this.table);
     return { url: `${environment.apiUrl}/dispensing`, params };
   });
 
@@ -101,11 +96,7 @@ export class DispensingListComponent {
   }
 
   private refreshRecords(): void {
-    if (this.page() === 1) {
-      void this.records.reload();
-    } else {
-      this.page.set(1);
-    }
+    refreshPaged(this.table, this.records);
   }
 
   itemsLabel(record: DispensingRecordDto): string {
@@ -113,14 +104,9 @@ export class DispensingListComponent {
   }
 
   openDispense(): void {
-    const picker = this.dialog.open(DispensePickerDialogComponent, { width: '560px' });
-    picker.afterClosed().subscribe((prescriptionId: string | null) => {
-      if (!prescriptionId) return;
-      const ref = this.dialog.open(DispenseDialogComponent, { width: '560px', data: prescriptionId });
-      ref.afterClosed().subscribe((dispensed: boolean) => {
-        if (dispensed) {
-          this.refreshRecords();
-        }
+    openForResult(this.dialog, DispensePickerDialogComponent, { width: '560px' }, (prescriptionId: string) => {
+      openForResult(this.dialog, DispenseDialogComponent, { width: '560px', data: prescriptionId }, () => {
+        this.refreshRecords();
       });
     });
   }

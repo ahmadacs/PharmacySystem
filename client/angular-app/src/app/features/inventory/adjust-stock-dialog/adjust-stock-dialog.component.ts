@@ -1,5 +1,5 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -26,17 +26,10 @@ import {
 } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
-import { startOfDay, toDateString } from '../../../core/utils/date-utils';
-import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
+import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { futureOrEqualDate, startOfDay, toDateString } from '../../../core/utils/date-utils';
+import { filterMedicinesByName, pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { InventoryService } from '../inventory.service';
-
-function futureOrEqualDate(control: AbstractControl): ValidationErrors | null {
-  const value = control.value as Date | null;
-  if (!value) {
-    return null;
-  }
-  return startOfDay(value) >= startOfDay(new Date()) ? null : { pastDate: true };
-}
 
 /**
  * Inbound types create a brand-new batch (official receive). Every other type
@@ -93,16 +86,7 @@ export class AdjustStockDialogComponent {
   protected readonly medicineSearch = signal('');
   protected displayMedicine(medicine: MedicineListItemDto): string { return pickLocalizedName(medicine, this.translate); }
   protected displayMedicineGeneric(medicine: MedicineListItemDto): string { return pickLocalizedGenericName(medicine, this.translate); }
-  protected readonly filteredMedicines = computed(() => {
-    const search = this.medicineSearch().trim().toLowerCase();
-    if (!search) return this.medicines();
-    return this.medicines().filter((medicine) =>
-      medicine.name.toLowerCase().includes(search) ||
-      medicine.nameAr?.toLowerCase().includes(search) ||
-      medicine.genericName.toLowerCase().includes(search) ||
-      medicine.genericNameAr?.toLowerCase().includes(search)
-    );
-  });
+  protected readonly filteredMedicines = computed(() => filterMedicinesByName(this.medicines(), this.medicineSearch()));
 
   protected readonly file = signal<File | null>(null);
   protected readonly fileUploading = signal(false);
@@ -253,57 +237,53 @@ export class AdjustStockDialogComponent {
   }
 
   async submit(): Promise<void> {
-    if (this.form.invalid || this.submitting()) {
-      this.form.markAllAsTouched();
-      return;
-    }
+    await runFormSubmit(
+      this.form,
+      this.submitting,
+      async () => {
+        const value = this.form.getRawValue();
+        let fileDto: FileUploadDto | undefined;
 
-    this.submitting.set(true);
-    try {
-      const value = this.form.getRawValue();
-      let fileDto: FileUploadDto | undefined;
+        if (this.file()) {
+          this.fileUploading.set(true);
+          const file = this.file()!;
+          const base64Content = await this.fileService.fileToBase64(file);
+          fileDto = {
+            fileName: file.name,
+            contentType: file.type,
+            sizeBytes: file.size,
+            base64Content
+          };
+          this.fileUploading.set(false);
+        }
 
-      if (this.file()) {
-        this.fileUploading.set(true);
-        const file = this.file()!;
-        const base64Content = await this.fileService.fileToBase64(file);
-        fileDto = {
-          fileName: file.name,
-          contentType: file.type,
-          sizeBytes: file.size,
-          base64Content
-        };
-        this.fileUploading.set(false);
+        if (this.isInbound()) {
+          await this.inventoryService.receive({
+            medicineVariantId: value.medicineVariantId as string,
+            manufactureDate: toDateString(value.manufactureDate)!,
+            expiryDate: toDateString(value.expiryDate)!,
+            packagesReceived: value.packagesReceived,
+            unitCost: value.unitCost,
+            supplierName: value.supplierName || null,
+            reason: value.reason,
+            adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum],
+            file: fileDto
+          });
+          this.toast.show('Batch received.', 'success');
+        } else {
+          await this.inventoryService.adjust({
+            medicineBatchId: value.medicineBatchId as string,
+            type: value.type as InventoryAdjustmentType,
+            quantity: value.quantity,
+            reason: value.reason,
+            file: fileDto
+          });
+          this.toast.show('Stock adjusted.', 'success');
+        }
+      },
+      () => {
+        this.dialogRef.close(true);
       }
-
-      if (this.isInbound()) {
-        await this.inventoryService.receive({
-          medicineVariantId: value.medicineVariantId as string,
-          manufactureDate: toDateString(value.manufactureDate)!,
-          expiryDate: toDateString(value.expiryDate)!,
-          packagesReceived: value.packagesReceived,
-          unitCost: value.unitCost,
-          supplierName: value.supplierName || null,
-          reason: value.reason,
-          adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum],
-          file: fileDto
-        });
-        this.toast.show('Batch received.', 'success');
-      } else {
-        await this.inventoryService.adjust({
-          medicineBatchId: value.medicineBatchId as string,
-          type: value.type as InventoryAdjustmentType,
-          quantity: value.quantity,
-          reason: value.reason,
-          file: fileDto
-        });
-        this.toast.show('Stock adjusted.', 'success');
-      }
-      this.dialogRef.close(true);
-    } catch {
-      // error toast already shown by the error interceptor
-    } finally {
-      this.submitting.set(false);
-    }
+    );
   }
 }
