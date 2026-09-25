@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -49,6 +49,7 @@ export class BatchFormDialogComponent {
   private readonly medicinesService = inject(MedicinesService);
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   private readonly dialogRef = inject(MatDialogRef<BatchFormDialogComponent>);
 
   readonly medicineId = inject<string>(MAT_DIALOG_DATA);
@@ -102,8 +103,15 @@ export class BatchFormDialogComponent {
     if (!v) {
       return null;
     }
-    const total = v.unitsPerPackage * this.form.controls.packagesReceived.value;
-    return `1 ${v.packageUnitName} = ${v.unitsPerPackage} ${v.baseUnitName}s. ${this.form.controls.packagesReceived.value} ${v.packageUnitName}s = ${total} ${v.baseUnitName}s.`;
+    const count = this.form.controls.packagesReceived.value;
+    const total = v.unitsPerPackage * count;
+    return this.translate.instant('dialogs.batchForm.packageHint', {
+      packageUnit: v.packageUnitName,
+      unitsPerPackage: v.unitsPerPackage,
+      baseUnit: v.baseUnitName,
+      count,
+      total
+    });
   });
 
   onFileSelected(event: Event): void {
@@ -151,7 +159,7 @@ export class BatchFormDialogComponent {
         }
       },
       () => {
-        this.toast.show('Batch added.', 'success');
+        this.toast.show(this.translate.instant('dialogs.batchForm.added'), 'success');
         this.dialogRef.close(true);
       }
     );

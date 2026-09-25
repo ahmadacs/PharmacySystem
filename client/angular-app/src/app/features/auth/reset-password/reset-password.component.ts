@@ -7,7 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
@@ -18,6 +18,7 @@ export class ResetPasswordComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   protected readonly submitting = signal(false);
   protected readonly form = new FormGroup({
     email: new FormControl(this.route.snapshot.queryParamMap.get('email') ?? '', { nonNullable: true, validators: [Validators.required, Validators.email] }),
@@ -31,7 +32,7 @@ export class ResetPasswordComponent {
       this.form,
       this.submitting,
       () => this.authService.resetPassword(this.form.getRawValue()),
-      async () => { this.toast.show('Password reset successfully.', 'success'); await this.router.navigate(['/login']); }
+      async () => { this.toast.show(this.translate.instant('auth.passwordResetDone'), 'success'); await this.router.navigate(['/login']); }
     );
   }
 }

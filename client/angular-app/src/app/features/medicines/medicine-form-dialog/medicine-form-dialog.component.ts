@@ -156,7 +156,7 @@ export class MedicineFormDialogComponent {
             isControlled: value.isControlled,
             isActive: value.isActive
           });
-          this.toast.show('Medicine updated.', 'success');
+          this.toast.show(this.translate.instant('medicines.updated'), 'success');
         } else {
           let fileDto: FileUploadDto | undefined;
           if (this.file()) {
@@ -187,7 +187,7 @@ export class MedicineFormDialogComponent {
             })),
             file: fileDto
           });
-          this.toast.show('Medicine created.', 'success');
+          this.toast.show(this.translate.instant('medicines.created'), 'success');
         }
       },
       () => {

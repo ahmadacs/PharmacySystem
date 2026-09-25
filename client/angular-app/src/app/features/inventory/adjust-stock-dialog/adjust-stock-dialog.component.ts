@@ -269,7 +269,7 @@ export class AdjustStockDialogComponent {
             adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum],
             file: fileDto
           });
-          this.toast.show('Batch received.', 'success');
+          this.toast.show(this.translate.instant('dialogs.adjustStock.received'), 'success');
         } else {
           await this.inventoryService.adjust({
             medicineBatchId: value.medicineBatchId as string,
@@ -278,7 +278,7 @@ export class AdjustStockDialogComponent {
             reason: value.reason,
             file: fileDto
           });
-          this.toast.show('Stock adjusted.', 'success');
+          this.toast.show(this.translate.instant('dialogs.adjustStock.adjusted'), 'success');
         }
       },
       () => {

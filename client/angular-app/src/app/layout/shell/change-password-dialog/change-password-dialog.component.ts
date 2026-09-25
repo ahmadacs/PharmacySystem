@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
@@ -22,6 +22,7 @@ export interface ChangePasswordData {
 export class ChangePasswordDialogComponent {
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   private readonly dialogRef = inject(MatDialogRef<ChangePasswordDialogComponent>);
 
   readonly email = inject(MAT_DIALOG_DATA).email;
@@ -42,7 +43,7 @@ export class ChangePasswordDialogComponent {
         newPassword: this.newPassword,
         confirmNewPassword: this.confirmPassword
       });
-      this.toast.show('Password changed successfully.', 'success');
+      this.toast.show(this.translate.instant('dialogs.changePassword.changed'), 'success');
       this.dialogRef.close(true);
     } catch {
       // error toast already shown by the error interceptor

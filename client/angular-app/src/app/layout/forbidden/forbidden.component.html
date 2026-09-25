@@ -2,9 +2,9 @@
     <div class="status-page">
       <app-empty-state
         icon="block"
-        message="Access denied"
-        hint="You do not have permission to view this page. Permission checks are enforced server-side."
+        [message]="'status.forbiddenTitle' | translate"
+        [hint]="'status.forbiddenHint' | translate"
       />
-      <button mat-flat-button color="primary" routerLink="/dashboard">Back to dashboard</button>
+      <button mat-flat-button color="primary" routerLink="/dashboard">{{ 'common.backToDashboard' | translate }}</button>
     </div>
   

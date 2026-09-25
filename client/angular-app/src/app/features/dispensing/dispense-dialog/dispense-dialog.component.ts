@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
@@ -26,6 +26,7 @@ export class DispenseDialogComponent {
   private readonly prescriptionsService = inject(PrescriptionsService);
   private readonly dispensingService = inject(DispensingService);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   private readonly dialogRef = inject(MatDialogRef<DispenseDialogComponent>);
 
   readonly prescriptionId = inject<string>(MAT_DIALOG_DATA);
@@ -80,7 +81,7 @@ export class DispenseDialogComponent {
         if (result.warnings.length > 0) {
           this.dispenseResult.set(result);
         } else {
-          this.toast.show('Prescription dispensed.', 'success');
+          this.toast.show(this.translate.instant('dialogs.dispense.success'), 'success');
           this.dialogRef.close(true);
         }
       }

@@ -7,7 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
@@ -17,6 +17,7 @@ export class ForgotPasswordComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   protected readonly submitting = signal(false);
   protected readonly form = new FormGroup({ email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }) });
 
@@ -25,7 +26,7 @@ export class ForgotPasswordComponent {
       this.form,
       this.submitting,
       () => this.authService.forgotPassword(this.form.getRawValue()),
-      async () => { this.toast.show('If the account exists, a reset link has been sent.', 'success'); await this.router.navigate(['/login']); }
+      async () => { this.toast.show(this.translate.instant('auth.resetLinkSent'), 'success'); await this.router.navigate(['/login']); }
     );
   }
 }

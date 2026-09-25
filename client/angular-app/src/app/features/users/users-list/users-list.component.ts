@@ -28,7 +28,7 @@ import { UserDto, UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
 import { confirmAndMutate, openForResult } from '../../../core/utils/dialog-helpers';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -77,6 +77,7 @@ export class UsersListComponent {
   private readonly dialog = inject(MatDialog);
   private readonly usersService = inject(UsersService);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
 
   protected readonly permissions = Permissions;
   protected readonly roles = USER_ROLES;
@@ -127,13 +128,13 @@ export class UsersListComponent {
       this.dialog,
       this.toast,
       {
-        title: user.isActive ? 'Deactivate user' : 'Activate user',
-        message: `${user.isActive ? 'Deactivate' : 'Activate'} ${user.email}?`,
-        confirmLabel: user.isActive ? 'Deactivate' : 'Activate',
+        title: this.translate.instant(user.isActive ? 'users.deactivateTitle' : 'users.activateTitle'),
+        message: this.translate.instant(user.isActive ? 'users.deactivateMessage' : 'users.activateMessage', { email: user.email }),
+        confirmLabel: this.translate.instant(user.isActive ? 'users.deactivate' : 'users.activate'),
         danger: user.isActive
       },
       () => this.usersService.setActive(user.id, !user.isActive),
-      user.isActive ? 'User deactivated.' : 'User activated.',
+      this.translate.instant(user.isActive ? 'users.deactivated' : 'users.activated'),
       () => this.refreshUsers()
     );
   }

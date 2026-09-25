@@ -5,7 +5,7 @@
   [matBadge]="unreadCount()"
   [matBadgeHidden]="!showUnreadBadge()"
   matBadgePosition="above after"
-  aria-label="Notifications"
+  [attr.aria-label]="'notifications.title' | translate"
 >
   <mat-icon>notifications</mat-icon>
 </button>

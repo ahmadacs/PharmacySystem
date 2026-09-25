@@ -1,5 +1,5 @@
 import { Component, inject, Input, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import {
   AbstractControl,
@@ -46,6 +46,7 @@ function matchPassword(password: FormControl<string>): ValidatorFn {
 export class UserFormDialogComponent {
   private readonly usersService = inject(UsersService);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   private readonly dialogRef = inject(MatDialogRef<UserFormDialogComponent>);
   
   @Input() isEdit = false;
@@ -91,7 +92,7 @@ export class UserFormDialogComponent {
         });
       },
       () => {
-        this.toast.show('User created.', 'success');
+        this.toast.show(this.translate.instant('dialogs.userForm.created'), 'success');
         this.dialogRef.close(true);
       }
     );

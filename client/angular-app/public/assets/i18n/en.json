@@ -20,6 +20,10 @@
     "system": "System",
     "language": "العربية",
     "all": "All",
+    "backToDashboard": "Back to dashboard",
+    "toggleNavigation": "Toggle navigation",
+    "userMenu": "User menu",
+    "appName": "Pharmacy System",
     "more": "+{{count}} more",
     "paginator": {
       "itemsPerPage": "Items per page:",
@@ -83,7 +87,15 @@
     "newPassword": "New password",
     "confirmNewPassword": "Confirm new password",
     "resetButton": "Reset password",
-    "signedInSuccess": "Signed in successfully."
+    "signedInSuccess": "Signed in successfully.",
+    "resetLinkSent": "If the account exists, a reset link has been sent.",
+    "accountCreated": "Account created successfully.",
+    "passwordResetDone": "Password reset successfully.",
+    "roles": {
+      "admin": "Admin",
+      "pharmacist": "Pharmacist",
+      "doctor": "Doctor"
+    }
   },
   "medicines": {
     "title": "Medicines",
@@ -380,6 +392,12 @@
     "role": "Role",
     "email": "Email",
     "status": "Status",
+    "activateTitle": "Activate user",
+    "deactivateTitle": "Deactivate user",
+    "activateMessage": "Activate {{email}}?",
+    "deactivateMessage": "Deactivate {{email}}?",
+    "activated": "User activated.",
+    "deactivated": "User deactivated.",
     "tables": {
       "name": "Name",
       "role": "Role",
@@ -533,6 +551,12 @@
       "performedBy": "Performed By"
     }
   },
+  "status": {
+    "forbiddenTitle": "Access denied",
+    "forbiddenHint": "You do not have permission to view this page. Permission checks are enforced server-side.",
+    "notFoundTitle": "Page not found",
+    "notFoundHint": "The page you are looking for does not exist."
+  },
   "files": {
     "dragDrop": "Drag & drop or click to select (jpeg/png/pdf, max 5MB)",
     "uploaded": "Uploaded {{name}}",
@@ -650,11 +674,13 @@
       "passwordMinLength": "Password must be at least 8 characters.",
       "passwordsDoNotMatch": "Passwords do not match.",
       "cancel": "Cancel",
-      "save": "Save"
+      "save": "Save",
+      "changed": "Password changed successfully."
     },
     "userForm": {
       "titleNew": "New user",
       "titleEdit": "Edit user",
+      "created": "User created.",
       "firstName": "First name",
       "lastName": "Last name",
       "email": "Email",
@@ -751,6 +777,8 @@
     },
     "batchForm": {
       "title": "Add batch",
+      "added": "Batch added.",
+      "packageHint": "1 {{packageUnit}} = {{unitsPerPackage}} {{baseUnit}}. {{count}} {{packageUnit}} = {{total}} {{baseUnit}}.",
       "subtitlePrefix": "Medicine:",
       "variant": "Type",
       "variantRequired": "Select a type.",
@@ -798,6 +826,8 @@
     },
     "adjustStock": {
       "titleInbound": "Receive stock",
+      "received": "Batch received.",
+      "adjusted": "Stock adjusted.",
       "subtitleInbound": "Receives a brand-new batch into stock; the reason is mandatory.",
       "titleAdjust": "Adjust stock",
       "subtitleAdjust": "Adjusts the quantity of an existing batch.",
@@ -844,6 +874,7 @@
     },
     "dispense": {
       "title": "Dispense prescription",
+      "success": "Prescription dispensed.",
       "errorTitle": "Could not load the prescription.",
       "errorHint": "The request timed out or failed. Please retry.",
       "retry": "Retry",
@@ -946,6 +977,10 @@
     },
     "prescriptionDetails": {
       "title": "Prescription #{{id}}",
+      "cancelConfirmMessage": "Cancel this prescription? This cannot be undone.",
+      "cancelled": "Prescription cancelled.",
+      "itemRefilled": "Item refilled.",
+      "eligibleRefilled": "Eligible items refilled.",
       "patient": "Patient",
       "doctor": "Doctor",
       "issued": "Issued",

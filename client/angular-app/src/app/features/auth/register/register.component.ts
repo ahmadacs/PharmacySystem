@@ -7,7 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -28,6 +28,7 @@ export class RegisterComponent {
   private readonly tokenStore = inject(TokenStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   protected readonly localizationService = inject(LocalizationService);
   protected readonly submitting = signal(false);
 
@@ -47,7 +48,7 @@ export class RegisterComponent {
       async (response) => {
         this.authStore.setSession(response.user);
         this.tokenStore.setAccessToken(response.accessToken);
-        this.toast.show('Account created successfully.', 'success');
+        this.toast.show(this.translate.instant('auth.accountCreated'), 'success');
         await this.router.navigate(['/dashboard']);
       }
     );

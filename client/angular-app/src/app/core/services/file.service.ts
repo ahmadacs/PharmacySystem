@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -26,6 +27,7 @@ export interface ImagePreview {
 @Injectable({ providedIn: 'root' })
 export class FileService {
   private readonly http = inject(HttpClient);
+  private readonly translate = inject(TranslateService);
   private readonly baseUrl = `${environment.apiUrl}/files`;
 
   readonly maxUploadBytes = 5 * 1024 * 1024;
@@ -82,10 +84,10 @@ export class FileService {
   /** Shared client-side validation (single source of truth for all dialogs). */
   validateUpload(file: File): string | null {
     if (!this.allowedUploadTypes.includes(file.type)) {
-      return 'Only PDF, JPG, and PNG files are allowed.';
+      return this.translate.instant('validation.fileType');
     }
     if (file.size > this.maxUploadBytes) {
-      return 'File size must be less than 5MB.';
+      return this.translate.instant('validation.fileSize');
     }
     return null;
   }

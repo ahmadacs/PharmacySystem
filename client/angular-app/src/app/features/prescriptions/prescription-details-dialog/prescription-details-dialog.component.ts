@@ -122,13 +122,13 @@ export class PrescriptionDetailsDialogComponent {
       this.dialog,
       this.toast,
       {
-        title: 'Cancel prescription',
-        message: 'Cancel this prescription? This cannot be undone.',
-        confirmLabel: 'Cancel prescription',
+        title: this.translate.instant('dialogs.prescriptionDetails.cancelPrescription'),
+        message: this.translate.instant('dialogs.prescriptionDetails.cancelConfirmMessage'),
+        confirmLabel: this.translate.instant('dialogs.prescriptionDetails.cancelPrescription'),
         danger: true
       },
       () => this.prescriptionsService.cancel(id),
-      'Prescription cancelled.',
+      this.translate.instant('dialogs.prescriptionDetails.cancelled'),
       () => this.dialogRef.close(true)
     );
   }
@@ -149,7 +149,7 @@ export class PrescriptionDetailsDialogComponent {
   async refillItem(prescriptionId: string, itemId: string): Promise<void> {
     try {
       await this.prescriptionsService.refillItem(prescriptionId, itemId);
-      this.toast.show('Item refilled.', 'success');
+      this.toast.show(this.translate.instant('dialogs.prescriptionDetails.itemRefilled'), 'success');
       await reloadDetails(this.prescription, () => this.prescriptionsService.get(prescriptionId));
     } catch {
       // error toast already shown by the error interceptor
@@ -161,7 +161,7 @@ export class PrescriptionDetailsDialogComponent {
     if (ids.length === 0) return;
     try {
       await this.prescriptionsService.refillItems(p.id, ids);
-      this.toast.show('Eligible items refilled.', 'success');
+      this.toast.show(this.translate.instant('dialogs.prescriptionDetails.eligibleRefilled'), 'success');
       await reloadDetails(this.prescription, () => this.prescriptionsService.get(p.id));
     } catch {
       // error toast already shown by the error interceptor

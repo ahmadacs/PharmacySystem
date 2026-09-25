@@ -1,6 +1,6 @@
 
     <div class="status-page">
-      <app-empty-state icon="search_off" message="Page not found" hint="The page you are looking for does not exist." />
-      <button mat-flat-button color="primary" routerLink="/dashboard">Back to dashboard</button>
+      <app-empty-state icon="search_off" [message]="'status.notFoundTitle' | translate" [hint]="'status.notFoundHint' | translate" />
+      <button mat-flat-button color="primary" routerLink="/dashboard">{{ 'common.backToDashboard' | translate }}</button>
     </div>
   

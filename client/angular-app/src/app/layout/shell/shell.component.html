@@ -7,7 +7,7 @@
   >
     <div class="shell__brand">
       <mat-icon>local_pharmacy</mat-icon>
-      <span>Pharmacy System</span>
+      <span>{{ 'common.appName' | translate }}</span>
     </div>
     <mat-nav-list>
       @for (item of navItems(); track item.route) {
@@ -22,7 +22,7 @@
   <mat-sidenav-content>
     <!-- Header تماماً كما في html.html -->
     <div class="topbar">
-      <button class="icon-btn" (click)="toggleSidenav()" aria-label="Toggle navigation">
+      <button class="icon-btn" (click)="toggleSidenav()" [attr.aria-label]="'common.toggleNavigation' | translate">
         <mat-icon>menu</mat-icon>
       </button>
       <span class="topbar__spacer"></span>
@@ -32,7 +32,7 @@
           <button [class.active]="localizationService.currentLang() === 'en'" (click)="localizationService.currentLang.set('en')">EN</button>
         </div>
         <app-notification-bell />
-        <button class="user-btn" [matMenuTriggerFor]="userMenu" aria-label="User menu">
+        <button class="user-btn" [matMenuTriggerFor]="userMenu" [attr.aria-label]="'common.userMenu' | translate">
           <div class="avatar">{{ firstName()[0] || 'U' }}</div>
           <div class="who">
             <div class="name">{{ firstName() }}</div>

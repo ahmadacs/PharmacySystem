@@ -56,9 +56,9 @@
       </div>
       <p class="login__hint">{{ 'auth.seededHint' | translate }}</p>
       <div class="login__accounts">
-        <button mat-button (click)="fill('admin@pharmacy.com', 'Admin@1234')">Admin</button>
-        <button mat-button (click)="fill('pharmacist@pharmacy.com', 'Pharma@1234')">Pharmacist</button>
-        <button mat-button (click)="fill('doctor@pharmacy.com', 'Doctor@1234')">Doctor</button>
+        <button mat-button (click)="fill('admin@pharmacy.com', 'Admin@1234')">{{ 'auth.roles.admin' | translate }}</button>
+        <button mat-button (click)="fill('pharmacist@pharmacy.com', 'Pharma@1234')">{{ 'auth.roles.pharmacist' | translate }}</button>
+        <button mat-button (click)="fill('doctor@pharmacy.com', 'Doctor@1234')">{{ 'auth.roles.doctor' | translate }}</button>
       </div>
     </mat-card-footer>
   </mat-card>
