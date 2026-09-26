@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Security;
-using Application.Common.Specifications;
 using Application.Features.Prescriptions.Common;
 using Domain.Entities.Prescriptions;
 using Domain.Exceptions;
@@ -40,9 +39,7 @@ public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
     {
         if (request is IOwnedPrescriptionRequest owned)
         {
-            var byIdSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
-            byIdSpec.Where(p => p.Id == owned.PrescriptionId);
-            var prescription = await _prescriptions.GetAsync(byIdSpec, cancellationToken)
+            var prescription = await _prescriptions.GetByIdAsync(owned.PrescriptionId, cancellationToken: cancellationToken)
                 ?? throw new EntityNotFoundException(typeof(Prescription), owned.PrescriptionId);
 
             try

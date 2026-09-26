@@ -1,7 +1,7 @@
+using System.Linq.Expressions;
 using System.Text.Json;
 using Application.Common.Interfaces;
 using Application.Common.Security;
-using Application.Common.Specifications;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using Domain.Events;
@@ -58,7 +58,8 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
         _logger.LogInformation("Prescription {PrescriptionId} created at {OccurredAtUtc}",
             notification.PrescriptionId, notification.OccurredAtUtc);
 
-        var row = await _prescriptions.GetAsync(NotificationRowSpecs.ById(notification.PrescriptionId), cancellationToken);
+        // Lean SELECT: only the selector's columns are fetched.
+        var row = await _prescriptions.GetAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
         if (row is null)
             return;
 
@@ -127,7 +128,8 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
             "Prescription {PrescriptionId} dispensed ({TotalDispensedQuantity} units) at {OccurredAtUtc}",
             notification.PrescriptionId, notification.TotalDispensedQuantity, notification.OccurredAtUtc);
 
-        var row = await _prescriptions.GetAsync(NotificationRowSpecs.ById(notification.PrescriptionId), cancellationToken);
+        // Lean SELECT: only the selector's columns are fetched.
+        var row = await _prescriptions.GetAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
         if (row is null)
             return;
 
@@ -154,16 +156,19 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
 /// </summary>
 file static class NotificationRowSpecs
 {
-    public static Specification<Prescription, NotificationPrescriptionRow> ById(Guid prescriptionId)
-    {
-        var spec = new Specification<Prescription, NotificationPrescriptionRow>(p => new NotificationPrescriptionRow(
+    public static readonly Expression<Func<Prescription, NotificationPrescriptionRow>> Selector =
+        p => new NotificationPrescriptionRow(
             p.Id,
             p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName).Trim() : "Unknown patient",
             p.Items.Count(),
-            p.Doctor != null ? (Guid?)p.Doctor.UserId : null));
-        spec.Where(p => p.Id == prescriptionId);
-        return spec;
-    }
+            p.Doctor != null ? (Guid?)p.Doctor.UserId : null);
 
     public sealed record NotificationPrescriptionRow(Guid Id, string PatientName, int ItemCount, Guid? DoctorUserId);
 }
+
+/// <summary>
+/// Read-only projection shared by the notification handlers: exactly the
+/// fields notifications need (patient display name with the same
+/// "Unknown patient" fallback, item count, doctor user id). Single query,
+/// no Include — navigations inside a Select need none.
+/// </summary>

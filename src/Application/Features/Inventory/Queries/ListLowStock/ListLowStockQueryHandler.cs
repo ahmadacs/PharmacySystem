@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -22,10 +21,8 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
 
-        var spec = new Specification<MedicineVariant, LowStockRow>(v => new LowStockRow(
+        var selector = (Expression<Func<MedicineVariant, LowStockRow>>)(v => new LowStockRow(
                     v.MedicineId,
                     v.Medicine!.Name,
                     v.Medicine!.NameAr,
@@ -35,21 +32,22 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
                     v.Form,
                     v.Unit,
                     v.Strength));
-        spec.Where(v => v.IsActive && v.Medicine!.IsActive);
-        spec.Where(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value);
 
-        spec.Order(request.SortBy?.ToLowerInvariant() switch
+        Expression<Func<MedicineVariant, bool>> predicate =
+            v => v.IsActive && v.Medicine!.IsActive
+                && v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value;
+
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize(100);
+        var desc = request.SortDir.IsDescending();
+
+        var totalCount = await _repo.CountAsync(predicate, cancellationToken);
+        List<LowStockRow> rows = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "available" => q => q.OrderByDirection(AvailableStock(asOf), request.SortDir),
-            "strength" => q => q.OrderByDirection(v => v.Strength, request.SortDir),
-            _ => q => q.OrderByDirection(v => v.Medicine!.Name, request.SortDir)
-        });
-
-        var totalCount = await _repo.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var rows = await _repo.ListAsync(spec, cancellationToken);
+            "quantity" or "available" => await _repo.PagedAsync(selector, predicate, v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0, desc, page, pageSize, cancellationToken),
+            "strength" => await _repo.PagedAsync(selector, predicate, v => v.Strength, desc, page, pageSize, cancellationToken),
+            _ => await _repo.PagedAsync(selector, predicate, v => v.Medicine!.Name, desc, page, pageSize, cancellationToken)
+        };
 
         var items = rows
             .Select(r => r.ToDto())
@@ -57,8 +55,4 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
 
         return Result<PagedList<LowStockDto>>.Success(items);
     }
-
-    private static Expression<Func<MedicineVariant, int>> AvailableStock(DateOnly asOf)
-        => v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0;
-
 }

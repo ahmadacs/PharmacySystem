@@ -1,7 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Security;
-using Application.Common.Specifications;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Files;
@@ -114,9 +113,7 @@ public sealed class FileAccessChecker : IFileAccessChecker
 
     private async Task<Result?> CheckPrescriptionAsync(Guid prescriptionId, bool missingAsNotFound, CancellationToken cancellationToken)
     {
-        var spec = new Specification<Prescription, Prescription>(p => p).Tracked();
-        spec.Where(p => p.Id == prescriptionId);
-        var prescription = await _prescriptions.GetAsync(spec, cancellationToken);
+        var prescription = await _prescriptions.GetByIdAsync(prescriptionId, cancellationToken: cancellationToken);
 
         if (prescription is null)
             return missingAsNotFound ? NotFound("Prescription", prescriptionId) : null;
@@ -128,13 +125,9 @@ public sealed class FileAccessChecker : IFileAccessChecker
     private bool HasAny(params string[] permissions)
         => permissions.Any(p => _currentUser.Permissions.Contains(p));
 
-    private static async Task<bool> ExistsAsync<TEntity>(IBaseRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
+    private static Task<bool> ExistsAsync<TEntity>(IBaseRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
         where TEntity : Domain.Common.BaseEntity
-    {
-        var spec = new Specification<TEntity, TEntity>(e => e);
-        spec.Where(e => e.Id == id);
-        return await repo.GetAsync(spec, cancellationToken) is not null;
-    }
+        => repo.ExistsAsync(e => e.Id == id, cancellationToken);
 
     private Result Denied(string messageKey)
         => Result.Failure(_localizer[messageKey].Value, 403);

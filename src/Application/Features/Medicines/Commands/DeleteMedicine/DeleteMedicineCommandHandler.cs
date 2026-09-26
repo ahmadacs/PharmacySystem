@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -23,9 +22,7 @@ public sealed class DeleteMedicineCommandHandler : IRequestHandler<DeleteMedicin
 
     public async Task<Result> Handle(DeleteMedicineCommand request, CancellationToken cancellationToken)
     {
-        var byIdSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
-        byIdSpec.Where(m => m.Id == request.Id);
-        var medicine = await _repo.GetAsync(byIdSpec, cancellationToken);
+        var medicine = await _repo.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
         if (medicine is null)
             return Result.Failure(_localizer["ResourceNotFound", "Medicine", request.Id].Value, 404);
 

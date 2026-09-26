@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
@@ -27,9 +26,7 @@ public sealed class CancelPrescriptionCommandHandler : IRequestHandler<CancelPre
 
     public async Task<Result> Handle(CancelPrescriptionCommand request, CancellationToken cancellationToken)
     {
-        var byIdSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
-        byIdSpec.Where(p => p.Id == request.Id);
-        var prescription = await _prescriptions.GetAsync(byIdSpec, cancellationToken);
+        var prescription = await _prescriptions.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 

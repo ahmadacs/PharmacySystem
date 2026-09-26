@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Files.Common;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
@@ -32,9 +31,7 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
     {
         var req = request.Request;
 
-        var nameSpec = new Specification<Medicine, Medicine>(m => m);
-        nameSpec.Where(m => m.Name == req.Name.Trim());
-        if (await _medicines.CountAsync(nameSpec, cancellationToken) > 0)
+        if (await _medicines.ExistsAsync(m => m.Name == req.Name.Trim(), cancellationToken))
             return Result<Guid>.Failure(_localizer["MedicineAlreadyExists", req.Name].Value, 409);
 
         GenericName genericName = await MedicineMapping.ResolveGenericNameAsync(_generics, req.GenericName, req.GenericNameAr, cancellationToken);

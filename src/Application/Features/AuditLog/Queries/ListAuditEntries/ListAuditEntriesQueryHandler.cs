@@ -2,7 +2,6 @@ using System.Text.Json;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.AuditLog.Dtos;
 using Domain.Entities.Audit;
 using Domain.Entities.Patients;
@@ -41,40 +40,31 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
     {
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize(200);
+        var desc = request.SortDir.IsDescending();
 
-        var spec = new Specification<AuditEntry, AuditEntry>(e => e);
+        var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
+        var entity = request.Entity;
+        var action = request.Action;
+        var from = request.From;
+        var to = request.To;
+        System.Linq.Expressions.Expression<Func<AuditEntry, bool>> predicate =
+            e => (search == null || e.EntityName.Contains(search))
+                && (!action.HasValue || e.Action == action.Value)
+                && (entity == null || e.EntityName == entity)
+                && (!from.HasValue || e.ChangedAt >= from.Value)
+                && (!to.HasValue || e.ChangedAt <= to.Value);
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        var totalCount = await _audit.CountAsync(predicate, cancellationToken);
+
+        // Identity selector: same entity, but paged in SQL — the heavy
+        // ChangesJson is fetched for the page rows only, not the whole table.
+        List<AuditEntry> entries = request.SortBy?.ToLowerInvariant() switch
         {
-            var trimmed = request.Search.Trim();
-            spec.Where(e => e.EntityName.Contains(trimmed));
-        }
-
-        if (request.Action.HasValue)
-            spec.Where(e => e.Action == request.Action.Value);
-
-        if (!string.IsNullOrWhiteSpace(request.Entity))
-            spec.Where(e => e.EntityName == request.Entity);
-
-        if (request.From.HasValue)
-            spec.Where(e => e.ChangedAt >= request.From.Value);
-
-        if (request.To.HasValue)
-            spec.Where(e => e.ChangedAt <= request.To.Value);
-
-        spec.Order(request.SortBy?.ToLowerInvariant() switch
-        {
-            "entity" => q => q.OrderByDirection(e => e.EntityName, request.SortDir),
-            "action" => q => q.OrderByDirection(e => e.Action, request.SortDir),
+            "entity" => await _audit.PagedAsync(e => e, predicate, e => e.EntityName, desc, page, pageSize, cancellationToken),
+            "action" => await _audit.PagedAsync(e => e, predicate, e => e.Action, desc, page, pageSize, cancellationToken),
             // No author column without the join: stable date order instead.
-            _ => q => q.OrderByDirection(e => e.ChangedAt, request.SortDir)
-        });
-
-        var totalCount = await _audit.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var entries = await _audit.ListAsync(spec, cancellationToken);
+            _ => await _audit.PagedAsync(e => e, predicate, e => e.ChangedAt, desc, page, pageSize, cancellationToken)
+        };
 
         var changesById = entries.ToDictionary(e => e.Id, e => DeserializeChanges(e.ChangesJson));
 
@@ -105,10 +95,8 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
         IReadOnlyDictionary<Guid, string> patientNames = new Dictionary<Guid, string>();
         if (patientIds.Count > 0)
         {
-            var patientSpec = new Specification<Patient, Patient>(p => p);
-            patientSpec.Where(p => patientIds.Contains(p.Id));
-            patientNames = (await _patients.ListAsync(patientSpec, cancellationToken))
-                .ToDictionary(p => p.Id, p => $"{p.FirstName} {p.LastName}".Trim());
+            patientNames = (await _patients.ListAsync(p => new { p.Id, FullName = p.FirstName + " " + p.LastName }, p => patientIds.Contains(p.Id), cancellationToken: cancellationToken))
+                .ToDictionary(p => p.Id, p => p.FullName.Trim());
         }
 
         var prescriptionEntryIds = entries

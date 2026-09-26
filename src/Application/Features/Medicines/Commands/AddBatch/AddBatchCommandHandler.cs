@@ -1,7 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
-using Application.Common.Specifications;
 using Application.Features.Files.Common;
 using Application.Features.Inventory.Dtos;
 using Application.Features.Medicines.Dtos;
@@ -50,28 +49,20 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
         // the variant first, then its batches and medicine; fix-up populates
         // variant.Batches / variant.Medicine in memory. The low-stock event
         // below reads both, so all three loads are tracked.
-        var variantSpec = new Specification<MedicineVariant, MedicineVariant>(v => v).Tracked();
-        variantSpec.Where(v => v.Id == req.MedicineVariantId);
-        var variant = await _variants.GetAsync(variantSpec, cancellationToken);
+        var variant = await _variants.GetByIdAsync(req.MedicineVariantId, tracked: true, cancellationToken: cancellationToken);
         if (variant is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "MedicineVariant", req.MedicineVariantId].Value, 404);
 
-        var variantBatchesSpec = new Specification<MedicineBatch, MedicineBatch>(b => b).Tracked();
-        variantBatchesSpec.Where(b => b.MedicineVariantId == req.MedicineVariantId);
-        await _batches.ListAsync(variantBatchesSpec, cancellationToken);
+        await _batches.ListAsync(b => b.MedicineVariantId == req.MedicineVariantId, cancellationToken: cancellationToken);
 
-        var medicineSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
-        medicineSpec.Where(m => m.Id == variant.MedicineId);
-        var medicine = await _medicines.GetAsync(medicineSpec, cancellationToken);
-        if (medicine is null)
+        var medicineName = await _medicines.GetAsync(m => m.Name, m => m.Id == variant.MedicineId, cancellationToken);
+        if (medicineName is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", variant.MedicineId].Value, 404);
 
         // Generate batch number: First 3 letters of medicine name + variant abbreviation + date
-        var batchNumber = GenerateBatchNumber(medicine.Name, variant);
+        var batchNumber = GenerateBatchNumber(medicineName, variant);
 
-        var batchNumberSpec = new Specification<MedicineBatch, MedicineBatch>(b => b);
-        batchNumberSpec.Where(b => b.BatchNumber == batchNumber.Trim());
-        if (await _batches.CountAsync(batchNumberSpec, cancellationToken) > 0)
+        if (await _batches.ExistsAsync(b => b.BatchNumber == batchNumber.Trim(), cancellationToken))
             return Result<Guid>.Failure(_localizer["BatchNumberExists", batchNumber].Value, 409);
 
         if (req.ExpiryDate <= req.ManufactureDate)

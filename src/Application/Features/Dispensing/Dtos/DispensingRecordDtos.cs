@@ -1,5 +1,7 @@
 namespace Application.Features.Dispensing.Dtos;
 
+using Domain.Enums;
+
 public sealed record DispensingRecordItemDto(
     Guid MedicineBatchId,
     string MedicineName,
@@ -28,9 +30,19 @@ internal sealed record DispensingRecordItemRow(
     Guid RecordId,
     Guid MedicineBatchId,
     string MedicineName,
-    string VariantName,
+    MedicineForm? Form,
+    MedicineUnit? Unit,
+    decimal? Strength,
     string BatchNumber,
     int Quantity);
+
+/// <summary>
+/// Internal single-query shape for the list: header row plus its lines, so
+/// one lean SELECT serves both the page and the per-record items.
+/// </summary>
+internal sealed record DispensingRecordWithItems(
+    DispensingRecordRow Row,
+    IReadOnlyList<DispensingRecordItemRow> Items);
 
 public sealed record DispensingRecordDto(
     Guid Id,
@@ -55,9 +67,14 @@ public sealed record DispensePrescriptionResponse(
 
 public static class DispensingMapping
 {
-    /// <summary>Maps a dispensed-line projection row.</summary>
+    /// <summary>Maps a dispensed-line projection row (variant display built here, not in SQL).</summary>
     internal static DispensingRecordItemDto ToDto(this DispensingRecordItemRow i)
-        => new(i.MedicineBatchId, i.MedicineName, i.VariantName, i.BatchNumber, i.Quantity);
+        => new(i.MedicineBatchId, i.MedicineName, BuildVariantName(i.Form, i.Strength, i.Unit), i.BatchNumber, i.Quantity);
+
+    internal static string BuildVariantName(MedicineForm? form, decimal? strength, MedicineUnit? unit)
+        => form.HasValue && strength.HasValue && unit.HasValue
+            ? $"{form.Value} {strength.Value} {unit.Value}"
+            : string.Empty;
 
     /// <summary>Maps a record projection row (names + lines resolved separately).</summary>
     internal static DispensingRecordDto ToDto(

@@ -4,15 +4,22 @@ namespace Application.Common.Extensions;
 
 /// <summary>
 /// Single shared ordering helper for all list queries (sortBy/sortDir).
-/// Replaces the identical private SortDir method previously duplicated in every list handler.
 /// </summary>
 public static class QueryableExtensions
 {
-    public static IOrderedQueryable<T> OrderByDirection<T, TKey>(
-        this IQueryable<T> query,
-        Expression<Func<T, TKey>> keySelector,
+    /// <summary>"desc" (any case) = descending.</summary>
+    public static bool IsDescending(this string? sortDir)
+        => sortDir?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// In-memory ordering for small projected lists (sort key must be part of
+    /// the projected row).
+    /// </summary>
+    public static IOrderedEnumerable<T> OrderByDirection<T, TKey>(
+        this IEnumerable<T> source,
+        Func<T, TKey> keySelector,
         string? sortDir)
-        => sortDir?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true
-            ? query.OrderByDescending(keySelector)
-            : query.OrderBy(keySelector);
+        => sortDir.IsDescending()
+            ? source.OrderByDescending(keySelector)
+            : source.OrderBy(keySelector);
 }

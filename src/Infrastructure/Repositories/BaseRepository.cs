@@ -1,5 +1,6 @@
+using System.Linq.Expressions;
 using Application.Common.Interfaces;
-using Application.Common.Specifications;
+using Application.Common.Models;
 using Domain.Common;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -15,33 +16,99 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         Db = db;
     }
 
-    public Task<TResult?> GetAsync<TResult>(ISpecification<TEntity, TResult> spec, CancellationToken cancellationToken = default)
+    public Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, bool tracked = false, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(spec);
-        ArgumentNullException.ThrowIfNull(spec.Selector);
+        ArgumentNullException.ThrowIfNull(predicate);
 
-        return Apply(spec, applyPaging: false).Select(spec.Selector).FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public Task<List<TResult>> ListAsync<TResult>(ISpecification<TEntity, TResult> spec, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(spec);
-        ArgumentNullException.ThrowIfNull(spec.Selector);
-
-        return Apply(spec, applyPaging: true).Select(spec.Selector).ToListAsync(cancellationToken);
-    }
-
-    public Task<int> CountAsync<TResult>(ISpecification<TEntity, TResult> spec, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(spec);
-
-        // Ordering/paging/projection never affect the count; only the filter does,
-        // so counting stays a single COUNT query exactly like before.
         IQueryable<TEntity> query = Db.Set<TEntity>();
-        if (spec.Criteria != null)
-            query = query.Where(spec.Criteria);
+        if (!tracked)
+            query = query.AsNoTracking();
+
+        return query.Where(predicate).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<TEntity?> GetByIdAsync(Guid id, bool tracked = false, CancellationToken cancellationToken = default)
+        => GetAsync(e => e.Id == id, tracked, cancellationToken);
+
+    public Task<List<TEntity>> ListAsync(
+        Expression<Func<TEntity, bool>>? predicate = null,
+        CancellationToken cancellationToken = default)
+    {
+        IQueryable<TEntity> query = Db.Set<TEntity>();
+        if (predicate is not null)
+            query = query.Where(predicate);
+
+        return query.ToListAsync(cancellationToken);
+    }
+
+    public Task<List<TResult>> ListAsync<TResult>(
+        Expression<Func<TEntity, TResult>> selector,
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        return Db.Set<TEntity>().AsNoTracking()
+            .Where(predicate)
+            .Select(selector)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<TResult?> GetAsync<TResult>(
+        Expression<Func<TEntity, TResult>> selector,
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        return Db.Set<TEntity>().AsNoTracking()
+            .Where(predicate)
+            .Select(selector)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<List<TResult>> PagedAsync<TResult, TKey>(
+        Expression<Func<TEntity, TResult>> selector,
+        Expression<Func<TEntity, bool>> predicate,
+        Expression<Func<TEntity, TKey>> orderBy,
+        bool descending,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(orderBy);
+
+        page = Math.Max(1, page);
+        pageSize = Math.Max(1, pageSize);
+
+        var filtered = Db.Set<TEntity>().AsNoTracking().Where(predicate);
+        var ordered = descending ? filtered.OrderByDescending(orderBy) : filtered.OrderBy(orderBy);
+
+        return ordered
+            .Select(selector)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<TEntity> query = Db.Set<TEntity>();
+        if (predicate is not null)
+            query = query.Where(predicate);
 
         return query.CountAsync(cancellationToken);
+    }
+
+    public Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        return Db.Set<TEntity>().AnyAsync(predicate, cancellationToken);
     }
 
     public void Add(TEntity entity)
@@ -49,28 +116,4 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
 
     public void Remove(TEntity entity)
         => Db.Set<TEntity>().Remove(entity);
-
-    private IQueryable<TEntity> Apply<TResult>(ISpecification<TEntity, TResult> spec, bool applyPaging)
-    {
-        IQueryable<TEntity> query = Db.Set<TEntity>();
-
-        if (spec.AsNoTracking)
-            query = query.AsNoTracking();
-
-        if (spec.Criteria != null)
-            query = query.Where(spec.Criteria);
-
-        if (spec.OrderBy != null)
-            query = spec.OrderBy(query);
-
-        if (applyPaging)
-        {
-            if (spec.Skip.HasValue)
-                query = query.Skip(spec.Skip.Value);
-            if (spec.Take.HasValue)
-                query = query.Take(spec.Take.Value);
-        }
-
-        return query;
-    }
 }

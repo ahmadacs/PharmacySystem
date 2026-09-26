@@ -1,7 +1,6 @@
 using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Files.Common;
 using Application.Features.Patients.Dtos;
 using Application.Features.Prescriptions.Dtos;
@@ -63,10 +62,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             var prescription = req.ToEntity(doctorId.Value, patient.Id);
 
         var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
-        var variantsSpec = new Specification<MedicineVariant, MedicineVariant>(v => v);
-        variantsSpec.Where(v => variantIds.Contains(v.Id));
-        var existingVariants = await _variants.ListAsync(variantsSpec, cancellationToken);
-        var existingVariantIds = existingVariants.Select(v => v.Id).ToHashSet();
+        var existingVariantIds = (await _variants.ListAsync(v => v.Id, v => variantIds.Contains(v.Id), cancellationToken: cancellationToken)).ToHashSet();
 
         foreach (var item in req.Items)
         {
@@ -88,9 +84,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     {
         // Read-only: this path never mutates the patient (numbers are already
         // normalized by the caller, so plain equality matches the old finder).
-        var phoneSpec = new Specification<Patient, Patient>(p => p);
-        phoneSpec.Where(p => p.PhoneNumber == normalizedPhone);
-        return await _patients.GetAsync(phoneSpec, cancellationToken);
+        return await _patients.GetAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken: cancellationToken);
     }
 
     private async Task<Patient?> FindOrCreatePatientAsync(CreatePrescriptionRequest request, CancellationToken cancellationToken)
@@ -114,9 +108,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         // Fallback: check by name+DOB to prevent duplicate patient with different phone.
         // Tracked read: UpdatePhone below must persist on SaveChanges
         // (the old Query() was tracked; specs default to NoTracking).
-        var nameDobSpec = new Specification<Patient, Patient>(p => p).Tracked();
-        nameDobSpec.Where(p => p.FirstName == firstName && p.LastName == lastName && p.DateOfBirth == request.PatientDateOfBirth);
-        var byNameDob = await _patients.GetAsync(nameDobSpec, cancellationToken);
+        var byNameDob = await _patients.GetAsync(p => p.FirstName == firstName && p.LastName == lastName && p.DateOfBirth == request.PatientDateOfBirth, tracked: true, cancellationToken: cancellationToken);
         if (byNameDob is not null)
         {
             if (byNameDob.PhoneNumber != normalizedPhone)

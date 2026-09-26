@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Application.Common.Security;
-using Application.Common.Specifications;
 using Domain.Entities.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
@@ -36,9 +35,7 @@ public sealed class NotificationsHub : Hub
 
             if (Guid.TryParse(userId, out var uid))
             {
-                var unreadSpec = new Specification<Notification, Notification>(n => n);
-                unreadSpec.Where(n => n.UserId == uid && !n.IsRead);
-                var count = await _notifications.CountAsync(unreadSpec);
+                var count = await _notifications.CountAsync(n => n.UserId == uid && !n.IsRead);
                 await Clients.Caller.SendAsync("unreadCount", count);
             }
         }

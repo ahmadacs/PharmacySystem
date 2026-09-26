@@ -1,7 +1,6 @@
 using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Notifications;
 using MediatR;
@@ -36,9 +35,7 @@ public sealed class MarkNotificationReadCommandHandler : IRequestHandler<MarkNot
         if (authFailure is not null)
             return authFailure;
 
-        var byIdSpec = new Specification<Notification, Notification>(n => n).Tracked();
-        byIdSpec.Where(n => n.Id == request.NotificationId);
-        var notification = await _notifications.GetAsync(byIdSpec, cancellationToken);
+        var notification = await _notifications.GetByIdAsync(request.NotificationId, tracked: true, cancellationToken: cancellationToken);
         if (notification is null)
             return Result.Failure(_localizer["ResourceNotFound", "Notification", request.NotificationId].Value, 404);
 

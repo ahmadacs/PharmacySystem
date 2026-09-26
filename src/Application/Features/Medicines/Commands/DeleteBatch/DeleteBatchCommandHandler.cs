@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -23,9 +22,7 @@ public sealed class DeleteBatchCommandHandler : IRequestHandler<DeleteBatchComma
 
     public async Task<Result> Handle(DeleteBatchCommand request, CancellationToken cancellationToken)
     {
-        var batchSpec = new Specification<MedicineBatch, MedicineBatch>(b => b).Tracked();
-        batchSpec.Where(b => b.Id == request.Id);
-        var batch = await _batches.GetAsync(batchSpec, cancellationToken);
+        var batch = await _batches.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
         if (batch is null)
             return Result.Failure(_localizer["ResourceNotFound", "MedicineBatch", request.Id].Value, 404);
 

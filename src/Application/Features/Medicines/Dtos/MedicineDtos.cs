@@ -47,7 +47,9 @@ internal sealed record MedicineRow(
     CategoryEnum Category,
     bool IsControlled,
     bool IsActive,
-    IReadOnlyList<MedicineVariantRow> Variants);
+    IReadOnlyList<MedicineVariantRow> Variants,
+    DateTime CreatedAt,
+    Domain.Enums.MedicineForm? FirstVariantForm);
 
 /// <summary>
 /// Internal EF projection shape for one batch.
@@ -60,7 +62,9 @@ internal sealed record MedicineBatchRow(
     Guid MedicineId,
     string MedicineName,
     string? MedicineNameAr,
-    string VariantName,
+    MedicineForm Form,
+    MedicineUnit Unit,
+    decimal Strength,
     string BatchNumber,
     DateOnly ManufactureDate,
     DateOnly ExpiryDate,

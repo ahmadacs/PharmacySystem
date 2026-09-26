@@ -1,7 +1,6 @@
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -22,21 +21,21 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.ExpiryStatus, asOf, request.WithinDays);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
 
         // Pure single-entity spec: filter + ordering + paging + projection all
         // live here in the Application layer. The dispensed total aggregates
         // through the DispensingItems navigation (existing FK, no extra round
         // trip, no Include — navigations inside a Select need none).
-        // COUNT + page = same 2 queries as before; the repository exposes only
-        // the generic Get/List/CountAsync and never sees a DTO shape decision.
-        var spec = new Specification<MedicineBatch, MedicineBatchRow>(b => new MedicineBatchRow(
+        // Scientific name (Medicine.Name) + variant type (Form/Strength/Unit)
+        // are scalar columns; VariantName is built in MedicineMapping (not SQL).
+        var selector = (System.Linq.Expressions.Expression<Func<MedicineBatch, MedicineBatchRow>>)(b => new MedicineBatchRow(
                     b.Id,
                     b.MedicineVariant!.MedicineId,
                     b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.Name : "Unknown",
                     b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.NameAr : null,
-                    $"{b.MedicineVariant!.Form} {b.MedicineVariant!.Strength} {b.MedicineVariant!.Unit}",
+                    b.MedicineVariant!.Form,
+                    b.MedicineVariant!.Unit,
+                    b.MedicineVariant!.Strength,
                     b.BatchNumber,
                     b.ManufactureDate,
                     b.ExpiryDate,
@@ -47,30 +46,25 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
                     b.CreatedAt,
                     b.DispensingItems.Sum(i => (int?)i.Quantity.Value) ?? 0));
 
-        if (request.MedicineId.HasValue)
-            spec.Where(b => b.MedicineVariant!.MedicineId == request.MedicineId.Value);
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        var medicineId = request.MedicineId;
+        var trimmed = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
+        System.Linq.Expressions.Expression<Func<MedicineBatch, bool>> predicate =
+            b => (!medicineId.HasValue || b.MedicineVariant!.MedicineId == medicineId.Value)
+                && (trimmed == null || b.BatchNumber.Contains(trimmed))
+                && (!expiryFrom.HasValue || b.ExpiryDate > expiryFrom.Value)
+                && (!expiryTo.HasValue || b.ExpiryDate <= expiryTo.Value);
+
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
+        var desc = request.SortDir.IsDescending();
+
+        var totalCount = await _batches.CountAsync(predicate, cancellationToken);
+        List<MedicineBatchRow> rows = request.SortBy?.ToLowerInvariant() switch
         {
-            var trimmed = request.Search.Trim();
-            spec.Where(b => b.BatchNumber.Contains(trimmed));
-        }
-        if (expiryFrom.HasValue)
-            spec.Where(b => b.ExpiryDate > expiryFrom.Value);
-        if (expiryTo.HasValue)
-            spec.Where(b => b.ExpiryDate <= expiryTo.Value);
-
-        spec.Order(request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" => q => q.OrderByDirection(b => b.QuantityAvailable.Value, request.SortDir),
-            "batch" => q => q.OrderByDirection(b => b.BatchNumber, request.SortDir),
-            _ => q => q.OrderByDirection(b => b.ExpiryDate, request.SortDir)
-        });
-
-        var totalCount = await _batches.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var rows = await _batches.ListAsync(spec, cancellationToken);
+            "quantity" => await _batches.PagedAsync(selector, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
+            "batch" => await _batches.PagedAsync(selector, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
+            _ => await _batches.PagedAsync(selector, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
+        };
 
         var items = rows
             .Select(r => r.ToDto(asOf))

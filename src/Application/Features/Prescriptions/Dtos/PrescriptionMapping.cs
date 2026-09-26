@@ -5,6 +5,25 @@ namespace Application.Features.Prescriptions.Dtos;
 
 public static class PrescriptionMapping
 {
+    /// <summary>Same rule as Patient.Age: full years at the server-local today.</summary>
+    internal static int CalculateAge(DateOnly dateOfBirth)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var age = today.Year - dateOfBirth.Year;
+        if (dateOfBirth.AddYears(age) > today)
+            age--;
+
+        return age;
+    }
+
+    internal static string BuildVariantName(
+        Domain.Enums.MedicineForm? form,
+        decimal? strength,
+        Domain.Enums.MedicineUnit? unit)
+        => form.HasValue && strength.HasValue && unit.HasValue
+            ? $"{form.Value} {strength.Value} {unit.Value}"
+            : string.Empty;
+
     /// <summary>Maps a list-screen projection row (doctor name resolved separately).</summary>
     internal static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
         => new(
@@ -13,10 +32,10 @@ public static class PrescriptionMapping
             doctorName,
             row.PatientName,
             row.PatientDateOfBirth,
-            row.PatientAge,
+            CalculateAge(row.PatientDateOfBirth),
             row.PatientPhoneNumber,
             row.IssuedDate,
-            row.Status,
+            row.Status.ToString(),
             row.ItemCount);
 
     internal static PrescriptionDetailsDto ToDetailsDto(
@@ -30,7 +49,7 @@ public static class PrescriptionMapping
                 i.Id,
                 i.MedicineVariantId,
                 i.MedicineName,
-                i.VariantName,
+                BuildVariantName(i.Form, i.Strength, i.Unit),
                 i.PrescribedQuantity,
                 i.DispensedQuantity,
                 i.PrescribedQuantity - i.DispensedQuantity,
@@ -49,11 +68,11 @@ public static class PrescriptionMapping
             doctorName,
             row.PatientName,
             row.PatientDateOfBirth,
-            row.PatientAge,
+            CalculateAge(row.PatientDateOfBirth),
             row.PatientPhoneNumber,
             row.Diagnosis,
             row.IssuedDate,
-            row.Status,
+            row.Status.ToString(),
             row.CreatedBy,
             row.CreatedAt,
             items);

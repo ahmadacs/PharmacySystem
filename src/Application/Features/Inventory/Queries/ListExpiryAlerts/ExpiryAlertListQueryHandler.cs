@@ -1,7 +1,6 @@
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Medicines;
 using MediatR;
@@ -25,10 +24,10 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.Status, asOf);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
 
-        var spec = new Specification<MedicineBatch, ExpiryAlertRow>(b => new ExpiryAlertRow(
+        // Lean selector: medicine name/type are scalar columns; days-to-expiry
+        // is derived in InventoryMapping (DayNumber math is not SQL).
+        var selector = (System.Linq.Expressions.Expression<Func<MedicineBatch, ExpiryAlertRow>>)(b => new ExpiryAlertRow(
                     b.Id,
                     b.MedicineVariant!.Medicine!.Name,
                     b.MedicineVariant!.Medicine!.NameAr,
@@ -37,38 +36,28 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
                     b.MedicineVariant!.Strength,
                     b.BatchNumber,
                     b.ExpiryDate,
-                    b.ExpiryDate.DayNumber - asOf.DayNumber,
                     b.QuantityAvailable.Value));
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
+        System.Linq.Expressions.Expression<Func<MedicineBatch, bool>> predicate =
+            b => (search == null || b.BatchNumber.Contains(search) || b.MedicineVariant!.Medicine!.Name.Contains(search))
+                && (!expiryFrom.HasValue || b.ExpiryDate >= expiryFrom.Value)
+                && (!expiryTo.HasValue || b.ExpiryDate < expiryTo.Value);
+
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize(100);
+        var desc = request.SortDir.IsDescending();
+
+        var totalCount = await _repo.CountAsync(predicate, cancellationToken);
+        List<ExpiryAlertRow> rows = request.SortBy?.ToLowerInvariant() switch
         {
-            var search = request.Search.Trim();
-            spec.Where(b =>
-                b.BatchNumber.Contains(search) ||
-                b.MedicineVariant!.Medicine!.Name.Contains(search));
-        }
-
-        if (expiryFrom.HasValue)
-            spec.Where(b => b.ExpiryDate >= expiryFrom.Value);
-
-        if (expiryTo.HasValue)
-            spec.Where(b => b.ExpiryDate < expiryTo.Value);
-
-        spec.Order(request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" or "remaining" => q => q.OrderByDirection(b => b.QuantityAvailable.Value, request.SortDir),
-            "batch" or "batchnumber" => q => q.OrderByDirection(b => b.BatchNumber, request.SortDir),
-            _ => q => q.OrderByDirection(b => b.ExpiryDate, request.SortDir)
-        });
-
-        var totalCount = await _repo.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var rows = await _repo.ListAsync(spec, cancellationToken);
+            "quantity" or "remaining" => await _repo.PagedAsync(selector, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
+            "batch" or "batchnumber" => await _repo.PagedAsync(selector, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
+            _ => await _repo.PagedAsync(selector, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
+        };
 
         var items = rows
-            .Select(r => r.ToDto())
+            .Select(r => r.ToDto(asOf))
             .ToPagedList(page, pageSize, totalCount);
 
         return Result<PagedList<ExpiryAlertDto>>.Success(items);

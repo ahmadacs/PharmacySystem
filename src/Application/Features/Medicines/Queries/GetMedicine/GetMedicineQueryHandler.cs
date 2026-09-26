@@ -1,6 +1,6 @@
+using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
@@ -26,7 +26,11 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var spec = new Specification<Medicine, MedicineDetailsRow>(m => new MedicineDetailsRow(
+        // Single lean SELECT: header (incl. scientific GenericName) + variant
+        // rows + batch rows. Batch rows reuse the root medicine name (m.Name)
+        // instead of re-joining Medicine per batch; VariantName is built in
+        // MedicineMapping from raw Form/Strength/Unit (not SQL).
+        var selector = (Expression<Func<Medicine, MedicineDetailsRow>>)(m => new MedicineDetailsRow(
                     m.Id,
                     m.Name,
                     m.NameAr,
@@ -55,10 +59,12 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
                                 .OrderBy(b => b.ExpiryDate)
                                 .Select(b => new MedicineBatchRow(
                                     b.Id,
-                                    b.MedicineVariant!.MedicineId,
-                                    b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.Name : "Unknown",
-                                    b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.NameAr : null,
-                                    $"{b.MedicineVariant!.Form} {b.MedicineVariant!.Strength} {b.MedicineVariant!.Unit}",
+                                    m.Id,
+                                    m.Name,
+                                    m.NameAr,
+                                    v.Form,
+                                    v.Unit,
+                                    v.Strength,
                                     b.BatchNumber,
                                     b.ManufactureDate,
                                     b.ExpiryDate,
@@ -70,10 +76,8 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
                                     0))
                                 .ToList()))
                         .ToList()));
-        spec.Where(m => m.Id == request.Id);
 
-        var row = await _repo.GetAsync(spec, cancellationToken);
-
+        var row = await _repo.GetAsync(selector, m => m.Id == request.Id, cancellationToken);
         if (row is null)
             return Result<MedicineDetailsDto>.Failure(_localizer["ResourceNotFound", "Medicine", request.Id].Value, 404);
 

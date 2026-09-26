@@ -65,17 +65,20 @@ public static class InventoryMapping
             r.ActiveBatchCount);
 
     /// <summary>Maps an expiry-alert projection row (display name + status derived here).</summary>
-    internal static ExpiryAlertDto ToDto(this ExpiryAlertRow r)
-        => new(
+    internal static ExpiryAlertDto ToDto(this ExpiryAlertRow r, DateOnly asOf)
+    {
+        var daysToExpiry = r.ExpiryDate.DayNumber - asOf.DayNumber;
+        return new(
             r.BatchId,
             r.MedicineName,
             r.MedicineNameAr,
             $"{r.Form} {r.Strength} {r.Unit}",
             r.BatchNumber,
             r.ExpiryDate,
-            r.DaysToExpiry,
+            daysToExpiry,
             r.RemainingQuantity,
-            GetExpiryStatus(r.DaysToExpiry));
+            GetExpiryStatus(daysToExpiry));
+    }
 
     /// <summary>Maps an adjustment projection row (display name + adjuster name applied here).</summary>
     internal static InventoryAdjustmentDto ToDto(this InventoryAdjustmentRow r, string? adjustedByName)

@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
@@ -28,15 +27,11 @@ public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicin
     public async Task<Result> Handle(UpdateMedicineCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var byIdSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
-        byIdSpec.Where(m => m.Id == req.Id);
-        var medicine = await _medicines.GetAsync(byIdSpec, cancellationToken);
+        var medicine = await _medicines.GetByIdAsync(req.Id, tracked: true, cancellationToken: cancellationToken);
         if (medicine is null)
             return Result.Failure(_localizer["ResourceNotFound", "Medicine", req.Id].Value, 404);
 
-        var nameSpec = new Specification<Medicine, Medicine>(m => m);
-        nameSpec.Where(m => m.Name == req.Name.Trim() && m.Id != req.Id);
-        if (await _medicines.CountAsync(nameSpec, cancellationToken) > 0)
+        if (await _medicines.ExistsAsync(m => m.Name == req.Name.Trim() && m.Id != req.Id, cancellationToken))
             return Result.Failure(_localizer["MedicineAlreadyExists", req.Name].Value, 409);
 
         var genericName = await MedicineMapping.ResolveGenericNameAsync(_generics, req.GenericName, req.GenericNameAr, cancellationToken);

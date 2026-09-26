@@ -1,5 +1,4 @@
 using Application.Common.Interfaces;
-using Application.Common.Specifications;
 using Domain.Entities.Medicines;
 using Domain.Enums;
 using Domain.ValueObjects;
@@ -21,9 +20,7 @@ public static class MedicineMapping
         var trimmed = name.Trim();
         var trimmedAr = nameAr?.Trim();
         // Tracked: Rename below must persist on SaveChanges.
-        var nameSpec = new Specification<GenericName, GenericName>(g => g).Tracked();
-        nameSpec.Where(g => g.Name == trimmed);
-        var genericName = await generics.GetAsync(nameSpec, cancellationToken);
+        var genericName = await generics.GetAsync(g => g.Name == trimmed, tracked: true, cancellationToken: cancellationToken);
         if (genericName is not null)
         {
             if (!string.IsNullOrWhiteSpace(trimmedAr) && genericName.NameAr != trimmedAr)
@@ -119,6 +116,7 @@ public static class MedicineMapping
     /// Maps a batches-list projection row (server-computed dispensed included).
     /// Same field semantics as the list screen: days-to-expiry is always the
     /// day difference (negative when expired), status is Expired/Depleted/Active.
+    /// VariantName is built here from raw Form/Strength/Unit (not in SQL).
     /// </summary>
     internal static MedicineBatchDto ToDto(this MedicineBatchRow r, DateOnly asOf)
     {
@@ -134,7 +132,7 @@ public static class MedicineMapping
             r.MedicineId,
             r.MedicineName,
             r.MedicineNameAr,
-            r.VariantName,
+            $"{r.Form} {r.Strength} {r.Unit}",
             r.BatchNumber,
             r.ManufactureDate,
             r.ExpiryDate,

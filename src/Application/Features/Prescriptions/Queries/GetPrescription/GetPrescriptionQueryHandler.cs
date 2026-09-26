@@ -1,6 +1,6 @@
+using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
@@ -29,18 +29,17 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
     {
         // Single projection query: header + ordered items with variant/medicine
         // names inline through navigations (no Include — navigations inside a
-        // Select need none). Same single round trip shape as the other details
-        // screens; the old second variant-infos query is gone (2 queries -> 1).
-        var spec = new Specification<Prescription, PrescriptionDetailsRow>(p => new PrescriptionDetailsRow(
+        // Select need none). Patient name/info are scalar columns; age/status/
+        // variant display strings are derived in PrescriptionMapping (not SQL).
+        var selector = (Expression<Func<Prescription, PrescriptionDetailsRow>>)(p => new PrescriptionDetailsRow(
             p.Id,
             p.DoctorId,
-            p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName).Trim() : string.Empty,
+            p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty,
             p.Patient != null ? p.Patient.DateOfBirth : default,
-            p.Patient != null ? p.Patient.Age : 0,
             p.Patient != null ? p.Patient.PhoneNumber : null,
             p.Diagnosis,
             p.IssuedDate,
-            p.Status.ToString(),
+            p.Status,
             p.CreatedBy,
             p.CreatedAt,
             p.Items
@@ -50,9 +49,9 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
                     i.MedicineVariantId,
                     i.MedicineVariant != null && i.MedicineVariant.Medicine != null
                         ? i.MedicineVariant.Medicine.Name : "Unknown",
-                    i.MedicineVariant != null
-                        ? $"{i.MedicineVariant.Form} {i.MedicineVariant.Strength} {i.MedicineVariant.Unit}"
-                        : string.Empty,
+                    i.MedicineVariant != null ? (Domain.Enums.MedicineForm?)i.MedicineVariant.Form : null,
+                    i.MedicineVariant != null ? (Domain.Enums.MedicineUnit?)i.MedicineVariant.Unit : null,
+                    i.MedicineVariant != null ? (decimal?)i.MedicineVariant.Strength : null,
                     i.PrescribedQuantity.Value,
                     i.DispensedQuantity.Value,
                     i.DosageInstructions,
@@ -62,9 +61,8 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
                     i.RefillIntervalDays,
                     i.LastDispensedAt))
                 .ToList()));
-        spec.Where(p => p.Id == request.Id);
 
-        var row = await _prescriptions.GetAsync(spec, cancellationToken);
+        var row = await _prescriptions.GetAsync(selector, p => p.Id == request.Id, cancellationToken);
         if (row is null)
             return Result<PrescriptionDetailsDto>.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 

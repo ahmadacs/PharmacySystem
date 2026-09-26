@@ -1,7 +1,7 @@
+using Application.Common.Extensions;
 using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Notifications.Dtos;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
@@ -32,24 +32,31 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
         if (authFailure is not null)
             return authFailure;
 
+
+        var isRead = request.IsRead;
+        System.Linq.Expressions.Expression<Func<Notification, bool>> predicate =
+            n => n.UserId == userId && (!isRead.HasValue || n.IsRead == isRead.Value);
+
+        // Lean selector: only list-screen columns (no full entity).
+        var selector = (System.Linq.Expressions.Expression<Func<Notification, NotificationListItemDto>>)(n => new NotificationListItemDto(
+            n.Id,
+            n.Type,
+            n.Title,
+            n.Message,
+            n.Data,
+            n.LocalizationKey,
+            n.LocalizationParamsJson,
+            n.IsRead,
+            n.CreatedAt));
+
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize(200);
 
-        var spec = new Specification<Notification, Notification>(n => n);
-        spec.Where(n => n.UserId == userId);
-        if (request.IsRead.HasValue)
-            spec.Where(n => n.IsRead == request.IsRead.Value);
-        spec.Order(q => q.OrderByDescending(n => n.CreatedAt));
+        var totalCount = await _notifications.CountAsync(predicate, cancellationToken);
+        var rows = await _notifications.PagedAsync(
+            selector, predicate, n => n.CreatedAt, true, page, pageSize, cancellationToken);
 
-        var totalCount = await _notifications.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var rows = await _notifications.ListAsync(spec, cancellationToken);
-
-        var items = rows
-            .Select(n => n.ToListItemDto())
-            .ToPagedList(page, pageSize, totalCount);
+        var items = rows.ToPagedList(page, pageSize, totalCount);
 
         return Result<PagedList<NotificationListItemDto>>.Success(items);
     }

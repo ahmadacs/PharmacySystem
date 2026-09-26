@@ -1,9 +1,9 @@
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Inventory.Dtos;
 using Domain.Entities.Inventory;
+using Domain.Entities.Medicines;
 using MediatR;
 
 namespace Application.Features.Inventory.Queries;
@@ -23,10 +23,11 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
         InventoryAdjustmentListQuery request,
         CancellationToken cancellationToken)
     {
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
 
-        var spec = new Specification<InventoryAdjustment, InventoryAdjustmentRow>(a => new InventoryAdjustmentRow(
+        // Lean selector: medicine name/type + batch number are scalar columns
+        // through navigations (no entity loads). VariantName is built in
+        // InventoryMapping; adjuster names resolve via one batched lookup.
+        var selector = (System.Linq.Expressions.Expression<Func<InventoryAdjustment, InventoryAdjustmentRow>>)(a => new InventoryAdjustmentRow(
                     a.Id,
                     a.MedicineBatchId,
                     a.MedicineBatch != null && a.MedicineBatch.MedicineVariant != null && a.MedicineBatch.MedicineVariant.Medicine != null
@@ -45,33 +46,26 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
                     a.AdjustedBy,
                     a.AdjustedAt));
 
-        if (request.Type.HasValue)
-            spec.Where(a => a.Type == request.Type.Value);
+        var type = request.Type;
+        var trimmed = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
+        System.Linq.Expressions.Expression<Func<InventoryAdjustment, bool>> predicate =
+            a => (!type.HasValue || a.Type == type.Value)
+                && (trimmed == null || a.Reason.Contains(trimmed));
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
+        var desc = request.SortDir.IsDescending();
+
+        var totalCount = await _repo.CountAsync(predicate, cancellationToken);
+        List<InventoryAdjustmentRow> rows = request.SortBy?.ToLowerInvariant() switch
         {
-            var trimmed = request.Search.Trim();
-            spec.Where(a => a.Reason.Contains(trimmed));
-        }
+            "quantity" => await _repo.PagedAsync(selector, predicate, a => a.QuantityChanged, desc, page, pageSize, cancellationToken),
+            _ => await _repo.PagedAsync(selector, predicate, a => a.AdjustedAt, desc, page, pageSize, cancellationToken)
+        };
 
-        spec.Order(request.SortBy?.ToLowerInvariant() switch
-        {
-            "quantity" => q => q.OrderByDirection(a => a.QuantityChanged, request.SortDir),
-            _ => q => q.OrderByDirection(a => a.AdjustedAt, request.SortDir)
-        });
-
-        var totalCount = await _repo.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var rows = await _repo.ListAsync(spec, cancellationToken);
-
-        var adjustedByIds = rows
-            .Where(r => r.AdjustedBy.HasValue)
-            .Select(r => r.AdjustedBy!.Value)
-            .Distinct()
-            .ToList();
-        var userNames = await _users.GetDisplayNamesAsync(adjustedByIds, cancellationToken);
+        var userNames = await _users.GetDisplayNamesAsync(
+            rows.Where(r => r.AdjustedBy.HasValue).Select(r => r.AdjustedBy!.Value).Distinct().ToList(),
+            cancellationToken);
 
         var items = rows
             .Select(r => r.ToDto(r.AdjustedBy.HasValue ? userNames.GetValueOrDefault(r.AdjustedBy.Value) : null))

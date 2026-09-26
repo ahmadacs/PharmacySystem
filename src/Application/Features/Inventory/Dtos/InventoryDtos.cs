@@ -34,8 +34,8 @@ internal sealed record MedicineInventorySummaryRow(
 
 /// <summary>
 /// Internal EF projection shape for the expiry-alerts list.
-/// Status (Expired/Critical/Warning/Safe) is derived in
-/// <c>InventoryMapping.ToDto</c>.
+/// Days-to-expiry + status are derived in
+/// <c>InventoryMapping.ToDto(row, asOf)</c> (DayNumber math is not SQL).
 /// </summary>
 internal sealed record ExpiryAlertRow(
     Guid BatchId,
@@ -46,7 +46,6 @@ internal sealed record ExpiryAlertRow(
     decimal Strength,
     string BatchNumber,
     DateOnly ExpiryDate,
-    int DaysToExpiry,
     int RemainingQuantity);
 
 /// <summary>

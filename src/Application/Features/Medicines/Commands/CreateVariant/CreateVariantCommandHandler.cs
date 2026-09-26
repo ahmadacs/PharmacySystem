@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
@@ -27,15 +26,11 @@ public sealed class CreateVariantCommandHandler : IRequestHandler<CreateVariantC
     public async Task<Result<Guid>> Handle(CreateVariantCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var byIdSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
-        byIdSpec.Where(m => m.Id == req.MedicineId);
-        var medicine = await _medicines.GetAsync(byIdSpec, cancellationToken);
+        var medicine = await _medicines.GetByIdAsync(req.MedicineId, tracked: true, cancellationToken: cancellationToken);
         if (medicine is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", req.MedicineId].Value, 404);
 
-        var existingSpec = new Specification<MedicineVariant, MedicineVariant>(v => v);
-        existingSpec.Where(v => v.MedicineId == req.MedicineId && v.Form == req.Form && v.Unit == req.Unit && v.Strength == req.Strength);
-        var existing = await _variants.GetAsync(existingSpec, cancellationToken);
+        var existing = await _variants.GetAsync(v => v.MedicineId == req.MedicineId && v.Form == req.Form && v.Unit == req.Unit && v.Strength == req.Strength, cancellationToken: cancellationToken);
         if (existing is not null)
             return Result<Guid>.Failure(
                 _localizer["VariantAlreadyExists", $"{req.Form} {req.Strength} {req.Unit}"].Value, 409);

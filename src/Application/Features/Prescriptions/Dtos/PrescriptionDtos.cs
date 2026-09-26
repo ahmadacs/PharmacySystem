@@ -1,5 +1,7 @@
 namespace Application.Features.Prescriptions.Dtos;
 
+using Domain.Enums;
+
 public sealed record PrescriptionItemDto(
     Guid Id,
     Guid MedicineVariantId,
@@ -26,11 +28,11 @@ internal sealed record PrescriptionListRow(
     Guid DoctorId,
     string PatientName,
     DateOnly PatientDateOfBirth,
-    int PatientAge,
     string? PatientPhoneNumber,
     DateOnly IssuedDate,
-    string Status,
-    int ItemCount);
+    PrescriptionStatus Status,
+    int ItemCount,
+    DateTime CreatedAt);
 
 public sealed record PrescriptionListItemDto(
     Guid Id,
@@ -68,7 +70,9 @@ internal sealed record PrescriptionDetailsItemRow(
     Guid Id,
     Guid MedicineVariantId,
     string MedicineName,
-    string VariantName,
+    MedicineForm? Form,
+    MedicineUnit? Unit,
+    decimal? Strength,
     int PrescribedQuantity,
     int DispensedQuantity,
     string? DosageInstructions,
@@ -86,11 +90,10 @@ internal sealed record PrescriptionDetailsRow(
     Guid DoctorId,
     string PatientName,
     DateOnly PatientDateOfBirth,
-    int PatientAge,
     string? PatientPhoneNumber,
     string? Diagnosis,
     DateOnly IssuedDate,
-    string Status,
+    PrescriptionStatus Status,
     Guid? CreatedBy,
     DateTime CreatedAt,
     IReadOnlyList<PrescriptionDetailsItemRow> Items);

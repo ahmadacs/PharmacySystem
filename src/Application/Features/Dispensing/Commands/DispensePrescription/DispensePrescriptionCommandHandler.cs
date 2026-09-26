@@ -3,7 +3,6 @@ using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
-using Application.Common.Specifications;
 using Application.Features.Dispensing.Dtos;
 using Application.Resources;
 using Domain.Entities.Dispensing;
@@ -66,16 +65,11 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         // the root first, then each collection; fix-up populates
         // prescription.Items, variant.Batches and variant.Medicine in memory.
         // Everything below mutates, so all loads are tracked.
-        var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
-        prescriptionSpec.Where(p => p.Id == req.PrescriptionId);
-        var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
+        var prescription = await _prescriptions.GetByIdAsync(req.PrescriptionId, tracked: true, cancellationToken: cancellationToken);
         if (prescription is null)
             return Result<DispensePrescriptionResponse>.Failure(_localizer["ResourceNotFound", nameof(Prescription), req.PrescriptionId].Value, 404);
 
-        var itemsSpec = new Specification<PrescriptionItem, PrescriptionItem>(i => i).Tracked();
-        itemsSpec.Where(i => i.PrescriptionId == req.PrescriptionId);
-        itemsSpec.Order(q => q.OrderBy(i => i.Id));
-        await _items.ListAsync(itemsSpec, cancellationToken);
+        await _items.ListAsync(i => i.PrescriptionId == req.PrescriptionId, cancellationToken: cancellationToken);
 
         var authFailure = AuthGuard.RequireUserId<DispensePrescriptionResponse>(_currentUser, _localizer, out var userId);
         if (authFailure is not null)
@@ -88,18 +82,12 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
 
         var variantIds = prescription.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
 
-        var variantsSpec = new Specification<MedicineVariant, MedicineVariant>(v => v).Tracked();
-        variantsSpec.Where(v => variantIds.Contains(v.Id));
-        var variants = await _variants.ListAsync(variantsSpec, cancellationToken);
+        var variants = await _variants.ListAsync(v => variantIds.Contains(v.Id), cancellationToken: cancellationToken);
 
-        var batchesSpec = new Specification<MedicineBatch, MedicineBatch>(b => b).Tracked();
-        batchesSpec.Where(b => variantIds.Contains(b.MedicineVariantId));
-        await _batches.ListAsync(batchesSpec, cancellationToken);
+        await _batches.ListAsync(b => variantIds.Contains(b.MedicineVariantId), cancellationToken: cancellationToken);
 
         var medicineIds = variants.Select(v => v.MedicineId).Distinct().ToList();
-        var medicinesSpec = new Specification<Medicine, Medicine>(m => m).Tracked();
-        medicinesSpec.Where(m => medicineIds.Contains(m.Id));
-        await _medicines.ListAsync(medicinesSpec, cancellationToken);
+        await _medicines.ListAsync(m => medicineIds.Contains(m.Id), cancellationToken: cancellationToken);
 
         var byId = variants.ToDictionary(m => m.Id);
 

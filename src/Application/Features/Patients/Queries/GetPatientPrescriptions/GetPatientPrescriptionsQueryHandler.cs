@@ -1,7 +1,9 @@
+using System.Linq.Expressions;
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Patients.Dtos;
+using Domain.Entities.Medicines;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using MediatR;
@@ -25,7 +27,7 @@ public sealed class GetPatientPrescriptionsQueryHandler
         var today = DateOnly.FromDateTime(DateTime.Today);
         var cutoff = today.AddDays(-lookback);
 
-        var spec = new Specification<Prescription, PatientPrescriptionHistoryRow>(p => new PatientPrescriptionHistoryRow(
+        var selector = (Expression<Func<Prescription, PatientPrescriptionHistoryRow>>)(p => new PatientPrescriptionHistoryRow(
                     p.Id,
                     p.IssuedDate,
                     p.Status,
@@ -49,12 +51,16 @@ public sealed class GetPatientPrescriptionsQueryHandler
                             i.RefillIntervalDays,
                             i.LastDispensedAt))
                         .ToList()));
-        spec.Where(p => p.PatientId == request.PatientId);
-        spec.Where(p => p.Status != PrescriptionStatus.Cancelled && p.Status != PrescriptionStatus.Expired);
-        spec.Where(p => p.IssuedDate >= cutoff);
-        spec.Order(q => q.OrderByDescending(p => p.IssuedDate));
 
-        var rows = await _prescriptions.ListAsync(spec, cancellationToken);
+        Expression<Func<Prescription, bool>> predicate =
+            p => p.PatientId == request.PatientId
+                && p.Status != PrescriptionStatus.Cancelled && p.Status != PrescriptionStatus.Expired
+                && p.IssuedDate >= cutoff;
+
+        // Lean SELECT: only the selector's columns are fetched, ordered in memory.
+        var allRows = await _prescriptions.ListAsync(selector, predicate, cancellationToken);
+
+        var rows = allRows.OrderByDirection(r => r.IssuedDate, "desc").ToList();
 
         return Result<IReadOnlyList<PatientPrescriptionHistoryDto>>.Success(
             rows.Select(r => r.ToDto(cutoff)).ToList());

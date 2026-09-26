@@ -1,6 +1,6 @@
+using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Files.Common;
 using Application.Features.Files.Dtos;
 using Application.Resources;
@@ -38,10 +38,25 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
         if (accessFailure is not null)
             return Result<IReadOnlyList<FileAttachmentDto>>.Failure(accessFailure.Error!, accessFailure.StatusCode);
 
-        var listSpec = new Specification<FileAttachment, FileAttachment>(f => f);
-        listSpec.Where(f => f.EntityType == entityType && f.EntityId == request.EntityId);
-        listSpec.Order(q => q.OrderByDescending(f => f.CreatedAt));
-        var list = await _files.ListAsync(listSpec, cancellationToken);
-        return Result<IReadOnlyList<FileAttachmentDto>>.Success(list.Select(x => x.ToDto()).ToList());
+        // Lean selector: file rows are scalar columns (no audit fields, no entity load).
+        var selector = (System.Linq.Expressions.Expression<Func<FileAttachment, FileAttachmentDto>>)(f => new FileAttachmentDto(
+            f.Id,
+            f.EntityType.ToString(),
+            f.EntityId,
+            f.FileName,
+            f.ContentType,
+            f.SizeBytes,
+            f.BlobPath,
+            f.CreatedAt));
+
+        System.Linq.Expressions.Expression<Func<FileAttachment, bool>> predicate =
+            f => f.EntityType == entityType && f.EntityId == request.EntityId;
+
+        // Lean selector (no audit fields); per-entity lists are small so the
+        // full filtered set is fetched then ordered in memory — same results.
+        var list = (await _files.ListAsync(selector, predicate, cancellationToken))
+            .OrderByDirection(f => f.CreatedAt, "desc")
+            .ToList();
+        return Result<IReadOnlyList<FileAttachmentDto>>.Success(list);
     }
 }

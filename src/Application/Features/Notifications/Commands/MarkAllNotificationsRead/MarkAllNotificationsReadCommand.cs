@@ -1,7 +1,6 @@
 using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Resources;
 using Domain.Entities.Notifications;
 using MediatR;
@@ -37,10 +36,7 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
             return authFailure;
 
         // Tracked read: the entities are mutated below, so no AsNoTracking.
-        var spec = new Specification<Notification, Notification>(n => n).Tracked();
-        spec.Where(n => n.UserId == userId && !n.IsRead);
-
-        var unread = await _notifications.ListAsync(spec, cancellationToken);
+        var unread = await _notifications.ListAsync(n => n.UserId == userId && !n.IsRead, cancellationToken: cancellationToken);
 
         var now = DateTime.UtcNow;
         foreach (var notification in unread)

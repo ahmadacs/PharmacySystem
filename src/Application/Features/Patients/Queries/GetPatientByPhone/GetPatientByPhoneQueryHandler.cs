@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Patients.Dtos;
 using Domain.Entities.Patients;
 using MediatR;
@@ -15,9 +14,17 @@ public sealed class GetPatientByPhoneQueryHandler : IRequestHandler<GetPatientBy
     public async Task<Result<PatientDto?>> Handle(GetPatientByPhoneQuery request, CancellationToken cancellationToken)
     {
         var normalized = Domain.Common.PhoneNumbers.NormalizeSaudiPhone(request.PhoneNumber);
-        var phoneSpec = new Specification<Patient, Patient>(p => p);
-        phoneSpec.Where(p => p.PhoneNumber == normalized);
-        var patient = await _patients.GetAsync(phoneSpec, cancellationToken);
-        return Result<PatientDto?>.Success(patient?.ToDto());
+
+        // Lean selector: only patient info columns (no full entity, no navs).
+        // Age is derived in PatientMapping (not SQL).
+        var selector = (System.Linq.Expressions.Expression<Func<Patient, PatientRow>>)(p => new PatientRow(
+            p.Id,
+            p.FirstName,
+            p.LastName,
+            p.DateOfBirth,
+            p.PhoneNumber));
+
+        var row = await _patients.GetAsync(selector, p => p.PhoneNumber == normalized, cancellationToken);
+        return Result<PatientDto?>.Success(row?.ToDto());
     }
 }

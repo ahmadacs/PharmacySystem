@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
@@ -33,16 +32,11 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         // Tracked root + tracked items: EF relationship fix-up assembles
         // prescription.Items from the two loads (no Include). Both mutations
         // below (RegisterItemsRefill) persist on SaveChanges.
-        var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
-        prescriptionSpec.Where(p => p.Id == request.Id);
-        var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
+        var prescription = await _prescriptions.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 
-        var itemsSpec = new Specification<PrescriptionItem, PrescriptionItem>(i => i).Tracked();
-        itemsSpec.Where(i => i.PrescriptionId == request.Id);
-        itemsSpec.Order(q => q.OrderBy(i => i.Id));
-        await _items.ListAsync(itemsSpec, cancellationToken);
+        await _items.ListAsync(i => i.PrescriptionId == request.Id, cancellationToken: cancellationToken);
 
         // Localized pre-checks mirror the domain rules: the domain still
         // re-validates as a safety net (English fallback, unreachable here).

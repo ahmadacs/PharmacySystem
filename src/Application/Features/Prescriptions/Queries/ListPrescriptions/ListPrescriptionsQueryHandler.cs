@@ -1,8 +1,8 @@
+using System.Linq.Expressions;
 using Application.Common.Security;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Specifications;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
@@ -47,55 +47,50 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
             restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
         }
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
 
-        var spec = new Specification<Prescription, PrescriptionListRow>(p => new PrescriptionListRow(
+        // Lean selector: patient name/info are scalar columns (FirstName +
+        // LastName, DOB, Phone) — no Patient entity load. Age and the status
+        // display string are derived in PrescriptionMapping (not SQL).
+        var selector = (Expression<Func<Prescription, PrescriptionListRow>>)(p => new PrescriptionListRow(
                     p.Id,
                     p.DoctorId,
                     p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty,
                     p.Patient != null ? p.Patient.DateOfBirth : default,
-                    p.Patient != null ? p.Patient.Age : 0,
                     p.Patient != null ? p.Patient.PhoneNumber : null,
                     p.IssuedDate,
-                    p.Status.ToString(),
-                    p.Items.Count()));
+                    p.Status,
+                    p.Items.Count(),
+                    p.CreatedAt));
 
-        if (restrictedToDoctorId.HasValue)
-            spec.Where(p => p.DoctorId == restrictedToDoctorId.Value);
+        var doctorId = restrictedToDoctorId;
+        var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
+        var status = request.Status;
+        var fromDate = request.FromDate;
+        var toDate = request.ToDate;
+        Expression<Func<Prescription, bool>> predicate =
+            p => (!doctorId.HasValue || p.DoctorId == doctorId.Value)
+                && (search == null || (p.Patient != null &&
+                    (p.Patient.FirstName.Contains(search) || p.Patient.LastName.Contains(search))))
+                && (!status.HasValue || p.Status == status.Value)
+                && (!fromDate.HasValue || p.IssuedDate >= fromDate.Value)
+                && (!toDate.HasValue || p.IssuedDate <= toDate.Value);
 
-        if (!string.IsNullOrWhiteSpace(request.Search))
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize();
+        var desc = request.SortDir.IsDescending();
+
+        var totalCount = await _prescriptions.CountAsync(predicate, cancellationToken);
+        List<PrescriptionListRow> rows = request.SortBy?.ToLowerInvariant() switch
         {
-            var search = request.Search.Trim();
-            spec.Where(p => p.Patient != null &&
-                (p.Patient.FirstName.Contains(search) || p.Patient.LastName.Contains(search)));
-        }
+            "createdat" => await _prescriptions.PagedAsync(selector, predicate, p => p.CreatedAt, desc, page, pageSize, cancellationToken),
+            "patientname" => await _prescriptions.PagedAsync(selector, predicate, p => p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty, desc, page, pageSize, cancellationToken),
+            "status" => await _prescriptions.PagedAsync(selector, predicate, p => p.Status, desc, page, pageSize, cancellationToken),
+            _ => await _prescriptions.PagedAsync(selector, predicate, p => p.IssuedDate, desc, page, pageSize, cancellationToken)
+        };
 
-        if (request.Status.HasValue)
-            spec.Where(p => p.Status == request.Status.Value);
-
-        if (request.FromDate.HasValue)
-            spec.Where(p => p.IssuedDate >= request.FromDate.Value);
-
-        if (request.ToDate.HasValue)
-            spec.Where(p => p.IssuedDate <= request.ToDate.Value);
-
-        spec.Order(request.SortBy?.ToLowerInvariant() switch
-        {
-            "createdat" => q => q.OrderByDirection(p => p.CreatedAt, request.SortDir),
-            "patientname" => q => q.OrderByDirection(p => p.Patient != null ? (p.Patient.LastName + " " + p.Patient.FirstName) : string.Empty, request.SortDir),
-            "status" => q => q.OrderByDirection(p => p.Status, request.SortDir),
-            _ => q => q.OrderByDirection(p => p.IssuedDate, request.SortDir)
-        });
-
-        var totalCount = await _prescriptions.CountAsync(spec, cancellationToken);
-
-        spec.Page((page - 1) * pageSize, pageSize);
-
-        var rows = await _prescriptions.ListAsync(spec, cancellationToken);
-
-        var doctorIds = rows.Select(p => p.DoctorId).Distinct().Where(id => id != Guid.Empty).ToList();
-        var doctorNamesById = await _staff.GetDoctorNamesAsync(doctorIds, cancellationToken);
+        var doctorNamesById = await _staff.GetDoctorNamesAsync(
+            rows.Select(p => p.DoctorId).Distinct().Where(id => id != Guid.Empty).ToList(),
+            cancellationToken);
 
         var items = rows
             .Select(p => p.ToDto(doctorNamesById.GetValueOrDefault(p.DoctorId, string.Empty)))

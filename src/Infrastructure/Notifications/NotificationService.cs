@@ -1,5 +1,4 @@
 using Application.Common.Interfaces;
-using Application.Common.Specifications;
 using Domain.Entities.Notifications;
 using Domain.Enums;
 using Infrastructure.Identity;
@@ -67,9 +66,7 @@ public sealed class NotificationService : INotificationService
         if (notification.Type is not (NotificationType.LowStock or NotificationType.NearExpiry))
             return false;
 
-        var dupSpec = new Specification<Notification, Notification>(n => n);
-        dupSpec.Where(n => n.UserId == userId && n.Type == notification.Type && n.Data == notification.Data && !n.IsRead);
-        return await _notifications.GetAsync(dupSpec, cancellationToken) is not null;
+        return await _notifications.GetAsync(n => (Guid?)n.Id, n => n.UserId == userId && n.Type == notification.Type && n.Data == notification.Data && !n.IsRead, cancellationToken) is not null;
     }
 
     private static object ToPayload(Notification entity) => new
