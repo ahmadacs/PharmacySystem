@@ -1,8 +1,7 @@
-using Application.Common;
+using Application.Common.Security;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Common.Security;
 using Application.Common.Specifications;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;

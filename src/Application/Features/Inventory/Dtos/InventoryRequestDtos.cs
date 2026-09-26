@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Common.Attributes;
+using Application.Features.Files.Dtos;
 using Application.Features.Medicines.Dtos;
 using Domain.Enums;
 
@@ -22,21 +23,6 @@ public sealed record AdjustInventoryRequest
 
     /// <summary>Optional file attachment (e.g., supporting document, invoice, photo)</summary>
     public FileUploadDto? File { get; init; }
-}
-
-public sealed record FileUploadDto
-{
-    [Required, StringLength(260)]
-    public string FileName { get; init; } = string.Empty;
-
-    [Required, StringLength(100)]
-    public string ContentType { get; init; } = string.Empty;
-
-    [Range(1, long.MaxValue)]
-    public long SizeBytes { get; init; }
-
-    [Required]
-    public string Base64Content { get; init; } = string.Empty;
 }
 
 /// <summary>

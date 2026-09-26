@@ -1,6 +1,6 @@
-using Application.Features.Inventory.Dtos;
+using Application.Features.Files.Dtos;
 
-namespace Application.Common.Interfaces;
+namespace Application.Features.Files.Common;
 
 /// <summary>
 /// Persists an optional base64 file attachment carried inside create/update

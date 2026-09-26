@@ -1,9 +1,9 @@
 using Application.Common.Interfaces;
 using Application.Features.Files.Commands.UploadFile;
-using Application.Features.Inventory.Dtos;
+using Application.Features.Files.Dtos;
 using MediatR;
 
-namespace Application.Common.Services;
+namespace Application.Features.Files.Common;
 
 /// <summary>Decodes an optional base64 payload and stores it via <see cref="UploadFileCommand"/>.</summary>
 public sealed class AttachmentUploadService : IAttachmentUploadService

@@ -2,15 +2,10 @@ using System.Globalization;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
-using Application.Common.Security;
-using Application.Common.Specifications;
+using Application.Features.Files.Common;
 using Application.Features.Files.Dtos;
-using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Files;
-using Domain.Entities.Inventory;
-using Domain.Entities.Medicines;
-using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
@@ -20,58 +15,54 @@ namespace Application.Features.Files.Commands.UploadFile;
 
 public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand, Result<FileAttachmentDto>>
 {
-    private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "image/jpeg", "image/png", "application/pdf"
-    };
-
-    private static readonly Dictionary<string, byte[][]> FileSignatures = new()
-    {
-        ["image/jpeg"] = [new byte[] { 0xFF, 0xD8, 0xFF }],
-        ["image/png"] = [new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }],
-        ["application/pdf"] = [new byte[] { 0x25, 0x50, 0x44, 0x46 }]
-    };
-
     private static readonly Dictionary<string, string[]> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ["image/jpeg"] = [".jpg", ".jpeg"],
         ["image/png"] = [".png"],
-        ["application/pdf"] = [".pdf"]
+        ["application/pdf"] = [".pdf"],
+    };
+
+    private static readonly Dictionary<string, byte[]> FileSignatures = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["image/jpeg"] = [0xFF, 0xD8, 0xFF],
+        ["image/png"] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+        ["application/pdf"] = [0x25, 0x50, 0x44, 0x46],
     };
 
     private const long DefaultMaxSize = 5 * 1024 * 1024;
 
     private readonly IBaseRepository<FileAttachment> _files;
-    private readonly IBaseRepository<Medicine> _medicines;
-    private readonly IBaseRepository<MedicineBatch> _batches;
-    private readonly IBaseRepository<InventoryAdjustment> _adjustments;
     private readonly IFileStorageService _storage;
     private readonly IUnitOfWork _uow;
-    private readonly FileStorageOptions _options;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IBaseRepository<Prescription> _prescriptions;
-    private readonly IResourceAuthorizationService _resourceAuth;
+    private readonly IFileAccessChecker _access;
     private readonly IStringLocalizer<SharedResource> _localizer;
+    private readonly FileStorageOptions _options;
 
-    public UploadFileCommandHandler(IBaseRepository<FileAttachment> files, IBaseRepository<Medicine> medicines, IBaseRepository<MedicineBatch> batches, IBaseRepository<InventoryAdjustment> adjustments, IFileStorageService storage, IUnitOfWork uow, IOptions<FileStorageOptions> options, ICurrentUserService currentUser, IBaseRepository<Prescription> prescriptions, IResourceAuthorizationService resourceAuth, IStringLocalizer<SharedResource> localizer)
+    public UploadFileCommandHandler(
+        IBaseRepository<FileAttachment> files,
+        IFileStorageService storage,
+        IUnitOfWork uow,
+        IOptions<FileStorageOptions> options,
+        IFileAccessChecker access,
+        IStringLocalizer<SharedResource> localizer)
     {
         _files = files;
-        _medicines = medicines;
-        _batches = batches;
-        _adjustments = adjustments;
         _storage = storage;
         _uow = uow;
         _options = options.Value;
-        _currentUser = currentUser;
-        _prescriptions = prescriptions;
-        _resourceAuth = resourceAuth;
+        _access = access;
         _localizer = localizer;
     }
 
     public async Task<Result<FileAttachmentDto>> Handle(UploadFileCommand request, CancellationToken cancellationToken)
     {
-        if (!AllowedContentTypes.Contains(request.ContentType))
+        // 1. File type must be known.
+        if (!AllowedExtensions.ContainsKey(request.ContentType))
             return Result<FileAttachmentDto>.Failure(_localizer["FileTypeNotAllowed", request.ContentType].Value, 422);
+
+        // 2. Size limits.
+        if (request.SizeBytes <= 0)
+            return Result<FileAttachmentDto>.Failure(_localizer["FileEmpty"].Value, 422);
 
         var maxSize = _options.MaxFileSizeBytes > 0 ? _options.MaxFileSizeBytes : DefaultMaxSize;
         if (request.SizeBytes > maxSize)
@@ -79,31 +70,31 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
                 request.SizeBytes.ToString(CultureInfo.InvariantCulture),
                 maxSize.ToString(CultureInfo.InvariantCulture)].Value, 422);
 
-        if (request.SizeBytes <= 0)
-            return Result<FileAttachmentDto>.Failure(_localizer["FileEmpty"].Value, 422);
-
+        // 3. Entity type must be valid.
         if (!Enum.TryParse<FileEntityType>(request.EntityType, true, out var entityType))
-            return Result<FileAttachmentDto>.Failure(_localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription, Batch, InventoryAdjustment"].Value, 422);
+            return Result<FileAttachmentDto>.Failure(
+                _localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription, Batch, InventoryAdjustment"].Value, 422);
 
-        // One authorization gate per entity type (null = allowed).
-        var authFailure = await AuthorizeAsync(entityType, request.EntityId, cancellationToken);
-        if (authFailure is not null)
-            return authFailure;
+        // 4. Caller must be allowed to attach to this entity.
+        var accessFailure = await _access.EnsureCanAttachAsync(entityType, request.EntityId, cancellationToken);
+        if (accessFailure is not null)
+            return Result<FileAttachmentDto>.Failure(accessFailure.Error!, accessFailure.StatusCode);
 
-        // Extension must match the (already validated) content type.
+        // 5. Extension must match content type, and content must match its magic bytes.
         var ext = Path.GetExtension(request.FileName).ToLowerInvariant();
         if (!AllowedExtensions[request.ContentType].Contains(ext))
             return Result<FileAttachmentDto>.Failure(_localizer["ExtensionMismatch", ext, request.ContentType].Value, 422);
 
-        var header = new byte[8];
         request.Content.Position = 0;
+        var header = new byte[8];
         var read = await request.Content.ReadAsync(header, 0, 8, cancellationToken);
         request.Content.Position = 0;
-        if (!HasValidSignature(request.ContentType, header, read))
+
+        var signature = FileSignatures[request.ContentType];
+        if (read < signature.Length || !header.Take(signature.Length).SequenceEqual(signature))
             return Result<FileAttachmentDto>.Failure(_localizer["ContentMismatch"].Value, 422);
 
         var blobPath = await _storage.SaveAsync(request.Content, request.FileName, request.ContentType, cancellationToken);
-
         try
         {
             var attachment = FileAttachmentMapping.ToEntity(entityType, request.EntityId, request.FileName, request.ContentType, request.SizeBytes, blobPath);
@@ -116,64 +107,5 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
             await _storage.DeleteAsync(blobPath, cancellationToken);
             throw;
         }
-    }
-
-    /// <summary>
-    /// Returns a failure when the current user may not attach to the entity,
-    /// or null when allowed. Existence is checked first so unknown ids are 404.
-    /// </summary>
-    private async Task<Result<FileAttachmentDto>?> AuthorizeAsync(
-        FileEntityType entityType, Guid entityId, CancellationToken cancellationToken)
-    {
-        if (entityType == FileEntityType.Prescription)
-        {
-            var prescriptionSpec = new Specification<Prescription, Prescription>(p => p).Tracked();
-            prescriptionSpec.Where(p => p.Id == entityId);
-            var prescription = await _prescriptions.GetAsync(prescriptionSpec, cancellationToken);
-            if (prescription is null)
-                return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", "Prescription", entityId].Value, 404);
-            await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
-            return null;
-        }
-
-        var (permissions, exists, resource, messageKey) = entityType switch
-        {
-            FileEntityType.Medicine => (
-                (IReadOnlyList<string>)[Permissions.Medicines.Create, Permissions.Medicines.Update],
-                ExistsAsync(_medicines, entityId, cancellationToken),
-                "Medicine",
-                "FileUploadMedicine"),
-            FileEntityType.Batch => (
-                (IReadOnlyList<string>)[Permissions.Inventory.View, Permissions.Inventory.Adjust],
-                ExistsAsync(_batches, entityId, cancellationToken),
-                "MedicineBatch",
-                "FileUploadBatch"),
-            _ => (
-                (IReadOnlyList<string>)[Permissions.Inventory.Adjust],
-                ExistsAsync(_adjustments, entityId, cancellationToken),
-                "InventoryAdjustment",
-                "FileUploadInventory")
-        };
-
-        if (!permissions.Any(p => _currentUser.Permissions.Contains(p)))
-            return Result<FileAttachmentDto>.Failure(_localizer[messageKey].Value, 403);
-        if (!await exists)
-            return Result<FileAttachmentDto>.Failure(_localizer["ResourceNotFound", resource, entityId].Value, 404);
-        return null;
-    }
-
-    private static async Task<bool> ExistsAsync<TEntity>(
-        IBaseRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
-        where TEntity : Domain.Common.BaseEntity
-    {
-        var spec = new Specification<TEntity, TEntity>(e => e);
-        spec.Where(e => e.Id == id);
-        return await repo.GetAsync(spec, cancellationToken) is not null;
-    }
-
-    private static bool HasValidSignature(string contentType, byte[] header, int read)
-    {
-        if (!FileSignatures.TryGetValue(contentType.ToLowerInvariant(), out var sigs)) return true;
-        return sigs.Any(sig => read >= sig.Length && header.Take(sig.Length).SequenceEqual(sig));
     }
 }

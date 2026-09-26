@@ -1,5 +1,5 @@
 using System.Globalization;
-using Application.Common;
+using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;

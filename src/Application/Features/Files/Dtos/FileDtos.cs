@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Domain.Enums;
 
 namespace Application.Features.Files.Dtos;
@@ -34,4 +35,23 @@ public static class FileAttachmentMapping
         e.BlobPath,
         e.CreatedAt
     );
+}
+
+/// <summary>
+/// File payload carried inside create/update requests of other features
+/// (medicine, batch, prescription, inventory adjustment).
+/// </summary>
+public sealed record FileUploadDto
+{
+    [Required, StringLength(260)]
+    public string FileName { get; init; } = string.Empty;
+
+    [Required, StringLength(100)]
+    public string ContentType { get; init; } = string.Empty;
+
+    [Range(1, long.MaxValue)]
+    public long SizeBytes { get; init; }
+
+    [Required]
+    public string Base64Content { get; init; } = string.Empty;
 }

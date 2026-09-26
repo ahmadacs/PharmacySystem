@@ -1,7 +1,7 @@
 using System.Reflection;
 using Application.Common.Behaviours;
 using Application.Common.Interfaces;
-using Application.Common.Services;
+using Application.Features.Files.Common;
 using Domain.Services;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +21,7 @@ public static class DependencyInjection
 
         services.AddScoped<DispensingDomainService>();
         services.AddScoped<IAttachmentUploadService, AttachmentUploadService>();
+        services.AddScoped<IFileAccessChecker, FileAccessChecker>();
 
         // Required for IStringLocalizer<T> (backend localizable messages).
         services.AddLocalization();

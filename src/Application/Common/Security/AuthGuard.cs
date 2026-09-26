@@ -3,7 +3,7 @@ using Application.Common.Models;
 using Application.Resources;
 using Microsoft.Extensions.Localization;
 
-namespace Application.Common;
+namespace Application.Common.Security;
 
 /// <summary>
 /// Guard clause for "any authenticated user" checks. Returns null on success

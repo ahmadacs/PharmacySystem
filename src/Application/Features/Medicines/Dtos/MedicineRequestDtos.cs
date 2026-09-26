@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Common.Attributes;
-using Application.Features.Inventory.Dtos;
+using Application.Features.Files.Dtos;
 using Domain.Enums;
 
 namespace Application.Features.Medicines.Dtos;

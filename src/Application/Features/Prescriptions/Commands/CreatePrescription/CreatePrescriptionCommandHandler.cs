@@ -1,7 +1,8 @@
-using Application.Common;
+using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Specifications;
+using Application.Features.Files.Common;
 using Application.Features.Patients.Dtos;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;

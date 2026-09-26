@@ -2,6 +2,7 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Common.Options;
 using Application.Common.Specifications;
+using Application.Features.Files.Common;
 using Application.Features.Inventory.Dtos;
 using Application.Resources;
 using Domain.Entities.Inventory;
