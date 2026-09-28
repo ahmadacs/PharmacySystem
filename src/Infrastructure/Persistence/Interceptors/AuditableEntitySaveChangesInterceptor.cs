@@ -74,12 +74,6 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
         }
     }
 
-    /// <summary>
-    /// Captures an audit row for every created/updated/soft-deleted domain entity.
-    /// Runs AFTER ApplyAuditRulesAndSoftDelete so soft deletes (which arrive here
-    /// as Modified with IsDeleted=true) are labelled "Deleted". Old/new values are
-    /// recorded for scalar and EF complex-type properties.
-    /// </summary>
     private void RecordAuditEntries(DbContext context)
     {
         var userId = _currentUser.UserId;

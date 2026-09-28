@@ -1,16 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Infrastructure.Migrations
 {
-    /// <inheritdoc />
+
     public partial class MakePatientPhoneRequiredAndUnique : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Backfill existing NULL phones with unique Saudi numbers before making column NOT NULL + Unique
+
             migrationBuilder.Sql(@"
                 WITH cte AS (
                     SELECT Id, ROW_NUMBER() OVER (ORDER BY Id) AS rn FROM Patients WHERE PhoneNumber IS NULL
@@ -37,7 +37,6 @@ namespace Infrastructure.Migrations
                 unique: true);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(

@@ -24,9 +24,6 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.Status, asOf);
 
-
-        // Lean selector: medicine name/type are scalar columns; days-to-expiry
-        // is derived in InventoryMapping (DayNumber math is not SQL).
         var selector = (System.Linq.Expressions.Expression<Func<MedicineBatch, ExpiryAlertRow>>)(b => new ExpiryAlertRow(
                     b.Id,
                     b.MedicineVariant!.Medicine!.Name,

@@ -6,6 +6,7 @@ public sealed record PrescriptionItemDto(
     Guid Id,
     Guid MedicineVariantId,
     string MedicineName,
+    string? MedicineNameAr,
     string VariantName,
     int PrescribedQuantity,
     int DispensedQuantity,
@@ -15,16 +16,14 @@ public sealed record PrescriptionItemDto(
     int RefillsAllowed,
     int RefillsUsed,
     int RefillIntervalDays,
-    DateOnly? LastDispensedAt);
+    DateOnly? LastDispensedAt,
+    int? Form,
+    int? Unit,
+    decimal? Strength);
 
-/// <summary>
-/// Internal EF projection shape for the prescriptions list.
-/// Field names mirror <see cref="PrescriptionListItemDto"/>; the doctor name
-/// is resolved separately via IStaffService and applied in
-/// <c>PrescriptionMapping.ToDto</c>.
-/// </summary>
 internal sealed record PrescriptionListRow(
     Guid Id,
+    string ShortCode,
     Guid DoctorId,
     string PatientName,
     DateOnly PatientDateOfBirth,
@@ -36,6 +35,7 @@ internal sealed record PrescriptionListRow(
 
 public sealed record PrescriptionListItemDto(
     Guid Id,
+    string ShortCode,
     Guid DoctorId,
     string DoctorName,
     string PatientName,
@@ -48,6 +48,7 @@ public sealed record PrescriptionListItemDto(
 
 public sealed record PrescriptionDetailsDto(
     Guid Id,
+    string ShortCode,
     Guid DoctorId,
     string DoctorName,
     string PatientName,
@@ -61,15 +62,11 @@ public sealed record PrescriptionDetailsDto(
     DateTime CreatedAt,
     IReadOnlyList<PrescriptionItemDto> Items);
 
-/// <summary>
-/// Internal EF projection shape for one prescription item.
-/// Raw quantities only (Remaining = Prescribed - Dispensed is computed in
-/// <c>PrescriptionMapping.ToDto</c> to keep one source of truth).
-/// </summary>
 internal sealed record PrescriptionDetailsItemRow(
     Guid Id,
     Guid MedicineVariantId,
     string MedicineName,
+    string? MedicineNameAr,
     MedicineForm? Form,
     MedicineUnit? Unit,
     decimal? Strength,
@@ -82,11 +79,9 @@ internal sealed record PrescriptionDetailsItemRow(
     int RefillIntervalDays,
     DateOnly? LastDispensedAt);
 
-/// <summary>
-/// Internal single-query shape for the details screen: header + ordered item rows.
-/// </summary>
 internal sealed record PrescriptionDetailsRow(
     Guid Id,
+    string ShortCode,
     Guid DoctorId,
     string PatientName,
     DateOnly PatientDateOfBirth,

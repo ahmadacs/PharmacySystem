@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Application.Common.Attributes;
 
 namespace Application.Features.Users.Dtos;
 
@@ -31,6 +32,7 @@ public sealed record CreateUserRequest
     public string? Specialization { get; init; }
 
     [StringLength(30)]
+    [SaudiPhone]
     public string? PhoneNumber { get; init; }
 }
 

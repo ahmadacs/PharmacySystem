@@ -7,12 +7,7 @@ namespace Infrastructure;
 
 public static class DatabaseInitializer
 {
-    /// <summary>
-    /// Creates the schema then applies the idempotent seed data.
-    /// Retries because the db container may not accept connections yet
-    /// when the api starts; without this, one failed attempt crashes
-    /// the process before Kestrel serves.
-    /// </summary>
+
     public static async Task InitializeDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         using var scope = services.CreateScope();
@@ -33,7 +28,7 @@ public static class DatabaseInitializer
             }
             catch when (attempt < maxAttempts)
             {
-                // Transient startup failure (db not reachable yet) — wait and retry.
+
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             }
         }

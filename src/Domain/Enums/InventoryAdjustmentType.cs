@@ -1,9 +1,6 @@
-﻿namespace Domain.Enums
+namespace Domain.Enums
 {
-    /// <summary>
-    /// The kind of stock movement recorded on an inventory adjustment.
-    /// Values are stored as strings in the database (see the EF configuration).
-    /// </summary>
+
     public enum InventoryAdjustmentType
     {
         Increase = 1,

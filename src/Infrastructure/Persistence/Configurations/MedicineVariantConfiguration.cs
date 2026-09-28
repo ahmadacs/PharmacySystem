@@ -36,7 +36,7 @@ public class MedicineVariantConfiguration : IEntityTypeConfiguration<MedicineVar
 
         builder.HasIndex(v => v.MedicineId);
         builder.HasIndex(v => new { v.MedicineId, v.Form, v.Unit, v.Strength }).IsUnique();
-        // Index on active flag to speed up queries that filter active variants
+
         builder.HasIndex(v => v.IsActive);
     }
 }

@@ -1,5 +1,7 @@
-﻿using Domain.Common;
+using System.Globalization;
+using Domain.Common;
 using Domain.Entities.Dispensing;
+using Domain.Enums;
 using Domain.Events;
 using Domain.Exceptions;
 using Domain.ValueObjects;
@@ -20,20 +22,11 @@ public class MedicineBatch : BaseEntity
     public string? SupplierName { get; private set; }
     public byte[] RowVersion { get; set; } = [];
 
-    // Inverse of DispensingRecordItem.MedicineBatch. Read-only query navigation:
-    // lets single-entity batch specs aggregate dispensed quantities through the
-    // existing FK without a second DbSet (no extra round trip, no Include).
     private readonly List<DispensingRecordItem> _dispensingItems = new();
     public IReadOnlyCollection<DispensingRecordItem> DispensingItems => _dispensingItems.AsReadOnly();
 
     private MedicineBatch() { }
 
-    /// <summary>
-    /// Creates a batch from a whole-package count. The package count is converted
-    /// to base units using the variant's <see cref="UnitOfMeasure"/> (e.g. 5 boxes
-    /// of 30 tablets => 150 tablets), so the stored quantity is always a multiple
-    /// of <c>UnitsPerPackage</c>. Dispensing then happens in base units.
-    /// </summary>
     public MedicineBatch(Guid medicineVariantId, string batchNumber, DateOnly manufactureDate, DateOnly expiryDate,
         int packagesReceived, UnitOfMeasure unitOfMeasure, decimal unitCost, string? supplierName = null)
     {
@@ -42,7 +35,7 @@ public class MedicineBatch : BaseEntity
         if (string.IsNullOrWhiteSpace(batchNumber))
             throw new ArgumentException("Batch number is required.", nameof(batchNumber));
         if (expiryDate <= manufactureDate)
-            throw new ArgumentException("Expiry date must be after the manufacture date.", nameof(expiryDate));
+            throw new InvalidBatchDatesException(manufactureDate, expiryDate);
         ArgumentNullException.ThrowIfNull(unitOfMeasure);
 
         var quantity = unitOfMeasure.PackagesToBaseUnits(packagesReceived);
@@ -61,6 +54,28 @@ public class MedicineBatch : BaseEntity
 
     public bool IsExpired(DateOnly asOf) => ExpiryDate <= asOf;
 
+    public static string GenerateNumber(
+        string medicineName,
+        MedicineForm form,
+        MedicineUnit unit,
+        decimal strength,
+        DateOnly today)
+    {
+        var namePart = new string(medicineName.Where(char.IsLetterOrDigit).Take(3).ToArray()).ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(namePart))
+            namePart = "MED";
+
+        var formPart = form.ToString()[0].ToString().ToUpperInvariant();
+        var unitPart = unit.ToString()[0].ToString().ToUpperInvariant();
+        var strengthPart = strength.ToString("0.##", CultureInfo.InvariantCulture).Replace(".", "");
+
+        var variantPart = $"{formPart}{unitPart}{strengthPart}";
+        if (string.IsNullOrWhiteSpace(variantPart))
+            variantPart = "VAR";
+
+        return $"{namePart}-{variantPart}-{today:yyMMdd}";
+    }
+
     public bool HasSufficientStock(int quantity) => QuantityAvailable.Value >= quantity;
 
     public void ReduceStock(int quantity, DateOnly asOf)
@@ -69,17 +84,13 @@ public class MedicineBatch : BaseEntity
         if (toReduce.IsZero)
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity to dispense must be positive.");
         if (IsExpired(asOf))
-            throw new ExpiredBatchException(Id, ExpiryDate);
+            throw new ExpiredBatchException(Id, ExpiryDate, BatchNumber);
         if (!HasSufficientStock(toReduce.Value))
             throw new InsufficientStockException(Id, toReduce.Value, QuantityAvailable.Value);
 
         QuantityAvailable = QuantityAvailable.Subtract(toReduce);
     }
 
-    /// <summary>
-    /// Raises MedicineBatchNearExpiryEvent when the batch expires within
-    /// <paramref name="withinDays"/> days and is not already expired.
-    /// </summary>
     public void RaiseNearExpiryEventIfNeeded(DateOnly asOf, int withinDays)
     {
         if (IsExpired(asOf))

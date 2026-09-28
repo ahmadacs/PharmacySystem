@@ -27,12 +27,10 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
 
     public async Task<Result<PrescriptionDetailsDto>> Handle(GetPrescriptionQuery request, CancellationToken cancellationToken)
     {
-        // Single projection query: header + ordered items with variant/medicine
-        // names inline through navigations (no Include — navigations inside a
-        // Select need none). Patient name/info are scalar columns; age/status/
-        // variant display strings are derived in PrescriptionMapping (not SQL).
+
         var selector = (Expression<Func<Prescription, PrescriptionDetailsRow>>)(p => new PrescriptionDetailsRow(
             p.Id,
+            p.ShortCode,
             p.DoctorId,
             p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty,
             p.Patient != null ? p.Patient.DateOfBirth : default,
@@ -49,6 +47,8 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
                     i.MedicineVariantId,
                     i.MedicineVariant != null && i.MedicineVariant.Medicine != null
                         ? i.MedicineVariant.Medicine.Name : "Unknown",
+                    i.MedicineVariant != null && i.MedicineVariant.Medicine != null
+                        ? i.MedicineVariant.Medicine.NameAr : null,
                     i.MedicineVariant != null ? (Domain.Enums.MedicineForm?)i.MedicineVariant.Form : null,
                     i.MedicineVariant != null ? (Domain.Enums.MedicineUnit?)i.MedicineVariant.Unit : null,
                     i.MedicineVariant != null ? (decimal?)i.MedicineVariant.Strength : null,

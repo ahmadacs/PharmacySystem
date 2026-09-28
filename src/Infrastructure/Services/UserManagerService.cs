@@ -43,7 +43,6 @@ public sealed class UserManagerService : IUserManager
         if (ids.Count == 0)
             return new Dictionary<Guid, string>();
 
-        // Single round trip: project only what list screens need (no roles/permissions).
         var rows = await _db.Users
             .AsNoTracking()
             .Where(u => ids.Contains(u.Id))
@@ -82,7 +81,6 @@ public sealed class UserManagerService : IUserManager
         if (valid)
             return PasswordCheckResult.Success;
 
-        // CheckPasswordAsync increments the failed-access counter; re-check lockout.
         return await _userManager.IsLockedOutAsync(user)
             ? PasswordCheckResult.LockedOut
             : PasswordCheckResult.Failed;

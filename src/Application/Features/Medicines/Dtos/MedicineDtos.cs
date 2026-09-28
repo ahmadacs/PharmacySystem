@@ -16,11 +16,6 @@ public sealed record MedicineVariantSummaryDto(
     int UnitsPerPackage,
     bool IsDivisible);
 
-/// <summary>
-/// Internal EF projection shape (SQL-translatable raw fields only).
-/// Never serialized to the API; maps via <c>MedicineMapping.ToDto</c>
-/// where display names and statuses are computed in memory.
-/// </summary>
 internal sealed record MedicineVariantRow(
     Guid Id,
     MedicineForm Form,
@@ -33,11 +28,6 @@ internal sealed record MedicineVariantRow(
     int UnitsPerPackage,
     bool IsDivisible);
 
-/// <summary>
-/// Internal EF projection shape for the medicines list.
-/// No computed fields here: counts and stock flags are derived in
-/// <c>MedicineMapping.ToDto</c> from <c>Variants</c> (single source of truth).
-/// </summary>
 internal sealed record MedicineRow(
     Guid Id,
     string Name,
@@ -51,12 +41,6 @@ internal sealed record MedicineRow(
     DateTime CreatedAt,
     Domain.Enums.MedicineForm? FirstVariantForm);
 
-/// <summary>
-/// Internal EF projection shape for one batch.
-/// Field names mirror <see cref="MedicineBatchDto"/> 1:1; status/expiry math
-/// lives in <c>MedicineMapping.ToDto</c> (not translatable to SQL).
-/// Note: <c>MedicineId</c> is the parent medicine id (as the list screen shows).
-/// </summary>
 internal sealed record MedicineBatchRow(
     Guid Id,
     Guid MedicineId,
@@ -75,18 +59,11 @@ internal sealed record MedicineBatchRow(
     DateTime ReceivedDate,
     int DispensedQuantity);
 
-/// <summary>
-/// Internal single-query shape for the details screen: header +
-/// variant rows, each carrying its own batch rows.
-/// </summary>
 internal sealed record VariantWithBatchesRow(
     bool IsActive,
     MedicineVariantRow Variant,
     IReadOnlyList<MedicineBatchRow> Batches);
 
-/// <summary>
-/// Internal single-query shape for the medicine details screen.
-/// </summary>
 internal sealed record MedicineDetailsRow(
     Guid Id,
     string Name,

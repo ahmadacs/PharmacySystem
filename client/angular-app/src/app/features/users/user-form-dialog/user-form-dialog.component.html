@@ -7,12 +7,20 @@
           <mat-form-field appearance="outline" class="grow">
             <mat-label>{{ 'dialogs.userForm.firstName' | translate }}</mat-label>
             <input matInput formControlName="firstName" />
-            <mat-error>{{ 'dialogs.userForm.firstNameRequired' | translate }}</mat-error>
+            @if (form.controls.firstName.hasError('required')) {
+              <mat-error>{{ 'dialogs.userForm.firstNameRequired' | translate }}</mat-error>
+            } @else {
+              <mat-error>{{ 'validation.invalidName' | translate }}</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline" class="grow">
             <mat-label>{{ 'dialogs.userForm.lastName' | translate }}</mat-label>
             <input matInput formControlName="lastName" />
-            <mat-error>{{ 'dialogs.userForm.lastNameRequired' | translate }}</mat-error>
+            @if (form.controls.lastName.hasError('required')) {
+              <mat-error>{{ 'dialogs.userForm.lastNameRequired' | translate }}</mat-error>
+            } @else {
+              <mat-error>{{ 'validation.invalidName' | translate }}</mat-error>
+            }
           </mat-form-field>
         </div>
 
@@ -60,9 +68,24 @@
               <mat-label>{{ 'dialogs.userForm.specialization' | translate }}</mat-label>
               <input matInput formControlName="specialization" />
             </mat-form-field>
-            <mat-form-field appearance="outline" class="grow">
+            <mat-form-field appearance="outline" class="grow" dir="ltr" floatLabel="always">
               <mat-label>{{ 'dialogs.userForm.phoneNumber' | translate }}</mat-label>
-              <input matInput formControlName="phoneNumber" />
+              <span matTextPrefix dir="ltr" class="phone-prefix">+9665</span>
+              <input
+                matInput
+                formControlName="phoneNumber"
+                appSaudiPhoneDigits
+                inputmode="numeric"
+                maxlength="8"
+                autocomplete="tel-national"
+                dir="ltr"
+                lang="en"
+                class="phone-suffix"
+                [placeholder]="'dialogs.userForm.phoneSuffixPlaceholder' | translate"
+              />
+              @if (form.controls.phoneNumber.hasError('pattern')) {
+                <mat-error>{{ 'validation.invalidPhone' | translate }}</mat-error>
+              }
             </mat-form-field>
           </div>
         }

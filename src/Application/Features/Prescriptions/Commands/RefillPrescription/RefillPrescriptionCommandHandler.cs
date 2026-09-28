@@ -1,9 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Features.Prescriptions.Common;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
-using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -29,34 +27,11 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         if (request.ItemIds is null || request.ItemIds.Count == 0)
             return Result.Failure(_localizer["RefillItemRequired"].Value, 400);
 
-        // Tracked root + tracked items: EF relationship fix-up assembles
-        // prescription.Items from the two loads (no Include). Both mutations
-        // below (RegisterItemsRefill) persist on SaveChanges.
         var prescription = await _prescriptions.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 
         await _items.ListAsync(i => i.PrescriptionId == request.Id, cancellationToken: cancellationToken);
-
-        // Localized pre-checks mirror the domain rules: the domain still
-        // re-validates as a safety net (English fallback, unreachable here).
-        if (prescription.Status is PrescriptionStatus.Cancelled or PrescriptionStatus.Expired)
-            return Result.Failure(
-                _localizer["RefillPrescriptionStatus", request.Id, PrescriptionStatusDisplay.ToDisplayName(prescription.Status, _localizer)].Value,
-                409);
-
-        foreach (var itemId in request.ItemIds.Distinct())
-        {
-            var item = prescription.Items.SingleOrDefault(i => i.Id == itemId);
-            if (item is null)
-                return Result.Failure(_localizer["RefillItemNotInPrescription", itemId, request.Id].Value, 409);
-            if (!item.IsRefillable)
-                return Result.Failure(_localizer["RefillItemNotRefillable", itemId].Value, 409);
-            if (!item.IsFullyDispensed)
-                return Result.Failure(_localizer["RefillItemNotDispensed", itemId].Value, 409);
-            if (item.RefillsUsed >= item.RefillsAllowed)
-                return Result.Failure(_localizer["RefillItemExhausted", itemId, item.RefillsUsed, item.RefillsAllowed].Value, 409);
-        }
 
         prescription.RegisterItemsRefill(request.ItemIds);
 

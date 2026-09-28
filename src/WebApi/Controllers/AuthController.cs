@@ -10,11 +10,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace WebApi.Controllers;
 
-/// <summary>
-/// Authentication endpoints: login, self-registration, token refresh, logout and
-/// password management. The refresh token travels as an httpOnly cookie scoped to
-/// /api/v1/auth; sensitive endpoints are rate-limited (10 requests/minute).
-/// </summary>
 [ApiVersion("1.0")]
 public sealed class AuthController(ISender sender, IWebHostEnvironment environment) : ApiControllerBase(sender)
 {
@@ -23,9 +18,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     private const string AccessTokenStorageNote =
         "Access tokens are kept in browser memory by the client; refresh tokens travel only in this httpOnly cookie.";
 
-    /// <summary>Authenticates a user and returns a short-lived access token plus a refresh-token cookie.</summary>
-    /// <param name="request">Email and password.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -34,9 +26,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         => AuthResponse(new LoginCommand(request), SetRefreshCookie, cancellationToken);
 
-    /// <summary>Registers a new account and returns the same token pair as login.</summary>
-    /// <param name="request">Names, email, password and role.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -45,8 +34,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
         => AuthResponse(new RegisterCommand(request), SetRefreshCookie, cancellationToken);
 
-    /// <summary>Rotates the refresh token: the old token is revoked and a new pair is issued.</summary>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("refresh")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -57,8 +44,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
         return AuthResponse(new RefreshTokenCommand(refreshToken), SetRefreshCookie, cancellationToken);
     }
 
-    /// <summary>Revokes the refresh token and clears the httpOnly cookie.</summary>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -70,8 +55,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
         return NoContent();
     }
 
-    /// <summary>Returns the current authenticated user with role and permissions.</summary>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [Authorize]
     [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -79,9 +62,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> Me(CancellationToken cancellationToken)
         => OkResponse(new GetCurrentUserQuery(), cancellationToken);
 
-    /// <summary>Changes the current user's password.</summary>
-    /// <param name="request">Current password and new password.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [Authorize]
     [EnableRateLimiting("auth")]
     [HttpPost("change-password")]
@@ -90,18 +70,12 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
         => NoContent(new ChangePasswordCommand(request), cancellationToken);
 
-    /// <summary>Requests a password reset; the reset link/token is delivered by email (mocked to a log/file).</summary>
-    /// <param name="request">Email address.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("forgot-password")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
         => NoContent(new ForgotPasswordCommand(request), cancellationToken);
 
-    /// <summary>Sets a new password using the reset token from the forgot-password flow.</summary>
-    /// <param name="request">Reset token and new password.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("reset-password")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

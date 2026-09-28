@@ -39,6 +39,8 @@ public sealed class DispensingRecordListQueryHandler : IRequestHandler<Dispensin
                     i.MedicineBatchId,
                     i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null && i.MedicineBatch.MedicineVariant.Medicine != null
                         ? i.MedicineBatch.MedicineVariant.Medicine.Name : "Unknown",
+                    i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null && i.MedicineBatch.MedicineVariant.Medicine != null
+                        ? i.MedicineBatch.MedicineVariant.Medicine.NameAr : null,
                     i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null
                         ? (Domain.Enums.MedicineForm?)i.MedicineBatch.MedicineVariant.Form : null,
                     i.MedicineBatch != null && i.MedicineBatch.MedicineVariant != null

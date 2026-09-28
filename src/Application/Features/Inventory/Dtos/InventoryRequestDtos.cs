@@ -13,7 +13,6 @@ public sealed record AdjustInventoryRequest
     [EnumDataType(typeof(InventoryAdjustmentType))]
     public InventoryAdjustmentType Type { get; init; }
 
-    /// <summary>The magnitude of the change; the sign is derived from the type.</summary>
     [PositiveQuantity]
     [Range(1, int.MaxValue)]
     public int Quantity { get; init; }
@@ -21,15 +20,9 @@ public sealed record AdjustInventoryRequest
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
 
-    /// <summary>Optional file attachment (e.g., supporting document, invoice, photo)</summary>
     public FileUploadDto? File { get; init; }
 }
 
-/// <summary>
-/// Official stock-in of a brand-new batch (Adjust Stock → Increase/TransferIn).
-/// Unlike the Medicines-screen Add Batch, the reason is mandatory here so every
-/// receive is fully documented in the audit trail.
-/// </summary>
 public sealed record ReceiveInventoryRequest
 {
     public Guid MedicineVariantId { get; init; }
@@ -50,13 +43,11 @@ public sealed record ReceiveInventoryRequest
     [StringLength(200)]
     public string? SupplierName { get; init; }
 
-    /// <summary>Inbound movement type recorded in the audit trail (Increase/TransferIn).</summary>
     [EnumDataType(typeof(InventoryAdjustmentType))]
     public InventoryAdjustmentType AdjustmentType { get; init; } = InventoryAdjustmentType.Increase;
 
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
 
-    /// <summary>Optional file attachment (e.g., invoice photo) stored against the new batch.</summary>
     public FileUploadDto? File { get; init; }
 }

@@ -3,11 +3,6 @@ using Microsoft.Extensions.Options;
 
 namespace WebApi.Authorization;
 
-/// <summary>
-/// Requirement that the authenticated principal holds a specific permission
-/// claim. Policy names are the same strings the JWT emits as permission claims,
-/// so authorization is data-driven instead of scattered role checks.
-/// </summary>
 public sealed class PermissionRequirement : IAuthorizationRequirement
 {
     public string PermissionName { get; }
@@ -33,11 +28,6 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
     }
 }
 
-/// <summary>
-/// Allows <c>[Authorize(Policy = "Permissions.Dispensing.Create")]</c> to work
-/// without registering every permission policy up front — the policy name IS the
-/// permission string.
-/// </summary>
 public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 {
     private readonly DefaultAuthorizationPolicyProvider _fallback;

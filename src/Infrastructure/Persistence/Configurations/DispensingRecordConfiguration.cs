@@ -29,7 +29,7 @@ public class DispensingRecordConfiguration : IEntityTypeConfiguration<Dispensing
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(r => r.DispensedAt);
-        // Index pharmacist for fast lookups by pharmacist
+
         builder.HasIndex(r => r.PharmacistId);
     }
 }

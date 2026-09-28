@@ -1,4 +1,9 @@
+using System.Globalization;
+using Application.Common.Extensions;
+using Application.Features.Prescriptions.Common;
 using Application.Resources;
+using Domain.Entities.Medicines;
+using Domain.Enums;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -42,17 +47,71 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 (StatusCodes.Status404NotFound, localizer["ResourceNotFound", e.EntityType.Name, e.EntityId]),
             ForbiddenResourceException =>
                 (StatusCodes.Status403Forbidden, localizer["Forbidden"]),
-            InvalidCredentialsException or InvalidRefreshTokenException =>
-                (StatusCodes.Status401Unauthorized, exception.Message),
-            ConflictingOperationException or RefillNotEligibleException or InvalidPrescriptionStatusException =>
+            InvalidCredentialsException =>
+                (StatusCodes.Status401Unauthorized, localizer["EmailOrPasswordIncorrect"]),
+            InvalidRefreshTokenException =>
+                (StatusCodes.Status401Unauthorized, localizer["RefreshTokenInvalid"]),
+            ConflictingOperationException =>
                 (StatusCodes.Status409Conflict, exception.Message),
+            InvalidBatchDatesException =>
+                (StatusCodes.Status422UnprocessableEntity, localizer["ExpiryAfterManufacture"]),
+            MissingMedicineVariantException e =>
+                (StatusCodes.Status404NotFound, localizer["ResourceNotFound", nameof(MedicineVariant), e.MedicineVariantId]),
+            InsufficientStockException e =>
+                (StatusCodes.Status409Conflict, localizer["InsufficientStockVariant",
+                    MedicineDisplayNames.Resolve(e.MedicineName, e.MedicineNameAr,
+                        CultureInfo.CurrentUICulture, e.MedicineBatchId.ToString()),
+                    e.Requested, e.Available]),
+            ExpiredBatchException e =>
+                (StatusCodes.Status409Conflict, localizer["ExpiredBatchCannotDispense",
+                    e.BatchNumber ?? e.MedicineBatchId.ToString(),
+                    e.ExpiryDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)]),
+            RefillIntervalNotSatisfiedException e =>
+                (StatusCodes.Status409Conflict, localizer["RefillNotDueForDispense",
+                    MedicineDisplayNames.Resolve(e.MedicineName, e.MedicineNameAr,
+                        CultureInfo.CurrentUICulture, e.PrescriptionItemId.ToString()),
+                    e.NextEligibleDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)]),
+            RefillNotEligibleException e =>
+                (StatusCodes.Status409Conflict, MapRefillNotEligible(e, localizer)),
+            InvalidPrescriptionStatusException e =>
+                (StatusCodes.Status409Conflict, MapPrescriptionStatus(e, localizer)),
             DbUpdateConcurrencyException =>
                 (StatusCodes.Status409Conflict, localizer["ConcurrencyConflict"]),
-            MissingMedicineVariantException =>
-                (StatusCodes.Status400BadRequest, exception.Message),
             DomainException =>
                 (StatusCodes.Status422UnprocessableEntity, exception.Message),
             _ =>
                 (StatusCodes.Status500InternalServerError, localizer["UnexpectedError"])
+        };
+
+    private static string MapRefillNotEligible(RefillNotEligibleException e, IStringLocalizer<SharedResource> localizer) =>
+        e.Reason switch
+        {
+            RefillEligibilityReason.NotRefillable =>
+                localizer["RefillItemNotRefillable", e.PrescriptionItemId],
+            RefillEligibilityReason.NotFullyDispensed =>
+                localizer["RefillItemNotDispensed", e.PrescriptionItemId],
+            RefillEligibilityReason.Exhausted =>
+                localizer["RefillItemExhausted", e.PrescriptionItemId, e.RefillsUsed, e.RefillsAllowed],
+            _ => e.Message
+        };
+
+    private static string MapPrescriptionStatus(InvalidPrescriptionStatusException e, IStringLocalizer<SharedResource> localizer) =>
+        e.Reason switch
+        {
+            PrescriptionStatusReason.AddItemsProhibited =>
+                localizer["PrescriptionCannotAddItems", PrescriptionStatusDisplay.ToDisplayName(e.Status, localizer)],
+            PrescriptionStatusReason.AlreadyCancelled =>
+                localizer["AlreadyCancelled"],
+            PrescriptionStatusReason.CancelAfterDispensed =>
+                localizer["CannotCancelDispensed"],
+            PrescriptionStatusReason.NotDispensable =>
+                localizer["PrescriptionNotDispensable", PrescriptionStatusDisplay.ToDisplayName(e.Status, localizer)],
+            PrescriptionStatusReason.Empty =>
+                localizer["PrescriptionHasNoItems"],
+            PrescriptionStatusReason.ItemNotInPrescription =>
+                localizer["RefillItemNotInPrescription", e.PrescriptionItemId?.ToString() ?? string.Empty, e.PrescriptionId],
+            PrescriptionStatusReason.RefillProhibited =>
+                localizer["RefillPrescriptionStatus", e.PrescriptionId, PrescriptionStatusDisplay.ToDisplayName(e.Status, localizer)],
+            _ => e.Message
         };
 }

@@ -30,8 +30,7 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
 
     public async Task<Result<(Stream Content, string ContentType, string FileName)>> Handle(GetFileQuery request, CancellationToken cancellationToken)
     {
-        // Lean selector: only the columns needed for auth + storage open
-        // (no full entity, no audit fields).
+
         var selector = (System.Linq.Expressions.Expression<Func<FileAttachment, FileAttachmentRow>>)(f => new FileAttachmentRow(
             f.Id,
             f.EntityType,
@@ -43,9 +42,6 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
         if (row is null)
             return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["ResourceNotFound", "FileAttachment", request.FileId].Value, 404);
 
-        // Transient entity carries only EntityType/EntityId for the access
-        // check — preserves the attachment-based auth branch (deleted
-        // prescriptions stay viewable) without loading the full row.
         var accessFailure = await _access.EnsureCanViewAsync(
             new FileAttachment(row.EntityType, row.EntityId, row.FileName, "application/octet-stream", 0, row.BlobPath),
             cancellationToken);

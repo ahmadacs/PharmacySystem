@@ -42,6 +42,9 @@ export interface PrescriptionItemDto {
   refillsUsed: number;
   refillIntervalDays: number;
   lastDispensedAt: string | null;
+  form: number | null;
+  unit: number | null;
+  strength: number | null;
 }
 
 export interface RefillPrescriptionRequest {
@@ -50,6 +53,7 @@ export interface RefillPrescriptionRequest {
 
 export interface PrescriptionListItemDto {
   id: string;
+  shortCode: string;
   doctorId: string;
   doctorName: string;
   patientName: string;
@@ -63,6 +67,7 @@ export interface PrescriptionListItemDto {
 
 export interface PrescriptionDetailsDto {
   id: string;
+  shortCode: string;
   doctorId: string;
   doctorName: string;
   patientName: string;

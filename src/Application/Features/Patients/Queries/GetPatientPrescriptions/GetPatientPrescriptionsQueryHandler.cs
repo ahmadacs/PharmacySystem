@@ -57,7 +57,6 @@ public sealed class GetPatientPrescriptionsQueryHandler
                 && p.Status != PrescriptionStatus.Cancelled && p.Status != PrescriptionStatus.Expired
                 && p.IssuedDate >= cutoff;
 
-        // Lean SELECT: only the selector's columns are fetched, ordered in memory.
         var allRows = await _prescriptions.ListAsync(selector, predicate, cancellationToken);
 
         var rows = allRows.OrderByDirection(r => r.IssuedDate, "desc").ToList();

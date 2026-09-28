@@ -3,13 +3,6 @@ namespace Domain.Entities.Audit;
 using Domain.Common;
 using Domain.Enums;
 
-/// <summary>
-/// A change-tracking record written automatically on every save: which entity was
-/// changed, by whom, when, and the old/new values of the changed properties.
-/// Deliberately NOT a BaseEntity — audit rows are immutable and never soft-deleted.
-/// Implements <see cref="IEntity"/> (identity only) so the generic repositories
-/// can serve it without inheriting audit fields, domain events or soft-delete behavior.
-/// </summary>
 public class AuditEntry : IEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -19,7 +12,6 @@ public class AuditEntry : IEntity
     public Guid? ChangedBy { get; private set; }
     public DateTime ChangedAt { get; private set; }
 
-    /// <summary>JSON array of { property, oldValue, newValue } for the changed properties.</summary>
     public string? ChangesJson { get; private set; }
 
     private AuditEntry() { }

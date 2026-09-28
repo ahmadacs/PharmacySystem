@@ -89,7 +89,7 @@ export class PrescriptionsListComponent {
   protected readonly roles = Roles;
   protected readonly statuses = PRESCRIPTION_STATUSES;
   protected readonly displayedColumns = computed(() => {
-    const columns = ['patientName', 'doctorName', 'issuedDate', 'status', 'itemCount'];
+    const columns = ['shortCode', 'patientName', 'doctorName', 'issuedDate', 'status', 'itemCount'];
     if (this.auth.hasPermission(Permissions.DispensingCreate)) {
       columns.push('actions');
     }

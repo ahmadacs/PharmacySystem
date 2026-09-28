@@ -1,29 +1,65 @@
+<h2 mat-dialog-title>{{ 'dialogs.dispensePicker.title' | translate }}</h2>
 
-    <h2 mat-dialog-title>{{ 'dialogs.dispensePicker.title' | translate }}</h2>
+<mat-dialog-content class="picker">
+  <p class="hint">{{ 'dialogs.dispensePicker.hint' | translate }}</p>
 
-    <mat-dialog-content class="picker">
-      @if (loading()) {
-        <mat-progress-bar mode="indeterminate" />
+  <form [formGroup]="form" (ngSubmit)="search()" class="lookup-form">
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'dialogs.dispensePicker.shortCode' | translate }}</mat-label>
+      <input
+        matInput
+        formControlName="shortCode"
+        [placeholder]="'dialogs.dispensePicker.shortCodePlaceholder' | translate"
+        autocomplete="off"
+        maxlength="8"
+        dir="ltr"
+        lang="en"
+        class="code-input"
+        style="text-transform: uppercase"
+        (input)="onShortCodeInput($event)"
+      />
+      @if (shortCode.hasError('required') && shortCode.touched) {
+        <mat-error>{{ 'validation.required' | translate }}</mat-error>
+      } @else if (shortCode.touched && (shortCode.hasError('minlength') || shortCode.hasError('maxlength') || shortCode.hasError('pattern'))) {
+        <mat-error>{{ 'dialogs.dispensePicker.shortCodeLength' | translate }}</mat-error>
       }
+    </mat-form-field>
 
-      @if (candidates().length > 0) {
-        @for (candidate of candidates(); track candidate.id) {
-          <button class="candidate" mat-button (click)="select(candidate)">
-            <span class="candidate__patient">{{ candidate.patientName }}</span>
-            <span class="candidate__meta">
-              {{ candidate.doctorName }} · {{ candidate.issuedDate | riyadhDate: 'mediumDate' }} ·
-              {{ candidate.status }} · {{ candidate.itemCount }} item(s)
-            </span>
-          </button>
-        }
+    <mat-form-field appearance="outline" dir="ltr" floatLabel="always">
+      <mat-label>{{ 'dialogs.dispensePicker.phoneNumber' | translate }}</mat-label>
+      <span matTextPrefix dir="ltr" class="phone-prefix">+9665</span>
+      <input
+        matInput
+        formControlName="phoneNumber"
+        appSaudiPhoneDigits
+        inputmode="numeric"
+        maxlength="8"
+        autocomplete="tel-national"
+        dir="ltr"
+        lang="en"
+        class="phone-suffix"
+        [placeholder]="'dialogs.dispensePicker.phoneSuffixPlaceholder' | translate"
+      />
+      @if (phoneNumber.hasError('required') && phoneNumber.touched) {
+        <mat-error>{{ 'validation.required' | translate }}</mat-error>
+      } @else if (phoneNumber.hasError('pattern') && phoneNumber.touched) {
+        <mat-error>{{ 'validation.invalidPhone' | translate }}</mat-error>
       }
+    </mat-form-field>
 
-      @if (!loading() && candidates().length === 0) {
-        <p class="empty">{{ 'dialogs.dispensePicker.empty' | translate }}</p>
-      }
-    </mat-dialog-content>
+    @if (searching()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
 
-    <mat-dialog-actions align="end">
-      <button mat-button [mat-dialog-close]="null">{{ 'dialogs.dispensePicker.cancel' | translate }}</button>
-    </mat-dialog-actions>
-  
+    @if (notFound()) {
+      <p class="not-found">{{ 'dialogs.dispensePicker.notFound' | translate }}</p>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="null">{{ 'dialogs.dispensePicker.cancel' | translate }}</button>
+  <button mat-flat-button color="primary" [disabled]="form.invalid || searching()" (click)="search()">
+    {{ 'dialogs.dispensePicker.search' | translate }}
+  </button>
+</mat-dialog-actions>

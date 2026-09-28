@@ -56,19 +56,16 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
 
         var totalCount = await _audit.CountAsync(predicate, cancellationToken);
 
-        // Identity selector: same entity, but paged in SQL — the heavy
-        // ChangesJson is fetched for the page rows only, not the whole table.
         List<AuditEntry> entries = request.SortBy?.ToLowerInvariant() switch
         {
             "entity" => await _audit.PagedAsync(e => e, predicate, e => e.EntityName, desc, page, pageSize, cancellationToken),
             "action" => await _audit.PagedAsync(e => e, predicate, e => e.Action, desc, page, pageSize, cancellationToken),
-            // No author column without the join: stable date order instead.
+
             _ => await _audit.PagedAsync(e => e, predicate, e => e.ChangedAt, desc, page, pageSize, cancellationToken)
         };
 
         var changesById = entries.ToDictionary(e => e.Id, e => DeserializeChanges(e.ChangesJson));
 
-        // One batched users lookup for author display names (keyed by ChangedBy).
         var userNames = await _users.GetDisplayNamesAsync(
             entries.Select(e => e.ChangedBy)
                 .Where(id => id.HasValue)
@@ -77,9 +74,6 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
                 .ToList(),
             cancellationToken);
 
-        // Prescription entries: resolve DoctorId/PatientId change values to
-        // display names with LINQ (batched: one staff lookup + one patient
-        // query per page, no N+1). Other entities keep raw values.
         var prescriptionChanges = entries
             .Where(e => e.EntityName == nameof(Prescription))
             .SelectMany(e => changesById[e.Id])
@@ -128,7 +122,6 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
         return Result<PagedList<AuditEntryDto>>.Success(items);
     }
 
-    /// <summary>Distinct referenced ids carried by one change property (LINQ).</summary>
     private static List<Guid> ChangeIdsFor(IEnumerable<AuditChangeDto> changes, string property)
         => changes
             .Where(c => c.Property == property)
@@ -139,7 +132,6 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
             .Distinct()
             .ToList();
 
-    /// <summary>Display name for a DoctorId/PatientId change value (LINQ lookups).</summary>
     private static string? ResolveDisplay(
         string property,
         string? value,

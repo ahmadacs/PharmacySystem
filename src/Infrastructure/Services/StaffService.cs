@@ -37,7 +37,6 @@ public sealed class StaffService : IStaffService
             where d.Id == doctorId
             select (u.FirstName + " " + u.LastName).Trim()).FirstOrDefaultAsync(cancellationToken);
 
-    /// <summary>All requested doctor names in one round trip (WHERE IN).</summary>
     public async Task<IReadOnlyDictionary<Guid, string>> GetDoctorNamesAsync(
         IEnumerable<Guid> doctorIds,
         CancellationToken cancellationToken = default)
@@ -53,7 +52,6 @@ public sealed class StaffService : IStaffService
             .ToDictionaryAsync(x => x.Id, x => x.FullName, cancellationToken);
     }
 
-    /// <summary>All requested pharmacist names in one round trip (WHERE IN).</summary>
     public async Task<IReadOnlyDictionary<Guid, string>> GetPharmacistNamesAsync(
         IEnumerable<Guid> pharmacistIds,
         CancellationToken cancellationToken = default)

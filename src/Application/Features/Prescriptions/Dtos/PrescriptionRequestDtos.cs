@@ -20,7 +20,6 @@ public sealed record PrescriptionItemRequest
     [Range(0, 99)]
     public int RefillsAllowed { get; init; }
 
-    /// <summary>Minimum days between dispenses. 0 = no time constraint.</summary>
     [Range(0, 365)]
     public int RefillIntervalDays { get; init; }
 }
@@ -51,6 +50,5 @@ public sealed record CreatePrescriptionRequest
     [MinLength(1)]
     public List<PrescriptionItemRequest> Items { get; init; } = [];
 
-    /// <summary>Optional file attachment (e.g., scanned prescription) stored against the new prescription.</summary>
     public FileUploadDto? File { get; init; }
 }

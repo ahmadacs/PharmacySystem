@@ -5,11 +5,6 @@ using Microsoft.Extensions.Localization;
 
 namespace Application.Common.Security;
 
-/// <summary>
-/// Guard clause for "any authenticated user" checks. Returns null on success
-/// (with the user id) or the ready-to-return failure, so handlers stay flat
-/// instead of nesting their whole body inside <c>if (IsSuccess)</c>.
-/// </summary>
 internal static class AuthGuard
 {
     public static Result? RequireUserId(

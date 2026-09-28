@@ -5,10 +5,6 @@ using MediatR;
 
 namespace Application.Features.Inventory.Queries;
 
-/// <summary>
-/// Per-medicine aggregated inventory rows. Stock status values: All / InStock /
-/// LowStock / OutOfStock. Every quantity is computed from the active batches.
-/// </summary>
 public sealed record MedicineInventorySummaryQuery : PagedQuery, IRequest<Result<PagedList<MedicineInventorySummaryDto>>>
 {
     [StringLength(20, ErrorMessage = "StockStatus must be at most 20 characters.")]

@@ -7,10 +7,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Notifications.Events;
 
-/// <summary>
-/// MediatR notifications mirroring the stock Domain events (see
-/// PrescriptionEventHandlers for the rationale: Domain stays dependency-free).
-/// </summary>
 public sealed record MedicineLowStockNotification(
     Guid MedicineId,
     Guid MedicineVariantId,
@@ -29,7 +25,6 @@ public sealed record MedicineBatchNearExpiryNotification(
     DateTime OccurredAtUtc)
     : MedicineBatchNearExpiryEvent(MedicineBatchId, MedicineVariantId, BatchNumber, ExpiryDate, OccurredAtUtc), INotification;
 
-/// <summary>Pushes a low-stock alert to Pharmacists and Admins, persisted per user.</summary>
 public sealed class MedicineLowStockNotificationHandler : INotificationHandler<MedicineLowStockNotification>
 {
     private readonly INotificationService _notifications;
@@ -62,7 +57,6 @@ public sealed class MedicineLowStockNotificationHandler : INotificationHandler<M
     }
 }
 
-/// <summary>Pushes a near-expiry alert to Pharmacists and Admins, persisted per user.</summary>
 public sealed class MedicineBatchNearExpiryNotificationHandler : INotificationHandler<MedicineBatchNearExpiryNotification>
 {
     private readonly INotificationService _notifications;

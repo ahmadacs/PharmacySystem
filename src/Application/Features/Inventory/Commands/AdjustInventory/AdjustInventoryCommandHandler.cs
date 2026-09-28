@@ -43,7 +43,7 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
     public async Task<Result<Guid>> Handle(AdjustInventoryCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        // Tracked: AdjustQuantity below must persist on SaveChanges.
+
         var batch = await _batches.GetByIdAsync(req.MedicineBatchId, tracked: true, cancellationToken: cancellationToken);
         if (batch is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "MedicineBatch", req.MedicineBatchId].Value, 404);
@@ -60,9 +60,6 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
-        // Tracked variant with batches + medicine for the low-stock domain
-        // event (reads variant.Batches and variant.Medicine?.Name), assembled
-        // by EF relationship fix-up (no Include).
         var eventVariant = await _variants.GetByIdAsync(batch.MedicineVariantId, tracked: true, cancellationToken: cancellationToken);
 
         if (eventVariant is not null)

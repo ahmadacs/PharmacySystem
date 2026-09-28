@@ -53,7 +53,6 @@ public sealed record CreateMedicineRequest
     [MinLength(1)]
     public List<MedicineVariantRequest> Variants { get; init; } = [];
 
-    /// <summary>Optional file attachment (e.g., medicine image) stored against the new medicine.</summary>
     public FileUploadDto? File { get; init; }
 }
 
@@ -83,7 +82,7 @@ public sealed record UpdateMedicineRequest
 public sealed record AddBatchRequest
 {
     public Guid MedicineVariantId { get; init; }
-    // BatchNumber removed; generated server-side.
+
     [NotInTheFuture]
     public DateOnly ManufactureDate { get; init; }
 
@@ -103,7 +102,6 @@ public sealed record AddBatchRequest
     [EnumDataType(typeof(Domain.Enums.InventoryAdjustmentType))]
     public Domain.Enums.InventoryAdjustmentType AdjustmentType { get; init; } = Domain.Enums.InventoryAdjustmentType.Increase;
 
-    /// <summary>Optional file attachment stored against the new batch (Receive flow).</summary>
     public FileUploadDto? File { get; init; }
 }
 

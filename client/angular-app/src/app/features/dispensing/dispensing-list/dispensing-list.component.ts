@@ -28,9 +28,11 @@ import { openForResult } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { localizedVariantName, pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
+import { MedicineForm, MedicineUnit } from '../../../core/models/api.models';
 import { DispenseDialogComponent } from '../dispense-dialog/dispense-dialog.component';
-import { DispensePickerDialogComponent } from '../dispense-picker-dialog/dispense-picker-dialog.component';
+import { DispensePickerDialogComponent, DispensePickerResult } from '../dispense-picker-dialog/dispense-picker-dialog.component';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 
 @Component({
@@ -68,6 +70,7 @@ import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 })
 export class DispensingListComponent {
   private readonly dialog = inject(MatDialog);
+  private readonly translate = inject(TranslateService);
 
   protected readonly permissions = Permissions;
   protected readonly displayedColumns = ['dispensedAt', 'patientName', 'pharmacistName', 'items', 'notes'];
@@ -100,14 +103,29 @@ export class DispensingListComponent {
   }
 
   itemsLabel(record: DispensingRecordDto): string {
-    return record.items.map((item) => `${item.medicineName} ${item.variantName} (${item.batchNumber}) x${item.quantity}`).join(', ');
+    const formEnum = MedicineForm as unknown as Record<number, string>;
+    const unitEnum = MedicineUnit as unknown as Record<number, string>;
+    return record.items.map((item) => {
+      const variant = localizedVariantName(item, formEnum, unitEnum, this.translate) || item.variantName;
+      return `${pickLocalizedMedicineName(item, this.translate)} ${variant} (${item.batchNumber}) x${item.quantity}`;
+    }).join(', ');
   }
 
   openDispense(): void {
-    openForResult(this.dialog, DispensePickerDialogComponent, { width: '560px' }, (prescriptionId: string) => {
-      openForResult(this.dialog, DispenseDialogComponent, { width: '560px', data: prescriptionId }, () => {
-        this.refreshRecords();
-      });
-    });
+    openForResult(
+      this.dialog,
+      DispensePickerDialogComponent,
+      { width: '560px' },
+      (picked: DispensePickerResult) => {
+        openForResult(
+          this.dialog,
+          DispenseDialogComponent,
+          { width: '560px', data: picked },
+          () => {
+            this.refreshRecords();
+          }
+        );
+      }
+    );
   }
 }

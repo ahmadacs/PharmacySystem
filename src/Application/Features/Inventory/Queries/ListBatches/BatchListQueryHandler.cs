@@ -21,13 +21,6 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.ExpiryStatus, asOf, request.WithinDays);
 
-
-        // Pure single-entity spec: filter + ordering + paging + projection all
-        // live here in the Application layer. The dispensed total aggregates
-        // through the DispensingItems navigation (existing FK, no extra round
-        // trip, no Include — navigations inside a Select need none).
-        // Scientific name (Medicine.Name) + variant type (Form/Strength/Unit)
-        // are scalar columns; VariantName is built in MedicineMapping (not SQL).
         var selector = (System.Linq.Expressions.Expression<Func<MedicineBatch, MedicineBatchRow>>)(b => new MedicineBatchRow(
                     b.Id,
                     b.MedicineVariant!.MedicineId,

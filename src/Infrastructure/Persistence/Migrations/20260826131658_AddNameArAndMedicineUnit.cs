@@ -1,31 +1,29 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Infrastructure.Persistence.Migrations
 {
-    /// <inheritdoc />
+
     public partial class AddNameArAndMedicineUnit : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
                 name: "IX_MedicineVariants_MedicineId_Form_Unit_Strength",
                 table: "MedicineVariants");
 
-            // 1. Add new temp column for enum
             migrationBuilder.AddColumn<int>(
                 name: "UnitEnum",
                 table: "MedicineVariants",
                 type: "int",
                 nullable: false,
-                defaultValue: 99); // Other
+                defaultValue: 99);
 
-            // 2. Migrate string data to enum values
             migrationBuilder.Sql(@"
                 UPDATE [MedicineVariants]
-                SET [UnitEnum] = CASE 
+                SET [UnitEnum] = CASE
                     WHEN [Unit] = 'mg' THEN 1
                     WHEN [Unit] = 'ml' THEN 2
                     WHEN [Unit] = 'g' THEN 3
@@ -44,18 +42,15 @@ namespace Infrastructure.Persistence.Migrations
                 END
             ");
 
-            // 3. Drop old string column
             migrationBuilder.DropColumn(
                 name: "Unit",
                 table: "MedicineVariants");
 
-            // 4. Rename temp column to Unit
             migrationBuilder.RenameColumn(
                 name: "UnitEnum",
                 table: "MedicineVariants",
                 newName: "Unit");
 
-            // 5. Make Strength non-nullable (all existing rows should have values)
             migrationBuilder.AlterColumn<decimal>(
                 name: "Strength",
                 table: "MedicineVariants",
@@ -98,14 +93,12 @@ namespace Infrastructure.Persistence.Migrations
                 unique: true);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
                 name: "IX_MedicineVariants_MedicineId_Form_Unit_Strength",
                 table: "MedicineVariants");
 
-            // Reverse: Add temp string column
             migrationBuilder.AddColumn<string>(
                 name: "UnitString",
                 table: "MedicineVariants",
@@ -114,10 +107,9 @@ namespace Infrastructure.Persistence.Migrations
                 nullable: false,
                 defaultValue: "Other");
 
-            // Migrate enum back to string
             migrationBuilder.Sql(@"
                 UPDATE [MedicineVariants]
-                SET [UnitString] = CASE 
+                SET [UnitString] = CASE
                     WHEN [Unit] = 1 THEN 'mg'
                     WHEN [Unit] = 2 THEN 'ml'
                     WHEN [Unit] = 3 THEN 'g'

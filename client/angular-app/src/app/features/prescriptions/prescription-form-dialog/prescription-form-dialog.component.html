@@ -4,18 +4,34 @@
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <mat-dialog-content class="dialog-body">
         <div class="row">
-          <mat-form-field appearance="outline" class="grow">
+          <mat-form-field appearance="outline" class="grow" dir="ltr" floatLabel="always">
             <mat-label>{{ 'dialogs.prescriptionForm.phoneNumber' | translate }}</mat-label>
-            <input matInput formControlName="patientPhoneNumber" dir="ltr" class="phone-input" [placeholder]="'dialogs.prescriptionForm.phonePlaceholder' | translate" />
-            <mat-error>{{ 'dialogs.prescriptionForm.phoneRequired' | translate }}</mat-error>
-            @if (phoneHintKey(); as hintKey) {
-              @if (form.controls.patientPhoneNumber.untouched) {
-                <mat-hint>{{ hintKey | translate }}</mat-hint>
-              }
+            <span matTextPrefix dir="ltr" class="phone-prefix">+9665</span>
+            <input
+              matInput
+              formControlName="patientPhoneNumber"
+              appSaudiPhoneDigits
+              inputmode="numeric"
+              maxlength="8"
+              autocomplete="tel-national"
+              dir="ltr"
+              lang="en"
+              class="phone-suffix"
+              [placeholder]="'dialogs.prescriptionForm.phoneSuffixPlaceholder' | translate"
+            />
+            @if (form.controls.patientPhoneNumber.hasError('required')) {
+              <mat-error>{{ 'dialogs.prescriptionForm.phoneRequired' | translate }}</mat-error>
+            } @else {
+              <mat-error>{{ 'dialogs.prescriptionForm.phoneInvalidHint' | translate }}</mat-error>
             }
             @if (phoneSearching()) { <mat-icon matSuffix>hourglass_empty</mat-icon> }
           </mat-form-field>
         </div>
+        @if (phoneHintKey(); as hintKey) {
+          @if (form.controls.patientPhoneNumber.untouched) {
+            <div class="phone-hint">{{ hintKey | translate }}</div>
+          }
+        }
         @if (!showRest() && !phoneSearching()) {
           <div class="phone-hint">{{ 'dialogs.prescriptionForm.phoneFirstHint' | translate }}</div>
         }
@@ -49,12 +65,20 @@
           <mat-form-field appearance="outline" class="grow">
             <mat-label>{{ 'dialogs.prescriptionForm.firstName' | translate }}</mat-label>
             <input matInput formControlName="patientFirstName" />
-            <mat-error>{{ 'dialogs.prescriptionForm.firstNameRequired' | translate }}</mat-error>
+            @if (form.controls.patientFirstName.hasError('required')) {
+              <mat-error>{{ 'dialogs.prescriptionForm.firstNameRequired' | translate }}</mat-error>
+            } @else {
+              <mat-error>{{ 'validation.invalidName' | translate }}</mat-error>
+            }
           </mat-form-field>
           <mat-form-field appearance="outline" class="grow">
             <mat-label>{{ 'dialogs.prescriptionForm.lastName' | translate }}</mat-label>
             <input matInput formControlName="patientLastName" />
-            <mat-error>{{ 'dialogs.prescriptionForm.lastNameRequired' | translate }}</mat-error>
+            @if (form.controls.patientLastName.hasError('required')) {
+              <mat-error>{{ 'dialogs.prescriptionForm.lastNameRequired' | translate }}</mat-error>
+            } @else {
+              <mat-error>{{ 'validation.invalidName' | translate }}</mat-error>
+            }
           </mat-form-field>
         </div>
 
@@ -134,7 +158,7 @@
                   </mat-form-field>
                   <mat-form-field appearance="outline" class="refill-count">
                     <mat-label>{{ 'dialogs.prescriptionForm.refillIntervalDays' | translate }}</mat-label>
-                    <input matInput formControlName="refillIntervalDays" inputmode="numeric"
+                    <input matInput formControlName="refillIntervalDays" inputmode="numeric" appEnglishDigits
                         [matAutocomplete]="intervalAuto"
                         [placeholder]="'dialogs.prescriptionForm.refillIntervalNoLimit' | translate" />
                     <mat-autocomplete #intervalAuto="matAutocomplete">

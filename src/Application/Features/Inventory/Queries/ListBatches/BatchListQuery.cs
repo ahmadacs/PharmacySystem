@@ -5,7 +5,6 @@ using MediatR;
 
 namespace Application.Features.Inventory.Queries;
 
-/// <summary>Lists medicine batches with expiry awareness (All / Valid / ExpiringSoon / Expired).</summary>
 public sealed record BatchListQuery : PagedQuery, IRequest<Result<PagedList<MedicineBatchDto>>>
 {
     public Guid? MedicineId { get; init; }

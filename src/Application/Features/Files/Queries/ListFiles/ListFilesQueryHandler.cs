@@ -38,7 +38,6 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
         if (accessFailure is not null)
             return Result<IReadOnlyList<FileAttachmentDto>>.Failure(accessFailure.Error!, accessFailure.StatusCode);
 
-        // Lean selector: file rows are scalar columns (no audit fields, no entity load).
         var selector = (System.Linq.Expressions.Expression<Func<FileAttachment, FileAttachmentDto>>)(f => new FileAttachmentDto(
             f.Id,
             f.EntityType.ToString(),
@@ -52,8 +51,6 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
         System.Linq.Expressions.Expression<Func<FileAttachment, bool>> predicate =
             f => f.EntityType == entityType && f.EntityId == request.EntityId;
 
-        // Lean selector (no audit fields); per-entity lists are small so the
-        // full filtered set is fetched then ordered in memory — same results.
         var list = (await _files.ListAsync(selector, predicate, cancellationToken))
             .OrderByDirection(f => f.CreatedAt, "desc")
             .ToList();

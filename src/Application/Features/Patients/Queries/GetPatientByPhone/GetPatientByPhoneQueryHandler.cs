@@ -15,8 +15,6 @@ public sealed class GetPatientByPhoneQueryHandler : IRequestHandler<GetPatientBy
     {
         var normalized = Domain.Common.PhoneNumbers.NormalizeSaudiPhone(request.PhoneNumber);
 
-        // Lean selector: only patient info columns (no full entity, no navs).
-        // Age is derived in PatientMapping (not SQL).
         var selector = (System.Linq.Expressions.Expression<Func<Patient, PatientRow>>)(p => new PatientRow(
             p.Id,
             p.FirstName,

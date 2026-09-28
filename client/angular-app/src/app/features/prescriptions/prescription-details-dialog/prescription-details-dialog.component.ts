@@ -19,6 +19,7 @@ import {
 } from '@angular/material/table';
 import { Permissions } from '../../../core/constants/permissions';
 import { PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
+import { pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
@@ -83,6 +84,10 @@ export class PrescriptionDetailsDialogComponent {
 
   protected shortId(id: string): string {
     return id.slice(0, 8).toUpperCase();
+  }
+
+  protected medName(item: PrescriptionItemDto): string {
+    return pickLocalizedMedicineName(item, this.translate);
   }
 
   protected canCancel(p: PrescriptionDetailsDto): boolean {

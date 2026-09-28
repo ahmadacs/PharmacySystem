@@ -24,6 +24,9 @@
   <data name="BatchNearExpiry" xml:space="preserve">
     <value>الدفعة {0} تنتهي بتاريخ {1} (المتبقي {2} يوم) — يُرجى تنبيه المريض لإتمامها في وقتها.</value>
   </data>
+  <data name="ExpiredBatchCannotDispense" xml:space="preserve">
+    <value>الدفعة '{0}' انتهت صلاحيتها بتاريخ {1} ولا يمكن صرفها.</value>
+  </data>
   <data name="ResourceNotFound" xml:space="preserve">
     <value>المورد '{0}' بالمعرف '{1}' غير موجود.</value>
   </data>
@@ -77,6 +80,33 @@
   </data>
   <data name="PhoneRegistered" xml:space="preserve">
     <value>رقم الهاتف {0} مسجل لمريض آخر.</value>
+  </data>
+  <data name="InvalidShortCode" xml:space="preserve">
+    <value>صيغة رقم الوصفة غير صالحة.</value>
+  </data>
+  <data name="PrescriptionLookupNotFound" xml:space="preserve">
+    <value>لا توجد وصفة مطابقة لرقم الوصفة ورقم الهاتف.</value>
+  </data>
+  <data name="InsufficientStockForDispense" xml:space="preserve">
+    <value>المخزون غير كافٍ للدواء {0}. المطلوب: {1}، المتوفر: {2}.</value>
+  </data>
+  <data name="NoValidStockForDispense" xml:space="preserve">
+    <value>لا يوجد مخزون صالح للدواء {0}. جميع الكمية المتوفرة ({1}) منتهية الصلاحية.</value>
+  </data>
+  <data name="PrescriptionNotDispensable" xml:space="preserve">
+    <value>لا يمكن صرف الوصفة وهي بحالة '{0}'.</value>
+  </data>
+  <data name="PrescriptionCannotAddItems" xml:space="preserve">
+    <value>لا يمكن إضافة أصناف إلى وصفة بحالة '{0}'.</value>
+  </data>
+  <data name="PrescriptionHasNoItems" xml:space="preserve">
+    <value>الوصفة لا تحتوي على أصناف قابلة للصرف.</value>
+  </data>
+  <data name="RefillNotDueForDispense" xml:space="preserve">
+    <value>لا يمكن صرف {0} مجدداً قبل {1}.</value>
+  </data>
+  <data name="UnknownMedicine" xml:space="preserve">
+    <value>دواء غير معروف</value>
   </data>
   <data name="OwnNotifications" xml:space="preserve">
     <value>يمكنك إدارة تنبيهاتك الخاصة فقط.</value>

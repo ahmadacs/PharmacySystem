@@ -1,4 +1,4 @@
-﻿using Domain.Entities.Dispensing;
+using Domain.Entities.Dispensing;
 using Domain.Entities.Medicines;
 using Domain.Entities.Prescriptions;
 using Domain.Exceptions;
@@ -20,9 +20,6 @@ public sealed class DispensingDomainService
 
         prescription.EnsureCanBeDispensed(asOf);
 
-        // Interval gate first: no stock moves unless every item to dispense
-        // is time-eligible (same transaction, so concurrent dispenses cannot
-        // both pass — the second loses on the RowVersion conflict at save).
         foreach (var item in prescription.Items.Where(i => !i.IsFullyDispensed))
             item.EnsureRefillIntervalSatisfied(asOf);
 
@@ -31,8 +28,7 @@ public sealed class DispensingDomainService
         foreach (var item in prescription.Items.Where(i => !i.IsFullyDispensed))
         {
             if (!variantsByVariantId.TryGetValue(item.MedicineVariantId, out var variant))
-                throw new MissingMedicineVariantException(
-                    $"MedicineVariant '{item.MedicineVariantId}' for prescription item '{item.Id}' was not provided to the dispensing service.");
+                throw new MissingMedicineVariantException(item.MedicineVariantId, item.Id);
 
             var plan = variant.SelectBatchesForDispensing(item.RemainingQuantity.Value, asOf);
 

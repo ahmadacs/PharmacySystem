@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'shell.prescriptions',
     icon: 'description',
     route: '/prescriptions',
-    permissions: [Permissions.PrescriptionsView, Permissions.PrescriptionsManageOwn]
+    permissions: [Permissions.PrescriptionsManageOwn, Permissions.PrescriptionsManageAll]
   },
   { label: 'shell.dispensing', icon: 'local_pharmacy', route: '/dispensing', permissions: [Permissions.DispensingView] },
   { label: 'shell.users', icon: 'group', route: '/users', permissions: [Permissions.UsersManage] },

@@ -291,6 +291,7 @@
     "tables": {
       "patient": "Patient",
       "doctor": "Doctor",
+      "shortCode": "Rx No.",
       "issued": "Issued Date",
       "status": "Status",
       "items": "Items",
@@ -564,6 +565,8 @@
   },
   "validation": {
     "required": "This field is required",
+    "invalidPhone": "Enter the 8 digits after +9665 (digits only).",
+    "invalidName": "Letters, spaces, hyphens and apostrophes only.",
     "fileType": "Only jpeg, png, pdf allowed.",
     "fileSize": "File exceeds 5MB."
   },
@@ -695,6 +698,7 @@
       "licenseNumber": "License number",
       "specialization": "Specialization",
       "phoneNumber": "Phone",
+      "phoneSuffixPlaceholder": "XXXXXXXX",
       "cancel": "Cancel",
       "create": "Create",
       "save": "Save",
@@ -868,12 +872,22 @@
     },
     "dispensePicker": {
       "title": "Dispense prescription",
+      "hint": "Enter the prescription number and the patient phone number to retrieve the prescription.",
+      "shortCode": "Prescription No.",
+      "shortCodePlaceholder": "e.g. K7M2QX9D",
+      "shortCodeLength": "Code must be 6–8 characters.",
+      "phoneNumber": "Patient phone",
+      "phonePlaceholder": "+9665XXXXXXXX",
+      "phoneSuffixPlaceholder": "XXXXXXXX",
+      "search": "Search",
+      "notFound": "No prescription matches this code and phone number.",
       "loading": "Loading...",
       "empty": "No pending prescriptions to dispense.",
       "cancel": "Cancel"
     },
     "dispense": {
       "title": "Dispense prescription",
+      "shortCode": "Prescription No.",
       "success": "Prescription dispensed.",
       "errorTitle": "Could not load the prescription.",
       "errorHint": "The request timed out or failed. Please retry.",
@@ -884,6 +898,7 @@
       "prescribed": "Prescribed",
       "dispensed": "Dispensed",
       "remaining": "Remaining",
+      "available": "In stock",
       "notes": "Notes",
       "notesPlaceholder": "Optional",
       "emptyItems": "This prescription has no items to dispense.",
@@ -899,6 +914,7 @@
       "title": "New prescription",
       "phoneNumber": "Phone number",
       "phonePlaceholder": "+9665XXXXXXXX",
+      "phoneSuffixPlaceholder": "XXXXXXXX",
       "phoneRequired": "Required Saudi number (+9665 / 05...).",
       "existingPatient": "Existing patient: {{firstName}} {{lastName}} - {{dateOfBirth}} (read only)",
       "newPatientTitle": "New patient",

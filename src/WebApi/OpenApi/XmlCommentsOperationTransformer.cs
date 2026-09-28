@@ -6,11 +6,6 @@ using Microsoft.OpenApi;
 
 namespace WebApi.OpenApi;
 
-/// <summary>
-/// Applies XML documentation comments (summary/remarks/returns/param) from the
-/// generated <c>WebApi.xml</c> to each OpenAPI operation, so every endpoint
-/// carries a human-readable summary, description and parameter help in Scalar.
-/// </summary>
 public sealed class XmlCommentsOperationTransformer : IOpenApiOperationTransformer
 {
     private readonly Lazy<IReadOnlyDictionary<string, XElement>> _members;
@@ -59,9 +54,7 @@ public sealed class XmlCommentsOperationTransformer : IOpenApiOperationTransform
                 }
                 else if (target is null && paramName != "cancellationToken")
                 {
-                    // [FromQuery] model binding flattens the object into
-                    // per-property parameters, so a <param name="query"> has no
-                    // matching parameter — surface its text in the description.
+
                     description = description.Length == 0 ? text : $"{description} {text}";
                 }
             }
@@ -118,8 +111,6 @@ public sealed class XmlCommentsOperationTransformer : IOpenApiOperationTransform
         var parameterTypes = string.Join(",", parameters.Select(p => TypeName(p.ParameterType)));
         yield return $"M:{fullName}.{method.Name}({parameterTypes})";
 
-        // Overloads that differ only by ref/out modifiers or return type are rare
-        // in controllers; the exact signature above is what the compiler emits.
     }
 
     private static string TypeName(Type type)

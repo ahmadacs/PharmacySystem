@@ -26,12 +26,14 @@ public sealed class CreateVariantCommandHandler : IRequestHandler<CreateVariantC
     public async Task<Result<Guid>> Handle(CreateVariantCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
-        var medicine = await _medicines.GetByIdAsync(req.MedicineId, tracked: true, cancellationToken: cancellationToken);
-        if (medicine is null)
-            return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", req.MedicineId].Value, 404);
 
-        var existing = await _variants.GetAsync(v => v.MedicineId == req.MedicineId && v.Form == req.Form && v.Unit == req.Unit && v.Strength == req.Strength, cancellationToken: cancellationToken);
-        if (existing is not null)
+        var duplicate = await _medicines.GetAsync(
+            m => (bool?)m.Variants.Any(v => v.Form == req.Form && v.Unit == req.Unit && v.Strength == req.Strength),
+            m => m.Id == req.MedicineId,
+            cancellationToken: cancellationToken);
+        if (duplicate is null)
+            return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", req.MedicineId].Value, 404);
+        if (duplicate.Value)
             return Result<Guid>.Failure(
                 _localizer["VariantAlreadyExists", $"{req.Form} {req.Strength} {req.Unit}"].Value, 409);
 

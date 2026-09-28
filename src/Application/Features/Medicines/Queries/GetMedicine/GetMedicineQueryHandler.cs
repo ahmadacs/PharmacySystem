@@ -26,10 +26,6 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Single lean SELECT: header (incl. scientific GenericName) + variant
-        // rows + batch rows. Batch rows reuse the root medicine name (m.Name)
-        // instead of re-joining Medicine per batch; VariantName is built in
-        // MedicineMapping from raw Form/Strength/Unit (not SQL).
         var selector = (Expression<Func<Medicine, MedicineDetailsRow>>)(m => new MedicineDetailsRow(
                     m.Id,
                     m.Name,

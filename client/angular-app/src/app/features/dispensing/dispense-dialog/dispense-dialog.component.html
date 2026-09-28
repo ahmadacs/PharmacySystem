@@ -1,86 +1,88 @@
+<h2 mat-dialog-title>{{ 'dialogs.dispense.title' | translate }}</h2>
 
-    <h2 mat-dialog-title>{{ 'dialogs.dispense.title' | translate }}</h2>
+@if (dispenseResult(); as r) {
+  <mat-dialog-content class="dispense-result">
+    @if (isPartialResult(r)) {
+      <p class="result-title partial">
+        <mat-icon>warning</mat-icon>
+        {{ 'dialogs.dispense.partialTitle' | translate }}
+      </p>
+      <p class="result-counts">{{ 'dialogs.dispense.partialCounts' | translate:{dispensed: r.dispensedQuantity, requested: r.requestedQuantity} }}</p>
+    } @else {
+      <p class="result-title success">
+        <mat-icon>check_circle</mat-icon>
+        {{ 'dialogs.dispense.successWithWarnings' | translate }}
+      </p>
+    }
+    <ul class="warnings">
+      @for (w of r.warnings; track w) {
+        <li>{{ w }}</li>
+      }
+    </ul>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-flat-button color="primary" [mat-dialog-close]="true">{{ 'dialogs.dispense.close' | translate }}</button>
+  </mat-dialog-actions>
+} @else {
+  @if (loadingError()) {
+    <mat-dialog-content class="error-state">
+      <p class="error-title">{{ 'dialogs.dispense.errorTitle' | translate }}</p>
+      <p class="error-hint">{{ 'dialogs.dispense.errorHint' | translate }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button [mat-dialog-close]="false">{{ 'dialogs.dispense.close' | translate }}</button>
+      <button mat-flat-button color="primary" (click)="retry()">{{ 'dialogs.dispense.retry' | translate }}</button>
+    </mat-dialog-actions>
+  }
 
-    @if (dispenseResult(); as r) {
-      <mat-dialog-content class="dispense-result">
-        @if (isPartialResult(r)) {
-          <p class="result-title partial">
-            <mat-icon>warning</mat-icon>
-            {{ 'dialogs.dispense.partialTitle' | translate }}
-          </p>
-          <p class="result-counts">{{ 'dialogs.dispense.partialCounts' | translate:{dispensed: r.dispensedQuantity, requested: r.requestedQuantity} }}</p>
-        } @else {
-          <p class="result-title success">
-            <mat-icon>check_circle</mat-icon>
-            {{ 'dialogs.dispense.successWithWarnings' | translate }}
-          </p>
-        }
-        <ul class="warnings">
-          @for (w of r.warnings; track w) {
-            <li>{{ w }}</li>
+  @if (view() === null && !loadingError()) {
+    <mat-dialog-content><mat-progress-bar mode="indeterminate" /></mat-dialog-content>
+  }
+
+  @if (view(); as v) {
+    <mat-dialog-content class="dispense">
+      <p class="patient">{{ v.patientName }}</p>
+      <p class="meta">{{ 'dialogs.dispense.shortCode' | translate }}: <strong>{{ v.shortCode }}</strong></p>
+
+      @if (v.items.length > 0) {
+        <ul class="items">
+          @for (item of v.items; track item.id) {
+            <li [class.out-of-stock]="item.availableQuantity === 0">
+              <span class="item-main">
+                <span class="item-name">{{ medName(item) }}</span>
+                <span class="item-variant">{{ variantLabel(item) }}</span>
+                <span class="item-dosage">{{ item.dosageInstructions || '-' }}</span>
+              </span>
+              <span class="item-qty">
+                {{ 'dialogs.dispense.prescribed' | translate }} <strong>{{ item.prescribedQuantity }}</strong>
+                · {{ 'dialogs.dispense.remaining' | translate }} <strong>{{ item.remainingQuantity }}</strong>
+                @if (item.availableQuantity !== null) {
+                  <span class="item-stock" [class.empty-stock]="item.availableQuantity === 0">
+                    {{ 'dialogs.dispense.available' | translate }} <strong>{{ item.availableQuantity }}</strong>
+                  </span>
+                }
+              </span>
+            </li>
           }
         </ul>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-flat-button color="primary" [mat-dialog-close]="true">{{ 'dialogs.dispense.close' | translate }}</button>
-      </mat-dialog-actions>
-    } @else {
-    @if (error()) {
-      <mat-dialog-content class="error-state">
-        <p class="error-title">{{ 'dialogs.dispense.errorTitle' | translate }}</p>
-        <p class="error-hint">{{ 'dialogs.dispense.errorHint' | translate }}</p>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button [mat-dialog-close]="false">{{ 'dialogs.dispense.close' | translate }}</button>
-        <button mat-flat-button color="primary" (click)="load()">{{ 'dialogs.dispense.retry' | translate }}</button>
-      </mat-dialog-actions>
-    }
+      } @else {
+        <p class="empty">{{ 'dialogs.dispense.emptyItems' | translate }}</p>
+      }
 
-    @if (prescription() === null && !error()) {
-      <mat-dialog-content><mat-progress-bar mode="indeterminate" /></mat-dialog-content>
-    }
-
-    @if (prescription(); as p) {
-      <mat-dialog-content class="dispense">
-        <p class="patient">{{ p.patientName }} · {{ p.patientAge }} {{ 'dialogs.dispense.patientAge' | translate }}</p>
-        <p class="meta">{{ p.status }} · ref #{{ p.id.slice(0, 8) }}</p>
-
-        @if (p.items.length > 0) {
-          <ul class="items">
-            @for (item of p.items; track item.id) {
-              <li>
-                <span class="item-main">
-                  <span class="item-name">{{ item.medicineName }}</span>
-                  <span class="item-variant">{{ item.variantName }}</span>
-                </span>
-                <span class="item-qty">
-                  {{ 'dialogs.dispense.remaining' | translate }} <strong>{{ item.remainingQuantity }}</strong>
-                  @if (dueInDays(item); as due) {
-                    <span class="item-due">{{ 'dialogs.dispense.dueInDays' | translate:{count: due} }}</span>
-                  }
-                </span>
-              </li>
-            }
-          </ul>
+      <mat-form-field appearance="outline" class="notes">
+        <mat-label>{{ 'dialogs.dispense.notes' | translate }}</mat-label>
+        <textarea matInput [formControl]="notes" rows="2" [placeholder]="'dialogs.dispense.notesPlaceholder' | translate"></textarea>
+      </mat-form-field>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button [mat-dialog-close]="false">{{ 'dialogs.dispense.cancel' | translate }}</button>
+      <button mat-flat-button color="primary" [disabled]="submitting() || v.items.length === 0" (click)="dispense()">
+        @if (submitting()) {
+          {{ 'dialogs.dispense.dispensing' | translate }}
         } @else {
-          <p class="empty">{{ 'dialogs.dispense.emptyItems' | translate }}</p>
+          {{ 'dialogs.dispense.dispense' | translate }}
         }
-
-        <mat-form-field appearance="outline" class="notes">
-          <mat-label>{{ 'dialogs.dispense.notes' | translate }}</mat-label>
-          <textarea matInput [formControl]="notes" rows="2" [placeholder]="'dialogs.dispense.notesPlaceholder' | translate"></textarea>
-        </mat-form-field>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button [mat-dialog-close]="false">{{ 'dialogs.dispense.cancel' | translate }}</button>
-        <button mat-flat-button color="primary" [disabled]="submitting()" (click)="dispense(p.id)">
-          @if (submitting()) {
-            {{ 'dialogs.dispense.dispensing' | translate }}
-          } @else {
-            {{ 'dialogs.dispense.dispense' | translate }}
-          }
-        </button>
-      </mat-dialog-actions>
-    }
-    }
-  
+      </button>
+    </mat-dialog-actions>
+  }
+}

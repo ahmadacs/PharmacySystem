@@ -12,12 +12,18 @@ import {
 } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
-import { MatError, MatFormField, MatLabel, MatHint } from '@angular/material/form-field';
+import { MatError, MatFormField, MatLabel, MatHint, MatPrefix } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { SaudiPhoneDigitsDirective } from '../../../shared/directives/saudi-phone-digits.directive';
+import {
+  personNameValidator,
+  SAUDI_PHONE_SUFFIX_PATTERN,
+  toFullSaudiPhone
+} from '../../../shared/validators/phone.validators';
 import { UsersService } from '../users.service';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
@@ -39,7 +45,7 @@ function matchPassword(password: FormControl<string>): ValidatorFn {
 @Component({
   selector: 'app-user-form-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe, EnumTranslatePipe, MatFormField, MatInput, MatLabel, MatError, MatHint, MatSelect, MatOption, MatButton, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose],
+  imports: [ReactiveFormsModule, TranslatePipe, EnumTranslatePipe, MatFormField, MatInput, MatLabel, MatError, MatHint, MatPrefix, MatSelect, MatOption, MatButton, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose, SaudiPhoneDigitsDirective],
   templateUrl: './user-form-dialog.component.html',
   styleUrl: './user-form-dialog.component.scss'
 })
@@ -61,15 +67,15 @@ export class UserFormDialogComponent {
   });
 
   protected readonly form = new FormGroup({
-    firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
-    lastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
+    firstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100), personNameValidator()] }),
+    lastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100), personNameValidator()] }),
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     password: this.passwordControl,
     confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, matchPassword(this.passwordControl)] }),
     role: new FormControl<UserRole>('Pharmacist', { nonNullable: true, validators: [Validators.required] }),
     licenseNumber: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(20)] }),
     specialization: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(150)] }),
-    phoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(30)] })
+    phoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.pattern(SAUDI_PHONE_SUFFIX_PATTERN)] })
   });
 
   async submit(): Promise<void> {
@@ -88,7 +94,7 @@ export class UserFormDialogComponent {
           role: value.role,
           licenseNumber: isDoctor && value.licenseNumber ? value.licenseNumber : undefined,
           specialization: isDoctor && value.specialization ? value.specialization : undefined,
-          phoneNumber: isDoctor && value.phoneNumber ? value.phoneNumber : undefined
+          phoneNumber: isDoctor && value.phoneNumber ? toFullSaudiPhone(value.phoneNumber) : undefined
         });
       },
       () => {

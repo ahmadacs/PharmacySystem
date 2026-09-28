@@ -1,17 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Infrastructure.Migrations
 {
-    /// <inheritdoc />
+
     public partial class NormalizePatientPhonesToPlus966 : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Canonical form is +9665XXXXXXXX: unify 00966.../05.../5... spellings
-            // so one person can never exist as two patient rows again.
+
             migrationBuilder.Sql(@"
                 UPDATE Patients
                 SET PhoneNumber = '+966' + SUBSTRING(PhoneNumber, 6, LEN(PhoneNumber) - 5)
@@ -28,9 +27,6 @@ namespace Infrastructure.Migrations
                 WHERE LEN(PhoneNumber) = 9 AND PhoneNumber LIKE '5%' AND PhoneNumber NOT LIKE '+%';
             ");
 
-            // Merge rows that became duplicates: move their prescriptions to the
-            // earliest-created survivor per canonical phone (one phone = one
-            // patient is the invariant the API already enforces with 409).
             migrationBuilder.Sql(@"
                 UPDATE pr
                 SET pr.PatientId = surv.SurvivorId
@@ -56,13 +52,9 @@ namespace Infrastructure.Migrations
             ");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Data-only migration: the original per-row spelling (05... vs +966...)
-            // is unrecoverable after canonicalization and merging, so Down is
-            // intentionally a no-op. Code before this migration reads canonical
-            // numbers fine (exact match), it just cannot dedupe new ones.
+
         }
     }
 }

@@ -14,6 +14,9 @@ public class PrescriptionConfiguration : IEntityTypeConfiguration<Prescription>
         builder.Property(p => p.Diagnosis).HasMaxLength(500);
         builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(30);
 
+        builder.Property(p => p.ShortCode).HasMaxLength(8).IsRequired();
+        builder.HasIndex(p => p.ShortCode).IsUnique();
+
         builder.Property(p => p.RowVersion).IsRowVersion();
 
         builder.HasOne(p => p.Patient)

@@ -16,15 +16,31 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         Db = db;
     }
 
+    public IQueryable<TEntity> Query(bool tracked = false)
+    {
+        IQueryable<TEntity> query = Db.Set<TEntity>();
+        return tracked ? query : query.AsNoTracking();
+    }
+
+    public Task<List<TResult>> ExecuteListAsync<TResult>(IQueryable<TResult> query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return query.ToListAsync(cancellationToken);
+    }
+
+    public Task<TResult?> ExecuteFirstOrDefaultAsync<TResult>(IQueryable<TResult> query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        return query.FirstOrDefaultAsync(cancellationToken);
+    }
+
     public Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, bool tracked = false, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
-        IQueryable<TEntity> query = Db.Set<TEntity>();
-        if (!tracked)
-            query = query.AsNoTracking();
-
-        return query.Where(predicate).FirstOrDefaultAsync(cancellationToken);
+        return ExecuteFirstOrDefaultAsync(Query(tracked).Where(predicate), cancellationToken);
     }
 
     public Task<TEntity?> GetByIdAsync(Guid id, bool tracked = false, CancellationToken cancellationToken = default)
@@ -34,11 +50,11 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         Expression<Func<TEntity, bool>>? predicate = null,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<TEntity> query = Db.Set<TEntity>();
+        var query = Query(tracked: true);
         if (predicate is not null)
             query = query.Where(predicate);
 
-        return query.ToListAsync(cancellationToken);
+        return ExecuteListAsync(query, cancellationToken);
     }
 
     public Task<List<TResult>> ListAsync<TResult>(
@@ -49,10 +65,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         ArgumentNullException.ThrowIfNull(selector);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return Db.Set<TEntity>().AsNoTracking()
-            .Where(predicate)
-            .Select(selector)
-            .ToListAsync(cancellationToken);
+        return ExecuteListAsync(Query().Where(predicate).Select(selector), cancellationToken);
     }
 
     public Task<TResult?> GetAsync<TResult>(
@@ -63,10 +76,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         ArgumentNullException.ThrowIfNull(selector);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return Db.Set<TEntity>().AsNoTracking()
-            .Where(predicate)
-            .Select(selector)
-            .FirstOrDefaultAsync(cancellationToken);
+        return ExecuteFirstOrDefaultAsync(Query().Where(predicate).Select(selector), cancellationToken);
     }
 
     public Task<List<TResult>> PagedAsync<TResult, TKey>(
@@ -85,19 +95,20 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         page = Math.Max(1, page);
         pageSize = Math.Max(1, pageSize);
 
-        var filtered = Db.Set<TEntity>().AsNoTracking().Where(predicate);
+        var filtered = Query().Where(predicate);
         var ordered = descending ? filtered.OrderByDescending(orderBy) : filtered.OrderBy(orderBy);
 
-        return ordered
-            .Select(selector)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        return ExecuteListAsync(
+            ordered
+                .Select(selector)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize),
+            cancellationToken);
     }
 
     public Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<TEntity> query = Db.Set<TEntity>();
+        var query = Query(tracked: true);
         if (predicate is not null)
             query = query.Where(predicate);
 
@@ -108,7 +119,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
-        return Db.Set<TEntity>().AnyAsync(predicate, cancellationToken);
+        return Query(tracked: true).AnyAsync(predicate, cancellationToken);
     }
 
     public void Add(TEntity entity)

@@ -4,10 +4,6 @@ namespace Application.Features.Patients.Dtos;
 
 public sealed record PatientDto(Guid Id, string FirstName, string LastName, DateOnly DateOfBirth, string PhoneNumber, int Age);
 
-/// <summary>
-/// Internal EF projection shape: raw patient columns only (Age is derived
-/// in <c>PatientMapping</c> — DateOnly math is not SQL).
-/// </summary>
 internal sealed record PatientRow(
     Guid Id,
     string FirstName,

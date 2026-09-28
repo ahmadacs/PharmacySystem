@@ -7,12 +7,6 @@ using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Services;
 
-/// <summary>
-/// Bridges the Application layer's resource-authorization need to ASP.NET Core's
-/// IAuthorizationService and the PrescriptionResourceAuthorizationHandler. Denial
-/// fails fast by throwing ForbiddenResourceException (403) — callers can never
-/// ignore the outcome.
-/// </summary>
 public sealed class ResourceAuthorizationService : IResourceAuthorizationService
 {
     private readonly IAuthorizationService _authorization;

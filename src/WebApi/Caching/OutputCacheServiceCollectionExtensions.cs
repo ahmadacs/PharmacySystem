@@ -10,15 +10,14 @@ public static class OutputCacheServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Redis-backed distributed output cache when ConnectionStrings:Redis is set (Docker/production).
-        // Falls back to in-memory when not configured (local dev without Redis).
+
         var redisConnection = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConnection))
         {
             services.AddStackExchangeRedisOutputCache(options =>
             {
                 options.Configuration = redisConnection;
-                // Isolate our keys from any other app sharing the same Redis (databases = 2).
+
                 options.InstanceName = "pharmacy:";
             });
         }

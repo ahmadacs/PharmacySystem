@@ -291,6 +291,7 @@
     "tables": {
       "patient": "المريض",
       "doctor": "الطبيب",
+      "shortCode": "رقم الوصفة",
       "issued": "تاريخ الإصدار",
       "status": "الحالة",
       "items": "العناصر",
@@ -564,6 +565,8 @@
   },
   "validation": {
     "required": "هذا الحقل مطلوب",
+    "invalidPhone": "أدخل 8 أرقام بعد ‎+9665‎ (أرقام فقط).",
+    "invalidName": "حروف ومسافات وشرطات فقط.",
     "fileType": "مسموح فقط jpeg, png, pdf",
     "fileSize": "الملف يتجاوز 5 ميغابايت."
   },
@@ -695,6 +698,7 @@
       "licenseNumber": "رقم الترخيص",
       "specialization": "التخصص",
       "phoneNumber": "الهاتف",
+      "phoneSuffixPlaceholder": "XXXXXXXX",
       "cancel": "إلغاء",
       "create": "إنشاء",
       "save": "حفظ",
@@ -868,12 +872,22 @@
     },
     "dispensePicker": {
       "title": "صرف وصفة",
+      "hint": "أدخل رقم الوصفة ورقم هاتف المريض لعرض الوصفة.",
+      "shortCode": "رقم الوصفة",
+      "shortCodePlaceholder": "مثال: K7M2QX9D",
+      "shortCodeLength": "الرمز من 6 إلى 8 أحرف.",
+      "phoneNumber": "هاتف المريض",
+      "phonePlaceholder": "+9665XXXXXXXX",
+      "phoneSuffixPlaceholder": "XXXXXXXX",
+      "search": "بحث",
+      "notFound": "لا توجد وصفة مطابقة لهذا الرقم ورقم الهاتف.",
       "loading": "جاري التحميل...",
       "empty": "لا توجد وصفات معلقة للصرف.",
       "cancel": "إلغاء"
     },
     "dispense": {
       "title": "صرف وصفة",
+      "shortCode": "رقم الوصفة",
       "success": "تم صرف الوصفة.",
       "errorTitle": "تعذر تحميل الوصفة.",
       "errorHint": "انتهت مهلة الطلب أو فشل. يرجى المحاولة مرة أخرى.",
@@ -884,6 +898,7 @@
       "prescribed": "الموصوف",
       "dispensed": "المصرف",
       "remaining": "المتبقي",
+      "available": "المتوفر",
       "notes": "ملاحظات",
       "notesPlaceholder": "اختياري",
       "emptyItems": "هذه الوصفة لا تحتوي على عناصر للصرف.",
@@ -899,6 +914,7 @@
       "title": "وصفة جديدة",
       "phoneNumber": "رقم الهاتف",
       "phonePlaceholder": "+9665XXXXXXXX",
+      "phoneSuffixPlaceholder": "XXXXXXXX",
       "phoneRequired": "مطلوب رقم سعودي (+9665 / 05...).",
       "existingPatient": "مريض موجود: {{firstName}} {{lastName}} - {{dateOfBirth}} (للقراءة فقط)",
       "newPatientTitle": "مريض جديد",

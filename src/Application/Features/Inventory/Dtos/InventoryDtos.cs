@@ -1,9 +1,5 @@
 namespace Application.Features.Inventory.Dtos;
 
-/// <summary>
-/// Internal EF projection shape for the low-stock list.
-/// Raw variant codes only; VariantName is built in <c>InventoryMapping.ToDto</c>.
-/// </summary>
 internal sealed record LowStockRow(
     Guid MedicineId,
     string MedicineName,
@@ -15,10 +11,6 @@ internal sealed record LowStockRow(
     Domain.Enums.MedicineUnit Unit,
     decimal Strength);
 
-/// <summary>
-/// Internal EF projection shape for the inventory summary list.
-/// StockStatus is derived in <c>InventoryMapping.ToDto</c> (not SQL-translatable).
-/// </summary>
 internal sealed record MedicineInventorySummaryRow(
     Guid Id,
     string Name,
@@ -32,11 +24,6 @@ internal sealed record MedicineInventorySummaryRow(
     DateOnly? NearestExpiryDate,
     int ActiveBatchCount);
 
-/// <summary>
-/// Internal EF projection shape for the expiry-alerts list.
-/// Days-to-expiry + status are derived in
-/// <c>InventoryMapping.ToDto(row, asOf)</c> (DayNumber math is not SQL).
-/// </summary>
 internal sealed record ExpiryAlertRow(
     Guid BatchId,
     string MedicineName,
@@ -48,10 +35,6 @@ internal sealed record ExpiryAlertRow(
     DateOnly ExpiryDate,
     int RemainingQuantity);
 
-/// <summary>
-/// Internal EF projection shape for the adjustments list.
-/// VariantName + adjuster name are applied in <c>InventoryMapping.ToDto</c>.
-/// </summary>
 internal sealed record InventoryAdjustmentRow(
     Guid Id,
     Guid MedicineBatchId,
@@ -81,10 +64,6 @@ public sealed record LowStockDto(
     Domain.Enums.MedicineUnit Unit,
     decimal Strength);
 
-/// <summary>
-/// Aggregated per-medicine inventory row (sums across all its variants and their
-/// batches). All quantity fields are computed from the active batches at query time.
-/// </summary>
 public sealed record MedicineInventorySummaryDto(
     Guid Id,
     string Name,
@@ -98,11 +77,6 @@ public sealed record MedicineInventorySummaryDto(
     DateOnly? NearestExpiryDate,
     int ActiveBatchCount);
 
-/// <summary>
-/// A single batch flagged for expiry attention. Status is computed internally
-/// with UTC "today": Critical when the batch expires within 30 days, Warning
-/// within 90 days, Safe otherwise, and Expired when past its expiry date.
-/// </summary>
 public sealed record ExpiryAlertDto(
     Guid BatchId,
     string MedicineName,

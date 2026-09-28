@@ -2,7 +2,6 @@ using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Resources;
 using Domain.Entities.Prescriptions;
-using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -29,11 +28,6 @@ public sealed class CancelPrescriptionCommandHandler : IRequestHandler<CancelPre
         var prescription = await _prescriptions.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
-
-        if (prescription.Status == PrescriptionStatus.Cancelled)
-            return Result.Failure(_localizer["AlreadyCancelled"].Value, 409);
-        if (prescription.Status == PrescriptionStatus.FullyDispensed)
-            return Result.Failure(_localizer["CannotCancelDispensed"].Value, 409);
 
         prescription.Cancel();
 

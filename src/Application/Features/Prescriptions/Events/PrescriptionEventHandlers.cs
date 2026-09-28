@@ -10,12 +10,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Prescriptions.Events;
 
-/// <summary>
-/// MediatR notifications that mirror the Domain events. The Domain project is
-/// dependency-free (Clean Architecture), so the MediatR INotification types live
-/// here and the DomainEventDispatcher (Infrastructure) maps each Domain event to
-/// its notification before publishing.
-/// </summary>
 public sealed record PrescriptionCreatedNotification(Guid PrescriptionId, DateTime OccurredAtUtc)
     : PrescriptionCreatedEvent(PrescriptionId, OccurredAtUtc), INotification;
 
@@ -34,9 +28,6 @@ public sealed record PrescriptionDispensedNotification(
     int TotalDispensedQuantity)
     : PrescriptionDispensedEvent(PrescriptionId, OccurredAtUtc, TotalDispensedQuantity), INotification;
 
-/// <summary>
-/// Logs prescription creation and pushes a SignalR notification to pharmacists.
-/// </summary>
 public sealed class PrescriptionCreatedNotificationHandler : INotificationHandler<PrescriptionCreatedNotification>
 {
     private readonly ILogger<PrescriptionCreatedNotificationHandler> _logger;
@@ -58,7 +49,6 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
         _logger.LogInformation("Prescription {PrescriptionId} created at {OccurredAtUtc}",
             notification.PrescriptionId, notification.OccurredAtUtc);
 
-        // Lean SELECT: only the selector's columns are fetched.
         var row = await _prescriptions.GetAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
         if (row is null)
             return;
@@ -75,7 +65,6 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
     }
 }
 
-/// <summary>Logs prescription cancellations and refills (no staff notification).</summary>
 public sealed class PrescriptionLifecycleLoggingHandler
     : INotificationHandler<PrescriptionCancelledNotification>,
       INotificationHandler<PrescriptionRefilledNotification>
@@ -102,10 +91,6 @@ public sealed class PrescriptionLifecycleLoggingHandler
     }
 }
 
-/// <summary>
-/// Logs dispensing and pushes a SignalR notification to pharmacists and to the
-/// prescribing doctor (so they know their prescription was fulfilled).
-/// </summary>
 public sealed class PrescriptionDispensedNotificationHandler : INotificationHandler<PrescriptionDispensedNotification>
 {
     private readonly ILogger<PrescriptionDispensedNotificationHandler> _logger;
@@ -128,7 +113,6 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
             "Prescription {PrescriptionId} dispensed ({TotalDispensedQuantity} units) at {OccurredAtUtc}",
             notification.PrescriptionId, notification.TotalDispensedQuantity, notification.OccurredAtUtc);
 
-        // Lean SELECT: only the selector's columns are fetched.
         var row = await _prescriptions.GetAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
         if (row is null)
             return;
@@ -148,12 +132,6 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
     }
 }
 
-/// <summary>
-/// Read-only projection shared by the notification handlers: exactly the
-/// fields notifications need (patient display name with the same
-/// "Unknown patient" fallback, item count, doctor user id). Single query,
-/// no Include — navigations inside a Select need none.
-/// </summary>
 file static class NotificationRowSpecs
 {
     public static readonly Expression<Func<Prescription, NotificationPrescriptionRow>> Selector =
@@ -165,10 +143,3 @@ file static class NotificationRowSpecs
 
     public sealed record NotificationPrescriptionRow(Guid Id, string PatientName, int ItemCount, Guid? DoctorUserId);
 }
-
-/// <summary>
-/// Read-only projection shared by the notification handlers: exactly the
-/// fields notifications need (patient display name with the same
-/// "Unknown patient" fallback, item count, doctor user id). Single query,
-/// no Include — navigations inside a Select need none.
-/// </summary>

@@ -35,7 +35,6 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
         if (authFailure is not null)
             return authFailure;
 
-        // Tracked read: the entities are mutated below, so no AsNoTracking.
         var unread = await _notifications.ListAsync(n => n.UserId == userId && !n.IsRead, cancellationToken: cancellationToken);
 
         var now = DateTime.UtcNow;

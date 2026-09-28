@@ -8,12 +8,6 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Infrastructure.Notifications;
 
-/// <summary>
-/// Persists a notification for each recipient (survives reloads, supports read
-/// state) and pushes it live over SignalR. Low-stock and near-expiry events are
-/// de-duplicated per user/type/data while an identical notification is unread, so
-/// repeated stock changes do not spam the bell.
-/// </summary>
 public sealed class NotificationService : INotificationService
 {
     private readonly ApplicationDbContext _db;

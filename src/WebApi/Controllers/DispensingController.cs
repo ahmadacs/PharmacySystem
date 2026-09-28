@@ -9,19 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers;
 
-/// <summary>
-/// Dispensing operations: pharmacists view dispensing history and dispense
-/// prescriptions. Dispensing validates the prescription and its batches, selects
-/// the first-to-expire non-expired batches, checks sufficient stock and reduces
-/// it atomically in a single transaction.
-/// </summary>
 [Authorize]
 [ApiVersion("1.0")]
 public sealed class DispensingController(ISender sender) : ApiControllerBase(sender)
 {
-    /// <summary>Lists dispensing records with pagination, search and sorting.</summary>
-    /// <param name="query">Page, pageSize, search, sortBy, sortDir.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
+
     [HttpGet]
     [Authorize(Policy = Permissions.Dispensing.View)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -31,9 +23,16 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
-    /// <summary>Dispenses a prescription: validates stock and expiry, reduces batches atomically, records the transaction. Returns the record id plus non-blocking near-expiry warnings for used batches.</summary>
-    /// <param name="request">Prescription id and optional notes.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("lookup")]
+    [Authorize(Policy = Permissions.Dispensing.Create)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<IActionResult> Lookup(
+        [FromQuery] LookupPrescriptionForDispensingQuery query,
+        CancellationToken cancellationToken = default)
+        => OkResponse(query, cancellationToken);
+
     [HttpPost]
     [Authorize(Policy = Permissions.Dispensing.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]

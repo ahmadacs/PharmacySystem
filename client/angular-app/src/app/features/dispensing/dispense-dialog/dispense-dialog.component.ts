@@ -7,13 +7,41 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
-import { DispensePrescriptionResponse, PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
+import { DispensePrescriptionResponse, MedicineForm, MedicineUnit } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
-import { daysFromToday } from '../../../core/utils/date-utils';
+import { localizedVariantName, pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
 import { runSubmit } from '../../../core/utils/dialog-helpers';
 import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../../prescriptions/prescriptions.service';
 import { DispensingService } from '../dispensing.service';
+import { DispensePickerResult } from '../dispense-picker-dialog/dispense-picker-dialog.component';
+
+export type DispenseDialogData = DispensePickerResult | string;
+
+interface DispenseViewItem {
+  id: string;
+  medicineName: string;
+  medicineNameAr: string | null;
+  variantName: string;
+  form: number | null;
+  unit: number | null;
+  strength: number | null;
+  dosageInstructions: string | null;
+  prescribedQuantity: number;
+  remainingQuantity: number;
+  availableQuantity: number | null;
+}
+
+interface DispenseView {
+  shortCode: string;
+  phoneNumber: string;
+  patientName: string;
+  items: DispenseViewItem[];
+}
+
+function isPicked(data: DispenseDialogData): data is DispensePickerResult {
+  return typeof data === 'object' && data !== null && 'lookup' in data;
+}
 
 @Component({
   selector: 'app-dispense-dialog',
@@ -29,10 +57,31 @@ export class DispenseDialogComponent {
   private readonly translate = inject(TranslateService);
   private readonly dialogRef = inject(MatDialogRef<DispenseDialogComponent>);
 
-  readonly prescriptionId = inject<string>(MAT_DIALOG_DATA);
-  protected readonly prescription = signal<PrescriptionDetailsDto | null>(null);
+  private readonly data = inject<DispenseDialogData>(MAT_DIALOG_DATA);
+  protected readonly view = signal<DispenseView | null>(
+    isPicked(this.data)
+      ? {
+          shortCode: this.data.lookup.shortCode,
+          phoneNumber: this.data.phoneNumber,
+          patientName: this.data.lookup.patientName,
+          items: this.data.lookup.items.map((i) => ({
+            id: i.prescriptionItemId,
+            medicineName: i.medicineName,
+            medicineNameAr: i.medicineNameAr,
+            form: i.form,
+            unit: i.unit,
+            strength: i.strength,
+            variantName: i.variantName,
+            dosageInstructions: i.dosageInstructions,
+            prescribedQuantity: i.prescribedQuantity,
+            remainingQuantity: i.remainingQuantity,
+            availableQuantity: i.availableQuantity
+          }))
+        }
+      : null
+  );
   protected readonly submitting = signal(false);
-  protected readonly error = signal(false);
+  protected readonly loadingError = signal(false);
   protected readonly notes = new FormControl('', { nonNullable: true });
   protected readonly dispenseResult = signal<DispensePrescriptionResponse | null>(null);
 
@@ -40,44 +89,99 @@ export class DispenseDialogComponent {
     return r.dispensedQuantity < r.requestedQuantity;
   }
 
-  constructor() {
-    void this.load();
+  protected medName(item: DispenseViewItem): string {
+    return pickLocalizedMedicineName(item, this.translate);
   }
 
-  protected load(): void {
-    this.error.set(false);
-    this.prescription.set(null);
+  protected variantLabel(item: DispenseViewItem): string {
+    const label = localizedVariantName(
+      item,
+      MedicineForm as unknown as Record<number, string>,
+      MedicineUnit as unknown as Record<number, string>,
+      this.translate
+    );
+    return label || item.variantName;
+  }
+
+  constructor() {
+    if (!isPicked(this.data)) {
+      const prescriptionId = this.data;
+      void reloadDetails(
+        this.view,
+        async () => {
+          const p = await this.prescriptionsService.get(prescriptionId);
+          if (!p.patientPhoneNumber) throw new Error('missing patient phone');
+          const mapped: DispenseView = {
+            shortCode: p.shortCode,
+            phoneNumber: p.patientPhoneNumber,
+            patientName: p.patientName,
+            items: p.items.map((i) => ({
+              id: i.id,
+              medicineName: i.medicineName,
+              medicineNameAr: i.medicineNameAr ?? null,
+              variantName: i.variantName,
+              form: i.form,
+              unit: i.unit,
+              strength: i.strength,
+              dosageInstructions: i.dosageInstructions,
+              prescribedQuantity: i.prescribedQuantity,
+              remainingQuantity: i.remainingQuantity,
+              availableQuantity: null
+            }))
+          };
+          return mapped;
+        },
+        () => this.loadingError.set(true)
+      );
+    }
+  }
+
+  protected retry(): void {
+    if (isPicked(this.data)) return;
+    const prescriptionId = this.data;
+    this.loadingError.set(false);
+    this.view.set(null);
     void reloadDetails(
-      this.prescription,
-      () => this.prescriptionsService.get(this.prescriptionId),
-      () => this.error.set(true)
+      this.view,
+      async () => {
+        const p = await this.prescriptionsService.get(prescriptionId);
+        if (!p.patientPhoneNumber) throw new Error('missing patient phone');
+        const mapped: DispenseView = {
+          shortCode: p.shortCode,
+          phoneNumber: p.patientPhoneNumber,
+          patientName: p.patientName,
+          items: p.items.map((i) => ({
+            id: i.id,
+            medicineName: i.medicineName,
+            medicineNameAr: i.medicineNameAr ?? null,
+            variantName: i.variantName,
+            form: i.form,
+            unit: i.unit,
+            strength: i.strength,
+            dosageInstructions: i.dosageInstructions,
+            prescribedQuantity: i.prescribedQuantity,
+            remainingQuantity: i.remainingQuantity,
+            availableQuantity: null
+          }))
+        };
+        return mapped;
+      },
+      () => this.loadingError.set(true)
     );
   }
 
-  /**
-   * Proactive UX hint only: days until the item may be dispensed again.
-   * Returns null when unconstrained or already due. The real enforcement
-   * lives server-side (409) — this never blocks the request.
-   */
-  protected dueInDays(item: PrescriptionItemDto): number | null {
-    if (!item.refillIntervalDays || item.refillIntervalDays <= 0) return null;
-    if (!item.lastDispensedAt || item.remainingQuantity <= 0) return null;
-    const [y, m, d] = item.lastDispensedAt.split('-').map(Number);
-    if (!y || !m || !d) return null;
-    return daysFromToday(new Date(y, m - 1, d + item.refillIntervalDays));
-  }
-
-  async dispense(id: string): Promise<void> {
+  async dispense(): Promise<void> {
+    const current = this.view();
+    if (!current || !current.phoneNumber) return;
     await runSubmit(
       this.submitting,
       () =>
         this.dispensingService.dispense({
-          prescriptionId: id,
+          shortCode: current.shortCode,
+          phoneNumber: current.phoneNumber,
           notes: this.notes.value.trim()
         }),
       (result) => {
-        // Warnings force visibility: show the result panel instead of closing.
-        // Clean success keeps the previous fast flow (toast + close).
         if (result.warnings.length > 0) {
           this.dispenseResult.set(result);
         } else {

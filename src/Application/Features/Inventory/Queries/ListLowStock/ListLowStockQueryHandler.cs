@@ -21,7 +21,6 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-
         var selector = (Expression<Func<MedicineVariant, LowStockRow>>)(v => new LowStockRow(
                     v.MedicineId,
                     v.Medicine!.Name,

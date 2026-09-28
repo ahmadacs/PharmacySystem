@@ -1,5 +1,6 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Entities.Medicines;
+using Domain.Enums;
 using Domain.Exceptions;
 using Domain.ValueObjects;
 
@@ -19,10 +20,8 @@ public class PrescriptionItem : BaseEntity
     public int RefillsAllowed { get; private set; }
     public int RefillsUsed { get; private set; }
 
-    /// <summary>Minimum days between two dispenses of this item. 0 = no constraint.</summary>
     public int RefillIntervalDays { get; private set; }
 
-    /// <summary>Date of the last successful dispense. Null = never dispensed.</summary>
     public DateOnly? LastDispensedAt { get; private set; }
 
     private PrescriptionItem() { }
@@ -79,12 +78,12 @@ public class PrescriptionItem : BaseEntity
     public void EnsureEligibleForRefill()
     {
         if (!IsRefillable)
-            throw new RefillNotEligibleException($"Prescription item '{Id}' is not marked as refillable.");
+            throw new RefillNotEligibleException(Id, RefillEligibilityReason.NotRefillable);
         if (!IsFullyDispensed)
-            throw new RefillNotEligibleException($"Prescription item '{Id}' must be fully dispensed before it can be refilled.");
+            throw new RefillNotEligibleException(Id, RefillEligibilityReason.NotFullyDispensed);
         if (RefillsUsed >= RefillsAllowed)
             throw new RefillNotEligibleException(
-                $"Prescription item '{Id}' has no refills remaining ({RefillsUsed}/{RefillsAllowed} used).");
+                Id, RefillEligibilityReason.Exhausted, RefillsUsed, RefillsAllowed);
     }
 
     internal void RegisterRefill()
@@ -94,11 +93,6 @@ public class PrescriptionItem : BaseEntity
         DispensedQuantity = Quantity.Zero;
     }
 
-    /// <summary>
-    /// Time gate for actual dispensing (called from the dispense path only —
-    /// refill authorization itself is never time-gated). Skipped when the item
-    /// has no interval (0) or was never dispensed.
-    /// </summary>
     public void EnsureRefillIntervalSatisfied(DateOnly today)
     {
         if (RefillIntervalDays <= 0 || LastDispensedAt is null)
@@ -106,8 +100,8 @@ public class PrescriptionItem : BaseEntity
 
         var nextEligible = LastDispensedAt.Value.AddDays(RefillIntervalDays);
         if (today < nextEligible)
-            throw new RefillIntervalNotSatisfiedException(nextEligible,
-                $"Prescription item '{Id}' cannot be dispensed before {nextEligible:yyyy-MM-dd} (refill interval {RefillIntervalDays} days).");
+            throw new RefillIntervalNotSatisfiedException(
+                Id, nextEligible, MedicineVariant?.Medicine?.Name, MedicineVariant?.Medicine?.NameAr);
     }
 
     internal void SetLastDispensedAt(DateOnly dispensedOn) => LastDispensedAt = dispensedOn;

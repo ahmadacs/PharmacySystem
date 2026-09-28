@@ -4,7 +4,7 @@
     }
 
     @if (prescription(); as p) {
-      <h2 mat-dialog-title>{{ 'dialogs.prescriptionDetails.title' | translate:{id: shortId(p.id)} }}</h2>
+      <h2 mat-dialog-title>{{ 'dialogs.prescriptionDetails.title' | translate:{id: p.shortCode} }}</h2>
       <mat-dialog-content class="details">
         <div class="meta">
           <span><strong>{{ 'dialogs.prescriptionDetails.patient' | translate }}:</strong> {{ p.patientName }} ({{ p.patientAge }} {{ 'dialogs.dispense.patientAge' | translate }})</span>
@@ -27,7 +27,7 @@
           <ng-container matColumnDef="medicineName">
             <th mat-header-cell *matHeaderCellDef>{{ 'dialogs.prescriptionDetails.medicine' | translate }}</th>
             <td mat-cell *matCellDef="let item">
-              <span class="cell-name">{{ item.medicineName }}</span>
+              <span class="cell-name">{{ medName(item) }}</span>
               <span class="cell-sub">{{ item.variantName }}</span>
             </td>
           </ng-container>

@@ -21,10 +21,6 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-
-        // Lean selector: scientific GenericName + variant type/stock are scalar
-        // columns and server-side SUMs (no entity loads). Variant display
-        // names are built in MedicineMapping (not SQL).
         var selector = (Expression<Func<Medicine, MedicineRow>>)(m => new MedicineRow(
                 m.Id,
                 m.Name,

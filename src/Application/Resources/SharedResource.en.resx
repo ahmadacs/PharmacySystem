@@ -24,6 +24,9 @@
   <data name="BatchNearExpiry" xml:space="preserve">
     <value>Batch {0} expires on {1} ({2} days remaining) — please counsel the patient to complete it in time.</value>
   </data>
+  <data name="ExpiredBatchCannotDispense" xml:space="preserve">
+    <value>Batch '{0}' expired on {1} and cannot be dispensed.</value>
+  </data>
   <data name="ResourceNotFound" xml:space="preserve">
     <value>Resource '{0}' with id '{1}' was not found.</value>
   </data>
@@ -77,6 +80,33 @@
   </data>
   <data name="PhoneRegistered" xml:space="preserve">
     <value>Phone number {0} is already registered to another patient.</value>
+  </data>
+  <data name="InvalidShortCode" xml:space="preserve">
+    <value>Invalid prescription code format.</value>
+  </data>
+  <data name="PrescriptionLookupNotFound" xml:space="preserve">
+    <value>No prescription matches the given code and phone number.</value>
+  </data>
+  <data name="InsufficientStockForDispense" xml:space="preserve">
+    <value>Not enough stock for {0}. Requested: {1}, available: {2}.</value>
+  </data>
+  <data name="NoValidStockForDispense" xml:space="preserve">
+    <value>No valid stock for {0}. All {1} units on hand are expired.</value>
+  </data>
+  <data name="PrescriptionNotDispensable" xml:space="preserve">
+    <value>Prescription cannot be dispensed while in '{0}' status.</value>
+  </data>
+  <data name="PrescriptionCannotAddItems" xml:space="preserve">
+    <value>Cannot add items to a prescription in '{0}' status.</value>
+  </data>
+  <data name="PrescriptionHasNoItems" xml:space="preserve">
+    <value>Prescription has no items to dispense.</value>
+  </data>
+  <data name="RefillNotDueForDispense" xml:space="preserve">
+    <value>{0} cannot be dispensed again before {1}.</value>
+  </data>
+  <data name="UnknownMedicine" xml:space="preserve">
+    <value>Unknown medicine</value>
   </data>
   <data name="OwnNotifications" xml:space="preserve">
     <value>You can only manage your own notifications.</value>

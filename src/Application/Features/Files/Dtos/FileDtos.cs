@@ -14,10 +14,6 @@ public sealed record FileAttachmentDto(
     DateTime CreatedAt
 );
 
-/// <summary>
-/// Internal EF projection shape for single-file reads: only the columns
-/// needed for auth + storage open (no audit fields).
-/// </summary>
 internal sealed record FileAttachmentRow(
     Guid Id,
     FileEntityType EntityType,
@@ -47,10 +43,6 @@ public static class FileAttachmentMapping
     );
 }
 
-/// <summary>
-/// File payload carried inside create/update requests of other features
-/// (medicine, batch, prescription, inventory adjustment).
-/// </summary>
 public sealed record FileUploadDto
 {
     [Required, StringLength(260)]

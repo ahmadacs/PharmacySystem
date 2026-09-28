@@ -14,7 +14,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
-import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from '@angular/material/form-field';
+import { MatError, MatFormField, MatHint, MatLabel, MatPrefix, MatSuffix } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
@@ -35,8 +35,14 @@ import { FileService } from '../../../core/services/file.service';
 import { FileUploadDto } from '../../../core/models/inventory.models';
 import { PrescriptionsService } from '../prescriptions.service';
 import { MedicineLookupService } from '../medicine-lookup.service';
-import { FoundPatient, SAUDI_PHONE_PATTERN } from '../patient-lookup.service';
+import { FoundPatient } from '../patient-lookup.service';
 import { PatientPhoneSearchService, PatientState } from './patient-phone-search.service';
+import { SaudiPhoneDigitsDirective } from '../../../shared/directives/saudi-phone-digits.directive';
+import {
+  personNameValidator,
+  SAUDI_PHONE_SUFFIX_PATTERN,
+  toFullSaudiPhone
+} from '../../../shared/validators/phone.validators';
 import { MedsLookback } from '../meds-history-list/meds-history-list.component';
 import { PatientDetailsDialogComponent } from '../patient-details-dialog/patient-details-dialog.component';
 import { refillsAllowedValidator, notInFuture } from './prescription-item.validators';
@@ -55,12 +61,14 @@ import { refillsAllowedValidator, notInFuture } from './prescription-item.valida
     MatError,
     MatHint,
     MatSuffix,
+    MatPrefix,
     MatSelect,
     MatOption,
     MatCheckbox,
     MatChipsModule,
     MatDatepickerModule,
     MatAutocompleteModule,
+    SaudiPhoneDigitsDirective,
     MatDialogTitle,
     MatDialogContent,
     MatDialogActions,
@@ -166,10 +174,10 @@ export class PrescriptionFormDialogComponent {
   protected readonly refillIntervalOptions = [0, 7, 14, 15, 30, 60, 90];
 
   protected readonly form = new FormGroup({
-    patientFirstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
-    patientLastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
+    patientFirstName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100), personNameValidator()] }),
+    patientLastName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100), personNameValidator()] }),
     patientDateOfBirth: new FormControl<Date | null>(null, { validators: [Validators.required, notInFuture] }),
-    patientPhoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(30), Validators.pattern(SAUDI_PHONE_PATTERN)] }),
+    patientPhoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(SAUDI_PHONE_SUFFIX_PATTERN)] }),
     issuedDate: new FormControl<Date | null>(startOfDay(new Date()), { validators: [Validators.required, notInFuture] }),
     diagnosis: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
     items: new FormArray<FormGroup>([])
@@ -193,7 +201,9 @@ export class PrescriptionFormDialogComponent {
 
     // Phone-first lookup machine (pure signal producer); this dialog consumes
     // its signals with the effect below — no callbacks.
-    this.phoneSearch.track(this.form.controls.patientPhoneNumber.valueChanges);
+    this.phoneSearch.track(
+      this.form.controls.patientPhoneNumber.valueChanges.pipe(map(toFullSaudiPhone))
+    );
 
     // Patient-state consumer: the service emits exactly one notification per
     // genuine kind transition, so `prevKind` is exact transition detection
@@ -487,7 +497,7 @@ export class PrescriptionFormDialogComponent {
           patientFirstName: value.patientFirstName,
           patientLastName: value.patientLastName,
           patientDateOfBirth: toDateString(value.patientDateOfBirth)!,
-          patientPhoneNumber: value.patientPhoneNumber || undefined,
+          patientPhoneNumber: toFullSaudiPhone(value.patientPhoneNumber) || undefined,
           diagnosis: value.diagnosis || undefined,
           issuedDate: toDateString(value.issuedDate)!,
           items: value.items.map((item) => ({

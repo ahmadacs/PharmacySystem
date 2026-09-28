@@ -6,10 +6,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Common.Behaviours;
 
-/// <summary>
-/// Evicts tagged output-cache entries after a successful command. Failures
-/// skip eviction so a rejected dispense cannot clear still-valid cache.
-/// </summary>
 public sealed class CacheInvalidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {

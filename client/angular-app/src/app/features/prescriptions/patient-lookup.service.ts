@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SAUDI_PHONE_PATTERN } from '../../shared/validators/phone.validators';
 
 export interface FoundPatient {
   id: string;
@@ -27,7 +28,7 @@ interface PatientPhoneCheckResponse {
   statusCode?: number;
 }
 
-export const SAUDI_PHONE_PATTERN = /^(?:\+9665\d{8}|05\d{8}|5\d{8})$/;
+export { SAUDI_PHONE_PATTERN } from '../../shared/validators/phone.validators';
 
 /** Matches the inline hint logic previously buried in the dialog component. */
 export function computePhoneHintKey(phone: string): string | null {

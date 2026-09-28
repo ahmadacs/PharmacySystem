@@ -20,15 +20,9 @@ public static class DependencyInjection
     {
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
 
-        // Use DbContext pooling to reduce expensive context creation and
-        // help with connection acquisition under load. The interceptor is
-        // still registered through the factory overload.
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
-            // Retry transient SQL failures (container networks blip during
-            // db restarts). Safe here: the context is the unit of work and
-            // handlers never manage explicit transactions, which retry
-            // strategies cannot replay.
+
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), sql =>
                 sql.EnableRetryOnFailure(
                     maxRetryCount: 5,
@@ -67,9 +61,6 @@ public static class DependencyInjection
         services.AddScoped<IExportService, ExportService>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
-        // Resource-based authorization: the implementation (and the ASP.NET Core
-        // authorization handler it drives) live in Infrastructure so the Application
-        // layer only sees the IResourceAuthorizationService abstraction.
         services.AddScoped<IAuthorizationHandler, PrescriptionResourceAuthorizationHandler>();
         services.AddScoped<IResourceAuthorizationService, ResourceAuthorizationService>();
 

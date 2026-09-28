@@ -11,18 +11,11 @@ using WebApi.Caching;
 
 namespace WebApi.Controllers;
 
-/// <summary>
-/// Medicine catalogue management: list, create, update, delete medicines and
-/// their batches/variants. Read operations require Permissions.Medicines.View;
-/// writes require the Create/Update/Delete permissions.
-/// </summary>
 [Authorize]
 [ApiVersion("1.0")]
 public sealed class MedicinesController(ISender sender) : ApiControllerBase(sender)
 {
-    /// <summary>Lists medicines with pagination, search, sorting and filters.</summary>
-    /// <param name="query">Page, pageSize, search, sortBy, sortDir, category, form, status.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
+
     [HttpGet]
     [Authorize(Policy = Permissions.Medicines.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Medicines)]
@@ -33,9 +26,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
-    /// <summary>Gets a medicine's details including its variants and batches.</summary>
-    /// <param name="id">Medicine id.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = Permissions.Medicines.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Medicines)]
@@ -44,9 +34,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
         => OkResponse(new GetMedicineQuery(id), cancellationToken);
 
-    /// <summary>Creates a medicine with its initial variants.</summary>
-    /// <param name="request">Medicine name, generic name, category and variants.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
     [Authorize(Policy = Permissions.Medicines.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -55,10 +42,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public Task<IActionResult> Create([FromBody] CreateMedicineRequest request, CancellationToken cancellationToken)
         => Created(nameof(Get), new { id = Guid.Empty }, new CreateMedicineCommand(request), cancellationToken);
 
-    /// <summary>Updates a medicine's catalogue data.</summary>
-    /// <param name="id">Medicine id (must match the body id).</param>
-    /// <param name="request">Updated medicine fields.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPatch("{id:guid}")]
     [Authorize(Policy = Permissions.Medicines.Update)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -72,9 +55,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         return await NoContent(new UpdateMedicineCommand(request), cancellationToken);
     }
 
-    /// <summary>Soft-deletes a medicine.</summary>
-    /// <param name="id">Medicine id.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = Permissions.Medicines.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -82,10 +62,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         => NoContent(new DeleteMedicineCommand(id), cancellationToken);
 
-    /// <summary>Adds a batch with an expiry date to a medicine variant.</summary>
-    /// <param name="id">Medicine id.</param>
-    /// <param name="request">Variant, batch number, expiry/manufacture dates and quantity.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/batches")]
     [Authorize(Policy = Permissions.Medicines.Update)]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -94,10 +70,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     public Task<IActionResult> AddBatch(Guid id, [FromBody] AddBatchRequest request, CancellationToken cancellationToken)
         => Created(nameof(Get), new { id }, new AddBatchCommand(request), cancellationToken);
 
-    /// <summary>Adds a variant (form/strength/unit) to a medicine.</summary>
-    /// <param name="id">Medicine id (must match the body medicineId).</param>
-    /// <param name="request">Variant form, strength, unit and activation flag.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/variants")]
     [Authorize(Policy = Permissions.Medicines.Update)]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -111,9 +83,6 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         return await Created(nameof(Get), new { id }, new CreateVariantCommand(request), cancellationToken);
     }
 
-    /// <summary>Soft-deletes a batch.</summary>
-    /// <param name="batchId">Batch id.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpDelete("batches/{batchId:guid}")]
     [Authorize(Policy = Permissions.Medicines.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

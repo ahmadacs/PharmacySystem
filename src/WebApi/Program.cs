@@ -21,17 +21,12 @@ using WebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Validate the whole service graph (including MediatR handlers) at startup so
-// missing registrations like ICurrentUserService fail fast instead of at runtime.
 builder.Host.UseDefaultServiceProvider(options =>
 {
     options.ValidateOnBuild = true;
     options.ValidateScopes = true;
 });
 
-// ---------------------------------------------------------------------------
-// Serilog structured logging (console + rolling file).
-// ---------------------------------------------------------------------------
 builder.Host.UseSerilog((context, services, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
@@ -40,14 +35,8 @@ var services = builder.Services;
 services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-// Read-heavy GETs only (medicines, inventory, low-stock). Named policies skip the
-// default "no Authorization header" rule so JWT calls can be cached. Redis is used
-// when ConnectionStrings:Redis is set; otherwise the in-memory store is used.
 services.AddPharmacyOutputCache(builder.Configuration);
 
-// ---------------------------------------------------------------------------
-// MVC. Model validation failures flow through the standard error envelope.
-// ---------------------------------------------------------------------------
 services
     .AddControllers()
     .AddJsonOptions(options =>
@@ -79,10 +68,6 @@ services.AddOpenApi(options =>
     options.AddOperationTransformer<XmlCommentsOperationTransformer>();
 });
 
-// ---------------------------------------------------------------------------
-// API versioning: /api/v{version:apiVersion}/... with the version reported in
-// responses (api-supported-versions) and each version grouped in the docs.
-// ---------------------------------------------------------------------------
 services.AddApiVersioning(options =>
     {
         options.DefaultApiVersion = new ApiVersion(1, 0);
@@ -96,15 +81,9 @@ services.AddApiVersioning(options =>
         options.SubstituteApiVersionInUrl = true;
     });
 
-// ---------------------------------------------------------------------------
-// Application + Infrastructure layers.
-// ---------------------------------------------------------------------------
 services.AddApplicationServices();
 services.AddInfrastructureServices(builder.Configuration);
 
-// ---------------------------------------------------------------------------
-// CORS for the Angular origin. Never AllowAnyOrigin with credentials.
-// ---------------------------------------------------------------------------
 services.AddCors(options =>
 {
     options.AddPolicy("Angular", policy =>
@@ -119,10 +98,6 @@ services.AddCors(options =>
     });
 });
 
-// ---------------------------------------------------------------------------
-// Authentication: JWT bearer using the same issuer/audience/signing key the
-// token service encodes tokens with.
-// ---------------------------------------------------------------------------
 var jwt = builder.Configuration.GetSection(Infrastructure.Identity.JwtOptions.SectionName)
     .Get<Infrastructure.Identity.JwtOptions>() ?? new Infrastructure.Identity.JwtOptions();
 
@@ -133,9 +108,7 @@ services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
-        // Keep the JWT claim names as issued (sub, role, email, ...). With the
-        // default inbound mapping .NET rewrites `sub` to ClaimTypes.NameIdentifier,
-        // which breaks CurrentUserService.UserId (null -> 403 on /auth/me).
+
         options.MapInboundClaims = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
@@ -151,8 +124,6 @@ services.AddAuthentication(options =>
             NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Name
         };
 
-        // WebSockets cannot send Authorization headers, so SignalR clients pass the
-        // JWT as the "access_token" query string. Only honor it for /hubs paths.
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -168,10 +139,7 @@ services.AddAuthentication(options =>
 
 services.AddAuthorization(options =>
     {
-        // Combined policy: anyone who may read prescriptions at all (View) OR may
-        // manage their own (ManageOwn) can reach the prescription endpoints. The
-        // fine-grained "own records only" rule is enforced per-resource by the
-        // PrescriptionResourceAuthorizationHandler (see Infrastructure.Services).
+
         options.AddPolicy("Prescriptions.ViewOrOwn", policy =>
             policy
                 .RequireAuthenticatedUser()
@@ -183,9 +151,6 @@ services.AddAuthorization(options =>
 services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
-// ---------------------------------------------------------------------------
-// Rate limiting on authentication endpoints.
-// ---------------------------------------------------------------------------
 services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -198,9 +163,6 @@ services.AddRateLimiter(options =>
     });
 });
 
-// ---------------------------------------------------------------------------
-// Centralized exception handling -> standard error envelope.
-// ---------------------------------------------------------------------------
 services.AddExceptionHandler<GlobalExceptionHandler>();
 services.AddProblemDetails();
 
@@ -210,9 +172,6 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
-// Request culture from Accept-Language (frontend sends the UI language):
-// drives IStringLocalizer messages per request. Must run BEFORE
-// UseExceptionHandler so localized error handling also sees the culture.
 var supportedCultures = new[] { "en", "ar" };
 app.UseRequestLocalization(new RequestLocalizationOptions()
     .SetDefaultCulture(supportedCultures[0])
@@ -237,16 +196,12 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 app.MapHub<NotificationsHub>("/hubs/notifications");
 
-// Scalar API docs UI (served at /scalar, reads the OpenAPI document).
 app.MapScalarApiReference(options =>
 {
     options.WithTitle("Pharmacy Inventory & Dispensing API")
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
 });
 
-// ---------------------------------------------------------------------------
-// Apply pending migrations and seed idempotent reference data on startup.
-// ---------------------------------------------------------------------------
 await app.Services.InitializeDatabaseAsync();
 
 app.Run();

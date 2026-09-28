@@ -24,9 +24,6 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
         CancellationToken cancellationToken)
     {
 
-        // Lean selector: medicine name/type + batch number are scalar columns
-        // through navigations (no entity loads). VariantName is built in
-        // InventoryMapping; adjuster names resolve via one batched lookup.
         var selector = (System.Linq.Expressions.Expression<Func<InventoryAdjustment, InventoryAdjustmentRow>>)(a => new InventoryAdjustmentRow(
                     a.Id,
                     a.MedicineBatchId,

@@ -3,10 +3,6 @@ using Domain.Enums;
 
 namespace Domain.Entities.Notifications;
 
-/// <summary>
-/// A per-user notification (bell + toast). Persisted so notifications survive a
-/// page reload and can be marked read. UserId is the ApplicationUser (Identity) id.
-/// </summary>
 public class Notification : BaseEntity
 {
     public Guid UserId { get; private set; }
@@ -14,10 +10,6 @@ public class Notification : BaseEntity
     public string Title { get; private set; } = string.Empty;
     public string Message { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Small JSON payload used by the UI to navigate to the related record, and by
-    /// the service to de-duplicate repeated low-stock / near-expiry events.
-    /// </summary>
     public string? Data { get; private set; }
     public string? LocalizationKey { get; private set; }
     public string? LocalizationParamsJson { get; private set; }

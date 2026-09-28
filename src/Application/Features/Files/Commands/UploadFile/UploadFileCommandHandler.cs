@@ -56,11 +56,10 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
 
     public async Task<Result<FileAttachmentDto>> Handle(UploadFileCommand request, CancellationToken cancellationToken)
     {
-        // 1. File type must be known.
+
         if (!AllowedExtensions.ContainsKey(request.ContentType))
             return Result<FileAttachmentDto>.Failure(_localizer["FileTypeNotAllowed", request.ContentType].Value, 422);
 
-        // 2. Size limits.
         if (request.SizeBytes <= 0)
             return Result<FileAttachmentDto>.Failure(_localizer["FileEmpty"].Value, 422);
 
@@ -70,17 +69,14 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
                 request.SizeBytes.ToString(CultureInfo.InvariantCulture),
                 maxSize.ToString(CultureInfo.InvariantCulture)].Value, 422);
 
-        // 3. Entity type must be valid.
         if (!Enum.TryParse<FileEntityType>(request.EntityType, true, out var entityType))
             return Result<FileAttachmentDto>.Failure(
                 _localizer["InvalidEntityType", request.EntityType, "Medicine, Prescription, Batch, InventoryAdjustment"].Value, 422);
 
-        // 4. Caller must be allowed to attach to this entity.
         var accessFailure = await _access.EnsureCanAttachAsync(entityType, request.EntityId, cancellationToken);
         if (accessFailure is not null)
             return Result<FileAttachmentDto>.Failure(accessFailure.Error!, accessFailure.StatusCode);
 
-        // 5. Extension must match content type, and content must match its magic bytes.
         var ext = Path.GetExtension(request.FileName).ToLowerInvariant();
         if (!AllowedExtensions[request.ContentType].Contains(ext))
             return Result<FileAttachmentDto>.Failure(_localizer["ExtensionMismatch", ext, request.ContentType].Value, 422);

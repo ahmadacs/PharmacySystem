@@ -60,6 +60,12 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
                 return Result<Guid>.Failure(_localizer["PhoneRegistered", NormalizePhone(req.PatientPhoneNumber)].Value, 409);
 
             var prescription = req.ToEntity(doctorId.Value, patient.Id);
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                if (!await _prescriptions.ExistsAsync(p => p.ShortCode == prescription.ShortCode, cancellationToken))
+                    break;
+                prescription.RegenerateShortCode();
+            }
 
         var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
         var existingVariantIds = (await _variants.ListAsync(v => v.Id, v => variantIds.Contains(v.Id), cancellationToken: cancellationToken)).ToHashSet();
@@ -82,8 +88,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
 
     private async Task<Patient?> FindByPhoneAsync(string normalizedPhone, CancellationToken cancellationToken)
     {
-        // Read-only: this path never mutates the patient (numbers are already
-        // normalized by the caller, so plain equality matches the old finder).
+
         return await _patients.GetAsync(p => p.PhoneNumber == normalizedPhone, cancellationToken: cancellationToken);
     }
 
@@ -105,9 +110,6 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             return patient;
         }
 
-        // Fallback: check by name+DOB to prevent duplicate patient with different phone.
-        // Tracked read: UpdatePhone below must persist on SaveChanges
-        // (the old Query() was tracked; specs default to NoTracking).
         var byNameDob = await _patients.GetAsync(p => p.FirstName == firstName && p.LastName == lastName && p.DateOfBirth == request.PatientDateOfBirth, tracked: true, cancellationToken: cancellationToken);
         if (byNameDob is not null)
         {

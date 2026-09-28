@@ -1,10 +1,5 @@
 namespace Application.Common.Security;
 
-/// <summary>
-/// Permission names used as JWT permission claims and authorization policy names.
-/// The source of truth lives here so both the Application layer and Infrastructure
-/// (role seeding, token claims) can reference the same strings.
-/// </summary>
 public static class Permissions
 {
     public static class Medicines
@@ -27,7 +22,6 @@ public static class Permissions
         public const string Create = "Permissions.Prescriptions.Create";
         public const string ManageOwn = "Permissions.Prescriptions.ManageOwn";
 
-        /// <summary>Elevated bypass — manage any prescription regardless of ownership (Admin only).</summary>
         public const string ManageAll = "Permissions.Prescriptions.ManageAll";
     }
 
@@ -51,8 +45,8 @@ public static class Permissions
     [
         Medicines.View, Medicines.Create, Medicines.Update, Medicines.Delete,
         Inventory.View, Inventory.Adjust,
-        Prescriptions.View, Prescriptions.ManageOwn, Prescriptions.ManageAll,
-        Dispensing.View,
+        Prescriptions.View, Prescriptions.Create, Prescriptions.ManageOwn, Prescriptions.ManageAll,
+        Dispensing.View, Dispensing.Create,
         Users.Manage,
         AuditLog.View
     ];

@@ -1,13 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Infrastructure.Migrations
 {
-    /// <inheritdoc />
+
     public partial class MoveReorderLevelToVariant : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
@@ -17,7 +17,6 @@ namespace Infrastructure.Migrations
                 nullable: false,
                 defaultValue: 10);
 
-            // Migrate existing medicine-level reorder levels to each of its variants
             migrationBuilder.Sql(@"
                 UPDATE mv
                 SET mv.ReorderLevel = m.ReorderLevel
@@ -30,7 +29,6 @@ namespace Infrastructure.Migrations
                 table: "Medicines");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(

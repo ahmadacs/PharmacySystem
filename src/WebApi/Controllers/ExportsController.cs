@@ -9,10 +9,7 @@ namespace WebApi.Controllers;
 [ApiVersion("1.0")]
 public sealed class ExportsController(ISender sender) : ApiControllerBase(sender)
 {
-    /// <summary>Exports entity data as Excel or PDF.</summary>
-    /// <param name="entityType">medicines|inventory|prescriptions|dispensing</param>
-    /// <param name="format">excel|xlsx|pdf</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+
     [HttpGet("{entityType}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

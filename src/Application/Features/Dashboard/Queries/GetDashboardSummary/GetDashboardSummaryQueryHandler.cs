@@ -15,7 +15,7 @@ namespace Application.Features.Dashboard.Queries.GetDashboardSummary;
 
 public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSummaryQuery, Result<DashboardSummaryDto>>
 {
-    /// <summary>Presentation decision owned by the Application layer.</summary>
+
     private const int LatestTake = 5;
 
     private readonly IBaseRepository<Prescription> _prescriptions;
@@ -49,19 +49,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
         var asOf = DateOnly.FromDateTime(now);
         var expiringLimit = asOf.AddDays(_notificationOptions.ExpiryWarningDays);
 
-        // NOTE: no IsDeleted guard anywhere below — the EF global query filter
-        // (ApplicationDbContext.ApplySoftDeleteFilters) already excludes
-        // soft-deleted rows from every database query.
-        //
-        // Pure specs: every counter and list below is an independent spec query
-        // (no bespoke repository method, no DTO built inside any repo).
-        // Sequential awaits are deliberate — one scoped DbContext is shared and
-        // EF Core does not allow concurrent operations on it, so Task.WhenAll
-        // over specs would throw. Each query is a tiny indexed COUNT/TOP read.
-        // An empty database needs no fallback branch: every count below is
-        // naturally 0 and both lists naturally empty.
-
-        // Same predicate as DispensingRecordListQueryHandler (inclusive range).
         var dispensedToday = await _dispensing.CountAsync(r => r.DispensedAt >= today && r.DispensedAt <= tomorrow, cancellationToken);
 
         var pending = await _prescriptions.CountAsync(p => p.Status == PrescriptionStatus.Pending, cancellationToken);
@@ -70,22 +57,16 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
 
         var fragmented = await _prescriptions.CountAsync(p => p.Status == PrescriptionStatus.PartiallyDispensed, cancellationToken);
 
-        // Same rule as ListLowStockQueryHandler: available non-expired stock at
-        // or below the variant reorder level.
         var lowStock = await _variants.CountAsync(
             v => v.IsActive && v.Medicine!.IsActive
                 && v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value,
             cancellationToken);
 
-        // Same window as the near-expiry domain rule (NotificationOptions.ExpiryWarningDays).
         var expiringSoon = await _batches.CountAsync(b => b.ExpiryDate > asOf && b.ExpiryDate <= expiringLimit, cancellationToken);
 
-        // Doctor names stay out: Identity tables are invisible to this layer,
-        // so names resolve with ONE batched lookup below (no N+1).
-        // Lean selector: patient name/info are scalar columns; age/status
-        // display strings are derived in DashboardMapping (not SQL).
         var latestSelector = (Expression<Func<Prescription, DashboardPrescriptionRow>>)(p => new DashboardPrescriptionRow(
             p.Id,
+            p.ShortCode,
             p.DoctorId,
             p.Patient == null ? string.Empty : (p.Patient.FirstName + " " + p.Patient.LastName),
             p.Patient != null ? p.Patient.DateOfBirth : default,
@@ -105,7 +86,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
             dispensedToday, pending, createdToday, lowStock, expiringSoon, fragmented,
             latestPending, latestFragmented);
 
-        // Every distinct doctor of both lists with one WHERE IN.
         var doctorIds = snapshot.LatestPending.Select(r => r.DoctorId)
             .Concat(snapshot.LatestFragmented.Select(r => r.DoctorId))
             .Distinct()
@@ -117,8 +97,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
             Map(snapshot.LatestFragmented, doctorNames),
             now));
     }
-
-
 
     private static IReadOnlyList<PrescriptionListItemDto> Map(
         IEnumerable<DashboardPrescriptionRow> rows,

@@ -17,12 +17,6 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence;
 
-/// <summary>
-/// The DbContext acts as the Unit of Work: all entities changed inside one
-/// request are committed atomically with a single SaveChangesAsync call. EF Core
-/// wraps that call in an implicit database transaction, so no explicit
-/// BeginTransaction/Commit/Rollback management is needed in handlers.
-/// </summary>
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IUnitOfWork
 {
     private readonly IDomainEventDispatcher _domainEventDispatcher;
@@ -60,14 +54,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
         ApplySoftDeleteFilters(builder);
     }
 
-    /// <summary>
-    /// All DateTime values are stored and read as UTC: EF Core reads SQL Server
-    /// datetime2 as DateTimeKind.Unspecified, which makes System.Text.Json omit the
-    /// trailing "Z" and lets clients misparse the instant. These converters force
-    /// every DateTime (and DateTime?) column to Kind=Utc on read and normalize to
-    /// UTC on write, so the API always returns ISO-8601 with "Z". Display timezone
-    /// conversion (Asia/Riyadh) happens only in the frontend.
-    /// </summary>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
@@ -100,11 +86,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
         { }
     }
 
-    /// <summary>
-    /// Domain events raised by entities are dispatched only after the transaction
-    /// commits, so a failed save never fires side effects. Note: if a notification
-    /// handler itself fails, the commit has already completed (see README §15).
-    /// </summary>
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var domainEvents = CollectDomainEvents();

@@ -7,10 +7,7 @@ namespace Application.Features.Medicines.Dtos;
 
 public static class MedicineMapping
 {
-    /// <summary>
-    /// Finds the tracked scientific name or creates and tracks a new one, updating
-    /// the Arabic name when it changed. Shared by the create/update medicine flows.
-    /// </summary>
+
     public static async Task<GenericName> ResolveGenericNameAsync(
         IBaseRepository<GenericName> generics,
         string name,
@@ -19,7 +16,7 @@ public static class MedicineMapping
     {
         var trimmed = name.Trim();
         var trimmedAr = nameAr?.Trim();
-        // Tracked: Rename below must persist on SaveChanges.
+
         var genericName = await generics.GetAsync(g => g.Name == trimmed, tracked: true, cancellationToken: cancellationToken);
         if (genericName is not null)
         {
@@ -33,7 +30,6 @@ public static class MedicineMapping
         return genericName;
     }
 
-    /// <summary>Maps a list-screen projection row (server-computed sums included).</summary>
     internal static MedicineVariantSummaryDto ToDto(this MedicineVariantRow v)
         => new(
             v.Id,
@@ -49,7 +45,6 @@ public static class MedicineMapping
             v.UnitsPerPackage,
             v.IsDivisible);
 
-    /// <summary>Maps a list-screen projection row (server-computed sums included).</summary>
     internal static MedicineListItemDto ToDto(this MedicineRow r)
     {
         var variants = r.Variants.Select(v => v.ToDto()).ToList();
@@ -69,13 +64,6 @@ public static class MedicineMapping
             variants.Any(v => v.IsLowStock));
     }
 
-   
-
-    /// <summary>
-    /// Assembles the details DTO from the single-query projection rows
-    /// (see GetMedicineQueryHandler). DisplayName/IsLowStock rules are reused
-    /// from the row mappings instead of being recomputed here.
-    /// </summary>
     internal static MedicineDetailsDto ToDto(this MedicineDetailsRow r, DateOnly asOf)
     {
         var variants = r.Variants.Select(v =>
@@ -112,12 +100,6 @@ public static class MedicineMapping
             variants);
     }
 
-    /// <summary>
-    /// Maps a batches-list projection row (server-computed dispensed included).
-    /// Same field semantics as the list screen: days-to-expiry is always the
-    /// day difference (negative when expired), status is Expired/Depleted/Active.
-    /// VariantName is built here from raw Form/Strength/Unit (not in SQL).
-    /// </summary>
     internal static MedicineBatchDto ToDto(this MedicineBatchRow r, DateOnly asOf)
     {
         var isExpired = r.ExpiryDate <= asOf;

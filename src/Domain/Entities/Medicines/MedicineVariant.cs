@@ -41,29 +41,23 @@ public class MedicineVariant : BaseEntity
 
     public bool IsLowStock(DateOnly asOf) => GetAvailableStock(asOf).Value <= ReorderLevel.Value;
 
-    /// <summary>
-    /// Raises MedicineLowStockEvent when this variant's available stock is at or below its reorder level.
-    /// </summary>
-    public void RaiseLowStockEventIfNeeded(DateOnly asOf)
+    public void RaiseLowStockEventIfNeeded(DateOnly asOf, string? medicineName = null)
     {
         if (!IsLowStock(asOf))
             return;
 
         var variantName = $"{Form} {Strength} {Unit}";
-        var medicineName = Medicine?.Name ?? "Unknown";
+        var name = string.IsNullOrWhiteSpace(medicineName) ? (Medicine?.Name ?? "Unknown") : medicineName;
         RaiseDomainEvent(new MedicineLowStockEvent(
             MedicineId,
             Id,
-            medicineName,
+            name,
             variantName,
             GetAvailableStock(asOf).Value,
             ReorderLevel.Value,
             DateTime.UtcNow));
     }
 
-    /// <summary>
-    /// Raises low-stock considering an additional quantity that will be added (e.g., a new batch not yet in Batches collection).
-    /// </summary>
     public void RaiseLowStockEventIfNeededWithAdditional(DateOnly asOf, int additionalQuantity)
     {
         var availableAfter = GetAvailableStock(asOf).Value + additionalQuantity;
@@ -87,10 +81,6 @@ public class MedicineVariant : BaseEntity
             .Where(b => !b.IsExpired(asOf))
             .Aggregate(Quantity.Zero, (total, b) => total.Add(b.QuantityAvailable));
 
-    /// <summary>
-    /// Draws the required quantity from non-expired batches (earliest expiry first).
-    /// Throws <see cref="InsufficientStockException"/> when the variant cannot cover it.
-    /// </summary>
     public IReadOnlyList<(MedicineBatch Batch, Quantity Quantity)> SelectBatchesForDispensing(int quantityNeeded, DateOnly asOf)
     {
         var needed = Quantity.Of(quantityNeeded);
@@ -113,11 +103,9 @@ public class MedicineVariant : BaseEntity
 
         var fulfilled = needed.Value - remaining;
 
-        // If nothing could be fulfilled, keep throwing as before.
         if (fulfilled == 0)
-            throw new InsufficientStockException(Id, needed.Value, needed.Value - remaining);
+            throw new InsufficientStockException(Id, needed.Value, needed.Value - remaining, Medicine?.Name, Medicine?.NameAr);
 
-        // Otherwise return the plan (possibly partial) so caller can record partial dispenses.
         return plan;
     }
 }

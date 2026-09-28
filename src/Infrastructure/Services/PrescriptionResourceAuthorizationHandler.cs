@@ -6,10 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Infrastructure.Services;
 
-/// <summary>
-/// Resource-based requirement for a specific operation on a Prescription. The
-/// operation lets one handler enforce both read and manage ownership rules.
-/// </summary>
 public sealed class OwnPrescriptionRequirement : IAuthorizationRequirement
 {
     public PrescriptionOperation Operation { get; }
@@ -20,17 +16,6 @@ public sealed class OwnPrescriptionRequirement : IAuthorizationRequirement
     }
 }
 
-/// <summary>
-/// Enforces the "own records only" rule on a Prescription resource:
-/// <list type="bullet">
-/// <item>Holders of <see cref="Permissions.Prescriptions.ManageAll"/> (Admin) may
-/// access any prescription for any operation — the only elevated bypass.</item>
-/// <item>Holders of <see cref="Permissions.Prescriptions.View"/> may view any
-/// prescription (pharmacists, admins) but NOT manage others' prescriptions.</item>
-/// <item>Holders of <see cref="Permissions.Prescriptions.ManageOwn"/> may view and
-/// manage only prescriptions they issued (the doctor who owns the record).</item>
-/// </list>
-/// </summary>
 public class PrescriptionResourceAuthorizationHandler
     : AuthorizationHandler<OwnPrescriptionRequirement, Prescription>
 {

@@ -4,10 +4,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace WebApi.HealthChecks;
 
-/// <summary>
-/// Redis liveness probe: TCP connect + PING (with AUTH when a password is set).
-/// Degraded when Redis is unconfigured because the app falls back to in-memory cache.
-/// </summary>
 public sealed class RedisHealthCheck : IHealthCheck
 {
     private readonly string? _connectionString;

@@ -24,7 +24,6 @@ public sealed class MedicineInventorySummaryQueryHandler
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-
         var selector = (Expression<Func<Medicine, MedicineInventorySummaryRow>>)(m => new MedicineInventorySummaryRow(
                     m.Id,
                     m.Name,

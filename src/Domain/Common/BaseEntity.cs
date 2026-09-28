@@ -1,4 +1,4 @@
-﻿namespace Domain.Common;
+namespace Domain.Common;
 
 public abstract class BaseEntity : ISoftDelete, IEntity
 {
@@ -13,7 +13,6 @@ public abstract class BaseEntity : ISoftDelete, IEntity
     public Guid? DeletedBy { get; set; }
     public DateTime? DeletedAt { get; set; }
 
-    
     public IReadOnlyCollection<object> DomainEvents => _domainEvents.AsReadOnly();
 
     protected void RaiseDomainEvent(object domainEvent) => _domainEvents.Add(domainEvent);

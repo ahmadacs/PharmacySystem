@@ -64,6 +64,11 @@
       color: var(--mat-sys-on-surface-variant);
       font-size: 0.8rem;
     }
+    .item-dosage {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.78rem;
+      font-style: italic;
+    }
     .notes {
       width: 100%;
     }
@@ -110,5 +115,17 @@
       color: var(--status-warning, #f57c00);
       font-size: 0.78rem;
       font-weight: 500;
+    }
+    .item-stock {
+      display: block;
+      color: var(--status-safe, #2e7d32);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .item-stock.empty-stock {
+      color: var(--mat-sys-error);
+    }
+    .out-of-stock {
+      background: color-mix(in srgb, var(--mat-sys-error) 6%, transparent);
     }
   

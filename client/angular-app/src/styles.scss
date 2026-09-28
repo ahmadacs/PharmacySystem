@@ -577,3 +577,26 @@ html[dir="rtl"] {
     min-width: 560px;
   }
 }
+
+.phone-prefix {
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  margin-inline-end: 4px;
+}
+
+input.phone-suffix {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+  letter-spacing: 0.08em;
+}
+
+input[type='number'],
+input[inputmode='numeric'],
+input[inputmode='decimal'],
+input.code-input {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}

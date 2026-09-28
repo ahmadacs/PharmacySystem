@@ -12,9 +12,7 @@ public class ExportDataProvider : IExportDataProvider
 
     public async Task<IReadOnlyList<MedicineExportRow>> GetMedicinesAsync(CancellationToken ct = default)
     {
-        // Lean projection: medicine name + scientific GenericName + variant
-        // type/stock as scalar columns and server-side SUMs (no Include, no
-        // entity graph, no audit fields). Display strings are built in memory.
+
         var projected = await _db.Medicines.AsNoTracking()
             .Select(m => new
             {
@@ -54,8 +52,7 @@ public class ExportDataProvider : IExportDataProvider
 
     public async Task<IReadOnlyList<InventoryExportRow>> GetInventoryAsync(CancellationToken ct = default)
     {
-        // Lean projection: medicine name + variant unit + batch columns only.
-        // Status is derived in memory (date math, not SQL).
+
         var projected = await _db.MedicineBatches.AsNoTracking()
             .Select(b => new
             {
@@ -82,10 +79,7 @@ public class ExportDataProvider : IExportDataProvider
 
     public async Task<IReadOnlyList<PrescriptionExportRow>> GetPrescriptionsAsync(CancellationToken ct = default, string? id = null)
     {
-        // Lean projection: patient name/info + doctor key + item medicine names
-        // as scalar columns (no Patient/Doctor/Variant/Medicine entity loads).
-        // The GenericName join is part of the projection, so the
-        // Medicine -> GenericName fallback works (it never did with Include).
+
         var query = _db.Prescriptions.AsNoTracking()
             .Select(p => new
             {
@@ -116,7 +110,6 @@ public class ExportDataProvider : IExportDataProvider
         }
         var list = await query.ToListAsync(ct);
 
-        // Get doctor names from identity users for display
         var userIds = list.Select(p => p.DoctorUserId ?? Guid.Empty).Where(uid => uid != Guid.Empty).Distinct().ToList();
         var usersDict = new Dictionary<Guid, string>();
         if (userIds.Any())
@@ -147,8 +140,7 @@ public class ExportDataProvider : IExportDataProvider
 
     public async Task<IReadOnlyList<DispensingExportRow>> GetDispensingAsync(CancellationToken ct = default)
     {
-        // Lean projection: record keys + per-line medicine name + quantity
-        // (no record/item/batch/variant/medicine entity graphs).
+
         var records = await _db.DispensingRecords.AsNoTracking()
             .Select(r => new
             {
@@ -182,7 +174,7 @@ public class ExportDataProvider : IExportDataProvider
         }
         if (rows.Count == 0 && records.Count > 0)
         {
-            // fallback if items empty
+
             rows.AddRange(records.Select(r => new DispensingExportRow(r.PrescriptionId.ToString()[..8], "-", 0, r.DispensedAt, r.PharmacistId.ToString()[..8])));
         }
         return rows;

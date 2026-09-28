@@ -12,7 +12,7 @@ namespace WebApi.Controllers;
 [ApiVersion("1.0")]
 public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
 {
-    /// <summary>Uploads a file for a medicine or prescription (jpeg/png/pdf, max 5MB).</summary>
+
     [HttpPost("{entityType}/{entityId:guid}")]
     [Authorize]
     [RequestSizeLimit(5 * 1024 * 1024)]
@@ -31,21 +31,18 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
         return await UploadResponse(command, nameof(Get), cancellationToken);
     }
 
-    /// <summary>Gets file metadata by id.</summary>
     [HttpGet("{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
         => FileResponse(new GetFileQuery(id), cancellationToken);
 
-    /// <summary>Downloads file content.</summary>
     [HttpGet("{id:guid}/download")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
         => FileResponse(new GetFileQuery(id), cancellationToken);
 
-    /// <summary>Lists files for an entity.</summary>
     [HttpGet("{entityType}/{entityId:guid}/list")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

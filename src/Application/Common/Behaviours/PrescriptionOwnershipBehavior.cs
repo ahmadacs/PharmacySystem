@@ -7,13 +7,6 @@ using MediatR;
 
 namespace Application.Common.Behaviours;
 
-/// <summary>
-/// Enforces resource-based authorization for every request marked
-/// <see cref="IOwnedPrescriptionRequest"/>. The entity is loaded once here and
-/// checked against the current user's access rights BEFORE the handler runs, so
-/// ownership checks can never be forgotten in a new handler. Requests that do not
-/// implement the marker pass straight through.
-/// </summary>
 public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
@@ -51,10 +44,7 @@ public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
             }
             catch (ForbiddenResourceException) when (!CanSeeExistence())
             {
-                // A caller that cannot enumerate prescriptions (no View) must not be
-                // able to tell "this id does not exist" (404) apart from "this id
-                // exists but belongs to someone else" (403). Healthcare data is
-                // sensitive, so both cases return 404. See README §15.
+
                 throw new EntityNotFoundException(typeof(Prescription), owned.PrescriptionId);
             }
         }
@@ -62,12 +52,6 @@ public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
         return await next();
     }
 
-    /// <summary>
-    /// Users who can enumerate prescriptions (<c>View</c>) or bypass ownership
-    /// entirely (<c>ManageAll</c>) legitimately know a prescription exists, so for
-    /// them a denial stays a genuine 403 (e.g. a pharmacist may view but not manage).
-    /// Everyone else receives the same 404 as a non-existent id.
-    /// </summary>
     private bool CanSeeExistence()
         => _currentUser.Permissions.Contains(Permissions.Prescriptions.View)
            || _currentUser.Permissions.Contains(Permissions.Prescriptions.ManageAll);

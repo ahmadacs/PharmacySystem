@@ -36,7 +36,6 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
     {
         Guid? restrictedToDoctorId = null;
 
-        // Doctors without the View permission see only their own prescriptions.
         if (_currentUser.Permissions.Contains(Permissions.Prescriptions.ManageOwn)
             && !_currentUser.Permissions.Contains(Permissions.Prescriptions.View))
         {
@@ -47,12 +46,9 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
             restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
         }
 
-
-        // Lean selector: patient name/info are scalar columns (FirstName +
-        // LastName, DOB, Phone) — no Patient entity load. Age and the status
-        // display string are derived in PrescriptionMapping (not SQL).
         var selector = (Expression<Func<Prescription, PrescriptionListRow>>)(p => new PrescriptionListRow(
                     p.Id,
+                    p.ShortCode,
                     p.DoctorId,
                     p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty,
                     p.Patient != null ? p.Patient.DateOfBirth : default,

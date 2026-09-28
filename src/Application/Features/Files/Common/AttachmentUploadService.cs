@@ -5,7 +5,6 @@ using MediatR;
 
 namespace Application.Features.Files.Common;
 
-/// <summary>Decodes an optional base64 payload and stores it via <see cref="UploadFileCommand"/>.</summary>
 public sealed class AttachmentUploadService : IAttachmentUploadService
 {
     private readonly ISender _sender;

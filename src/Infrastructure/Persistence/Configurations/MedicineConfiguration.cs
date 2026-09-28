@@ -29,7 +29,7 @@ public class MedicineConfiguration : IEntityTypeConfiguration<Medicine>
         builder.HasIndex(m => m.Name);
         builder.HasIndex(m => m.CategoryEnum);
         builder.HasIndex(m => m.GenericNameId);
-        // Frequently queried flag - index to speed up active/inactive filters
+
         builder.HasIndex(m => m.IsActive);
     }
 }

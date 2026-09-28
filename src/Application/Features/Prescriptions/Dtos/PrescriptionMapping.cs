@@ -5,7 +5,7 @@ namespace Application.Features.Prescriptions.Dtos;
 
 public static class PrescriptionMapping
 {
-    /// <summary>Same rule as Patient.Age: full years at the server-local today.</summary>
+
     internal static int CalculateAge(DateOnly dateOfBirth)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
@@ -24,10 +24,10 @@ public static class PrescriptionMapping
             ? $"{form.Value} {strength.Value} {unit.Value}"
             : string.Empty;
 
-    /// <summary>Maps a list-screen projection row (doctor name resolved separately).</summary>
     internal static PrescriptionListItemDto ToDto(this PrescriptionListRow row, string doctorName)
         => new(
             row.Id,
+            row.ShortCode,
             row.DoctorId,
             doctorName,
             row.PatientName,
@@ -42,13 +42,13 @@ public static class PrescriptionMapping
         this PrescriptionDetailsRow row,
         string doctorName)
     {
-        // Remaining mirrors PrescriptionItem.RemainingQuantity
-        // (PrescribedQuantity - DispensedQuantity).
+
         var items = row.Items
             .Select(i => new PrescriptionItemDto(
                 i.Id,
                 i.MedicineVariantId,
                 i.MedicineName,
+                i.MedicineNameAr,
                 BuildVariantName(i.Form, i.Strength, i.Unit),
                 i.PrescribedQuantity,
                 i.DispensedQuantity,
@@ -58,12 +58,16 @@ public static class PrescriptionMapping
                 i.RefillsAllowed,
                 i.RefillsUsed,
                 i.RefillIntervalDays,
-                i.LastDispensedAt))
+                i.LastDispensedAt,
+                (int?)i.Form,
+                (int?)i.Unit,
+                i.Strength))
             .OrderBy(i => i.Id)
             .ToList();
 
         return new PrescriptionDetailsDto(
             row.Id,
+            row.ShortCode,
             row.DoctorId,
             doctorName,
             row.PatientName,

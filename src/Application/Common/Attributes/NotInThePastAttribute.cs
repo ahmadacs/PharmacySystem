@@ -2,12 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Application.Common.Attributes;
 
-/// <summary>
-/// Validates that a DateOnly/DateTime value is not in the past (today or later).
-/// Used e.g. on a medicine batch expiry date — a rule the built-in attributes
-/// cannot express. Also rejects the default value (year 1) when the date is
-/// omitted from the request.
-/// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter)]
 public sealed class NotInThePastAttribute : ValidationAttribute
 {

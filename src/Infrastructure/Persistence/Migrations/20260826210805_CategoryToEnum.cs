@@ -1,17 +1,17 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Infrastructure.Persistence.Migrations
 {
-    /// <inheritdoc />
+
     public partial class CategoryToEnum : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // First, add the new CategoryEnum column with default value
+
             migrationBuilder.AddColumn<int>(
                 name: "CategoryEnum",
                 table: "Medicines",
@@ -19,10 +19,9 @@ namespace Infrastructure.Persistence.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            // Migrate data from CategoryId to CategoryEnum based on Category.Name
             migrationBuilder.Sql(@"
                 UPDATE Medicines
-                SET CategoryEnum = CASE 
+                SET CategoryEnum = CASE
                     WHEN CategoryId IN (SELECT Id FROM Categories WHERE Name = 'Analgesics') THEN 1
                     WHEN CategoryId IN (SELECT Id FROM Categories WHERE Name = 'Antibiotics') THEN 2
                     WHEN CategoryId IN (SELECT Id FROM Categories WHERE Name = 'Antipyretics') THEN 3
@@ -57,7 +56,6 @@ namespace Infrastructure.Persistence.Migrations
                 column: "CategoryEnum");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(

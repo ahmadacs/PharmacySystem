@@ -12,10 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Seeding;
-/// <summary>
-/// Idempotent seed data for local development. Runs automatically on first
-/// startup after the database is created/migrated.
-/// </summary>
+
 public static class DbSeeder
 {
     public const string AdminEmail = "admin@pharmacy.com";
@@ -31,14 +28,12 @@ public static class DbSeeder
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
-        // Ensure roles exist
         foreach (var role in new[] { Roles.Admin, Roles.Pharmacist, Roles.Doctor })
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new ApplicationRole(role));
         }
 
-        // Ensure users exist
         var admin = await EnsureUserAsync(userManager, AdminEmail, AdminPassword, "Pharmacy", "Administrator", Roles.Admin);
         var pharmacist = await EnsureUserAsync(userManager, PharmacistEmail, PharmacistPassword, "Rania", "Khalil", Roles.Pharmacist);
         var doctor = await EnsureUserAsync(userManager, DoctorEmail, DoctorPassword, "Omar", "Haddad", Roles.Doctor);
@@ -86,8 +81,6 @@ public static class DbSeeder
         await db.GenericNames.AddRangeAsync(genericNames, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
-        // Each medicine carries its own variants (some medicines have several
-        // forms, e.g. Paracetamol -> Tablet + Syrup + Drops).
         var medicines = new List<(Medicine Medicine, (MedicineForm Form, MedicineUnit Unit, decimal Strength)[] Variants)>
         {
             (new Medicine("Paracetamol", CategoryEnum.Analgesics, genericNames.First(g => g.Name == "Acetaminophen"), false, "باراسيتامول"),
@@ -111,15 +104,6 @@ public static class DbSeeder
 
         await db.SaveChangesAsync(cancellationToken);
 
-        // Add variants and batches for each medicine. Batch numbers use a single
-        // global counter so they are unique across the whole system (matches the
-        // AddBatch rule that forbids duplicate batch numbers). Expiry dates rotate
-        // through Safe / Critical / Warning offsets so the expiry-alerts tab and
-        // its badge show a meaningful mix on a fresh database. Batch quantities are
-        // entered in whole packages and converted to base units via the variant's
-        // UnitOfMeasure (e.g. 4 boxes of 30 tablets = 120 tablets). Amoxicillin and
-        // Cetirizine are seeded with a single package each so the low-stock list
-        // (and badge) have entries too.
         int batchCounter = 0;
         int expiryIndex = 0;
         int[] expiryOffsets = { 320, 320, 15, 60, 320, 320, 15, 60 };
@@ -128,7 +112,7 @@ public static class DbSeeder
             foreach (var (form, unit, strength) in variants)
             {
                 var uom = UnitOfMeasureFor(form);
-                // Each variant now carries its own reorder level (10 by default, matches the DTO default).
+
                 var variant = new MedicineVariant(medicine.Id, form, unit, strength, 10, uom);
                 medicine.AddVariant(variant);
                 db.MedicineVariants.Add(variant);

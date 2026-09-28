@@ -23,7 +23,6 @@ public static class DependencyInjection
         services.AddScoped<IAttachmentUploadService, AttachmentUploadService>();
         services.AddScoped<IFileAccessChecker, FileAccessChecker>();
 
-        // Required for IStringLocalizer<T> (backend localizable messages).
         services.AddLocalization();
 
         return services;

@@ -5,14 +5,6 @@ using WebApi.Services;
 
 namespace WebApi.Caching;
 
-/// <summary>
-/// Caches GET/HEAD 200 responses even when the request carries a JWT, while
-/// isolating entries by the caller's permission-claim set: two users with
-/// different permissions never share the same cached response. The claim type
-/// is shared with <see cref="CurrentUserService.PermissionClaimType"/> (which
-/// matches the JWT issuance side) so the three sides can never drift apart.
-/// Non-200 responses (401/403/4xx) are never stored.
-/// </summary>
 public sealed class AllowAuthenticatedGetCachePolicy : IOutputCachePolicy
 {
     ValueTask IOutputCachePolicy.CacheRequestAsync(OutputCacheContext context, CancellationToken cancellationToken)
@@ -27,7 +19,7 @@ public sealed class AllowAuthenticatedGetCachePolicy : IOutputCachePolicy
 
         if (allow)
         {
-            // Sorted + distinct so claim order can never split or merge entries.
+
             var permissions = context.HttpContext.User
                 .FindAll(CurrentUserService.PermissionClaimType)
                 .Select(c => c.Value)

@@ -47,7 +47,7 @@ export const routes: Routes = [
       },
       {
         path: 'prescriptions',
-        canActivate: [permissionGuard(Permissions.PrescriptionsView, Permissions.PrescriptionsManageOwn)],
+        canActivate: [permissionGuard(Permissions.PrescriptionsManageOwn, Permissions.PrescriptionsManageAll)],
         loadComponent: () =>
           import('./features/prescriptions/prescriptions-list/prescriptions-list.component').then(
             (m) => m.PrescriptionsListComponent

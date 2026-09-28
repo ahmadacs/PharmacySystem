@@ -7,7 +7,6 @@ using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Inventory;
 using Domain.Entities.Medicines;
-using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -15,7 +14,6 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Result<Guid>>
 {
-    private readonly IBaseRepository<Medicine> _medicines;
     private readonly IBaseRepository<MedicineVariant> _variants;
     private readonly IBaseRepository<MedicineBatch> _batches;
     private readonly IBaseRepository<InventoryAdjustment> _adjustments;
@@ -25,12 +23,11 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public AddBatchCommandHandler(IBaseRepository<Medicine> medicines, IBaseRepository<MedicineVariant> variants,
+    public AddBatchCommandHandler(IBaseRepository<MedicineVariant> variants,
         IBaseRepository<MedicineBatch> batches, IBaseRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
         ICurrentUserService currentUser, NotificationOptions notificationOptions, IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {
-        _medicines = medicines;
         _variants = variants;
         _batches = batches;
         _adjustments = adjustments;
@@ -44,44 +41,37 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     public async Task<Result<Guid>> Handle(AddBatchCommand request, CancellationToken cancellationToken)
     {
         var req = request.Request;
+        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Tracked loads assembled by EF relationship fix-up (no Include):
-        // the variant first, then its batches and medicine; fix-up populates
-        // variant.Batches / variant.Medicine in memory. The low-stock event
-        // below reads both, so all three loads are tracked.
-        var variant = await _variants.GetByIdAsync(req.MedicineVariantId, tracked: true, cancellationToken: cancellationToken);
+        var aggregate = await _variants.ExecuteFirstOrDefaultAsync(
+            _variants.Query(tracked: true)
+                .Where(v => v.Id == req.MedicineVariantId)
+                .Select(v => new
+                {
+                    Variant = v,
+                    Batches = v.Batches.ToList(),
+                    Medicine = v.Medicine
+                }),
+            cancellationToken);
+
+        var variant = aggregate?.Variant;
         if (variant is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "MedicineVariant", req.MedicineVariantId].Value, 404);
 
-        await _batches.ListAsync(b => b.MedicineVariantId == req.MedicineVariantId, cancellationToken: cancellationToken);
-
-        var medicineName = await _medicines.GetAsync(m => m.Name, m => m.Id == variant.MedicineId, cancellationToken);
+        var medicineName = variant.Medicine?.Name;
         if (medicineName is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "Medicine", variant.MedicineId].Value, 404);
 
-        // Generate batch number: First 3 letters of medicine name + variant abbreviation + date
-        var batchNumber = GenerateBatchNumber(medicineName, variant);
+        var batchNumber = MedicineBatch.GenerateNumber(
+            medicineName, variant.Form, variant.Unit, variant.Strength, asOf);
 
         if (await _batches.ExistsAsync(b => b.BatchNumber == batchNumber.Trim(), cancellationToken))
             return Result<Guid>.Failure(_localizer["BatchNumberExists", batchNumber].Value, 409);
 
-        if (req.ExpiryDate <= req.ManufactureDate)
-            return Result<Guid>.Failure(_localizer["ExpiryAfterManufacture"].Value, 422);
-
-        // Packages are converted to base units via the variant's UnitOfMeasure
-        // (e.g. 5 boxes of 30 tablets => 150 tablets), so stored quantities are
-        // always whole multiples of UnitsPerPackage.
         var batch = req.ToEntity(variant.UnitOfMeasure, batchNumber);
         var totalUnits = batch.QuantityAvailable.Value;
 
-        // Every batch creation is audited as a stock movement. The adjustment
-        // type now comes from the caller (AddBatchRequest.AdjustmentType) so
-        // the sign of QuantityChanged must match the type. Also include the
-        // generated batch number in the adjustment for traceability.
-        var adjustmentType = req.AdjustmentType;
-        var isIncrease = adjustmentType is InventoryAdjustmentType.Increase
-            or InventoryAdjustmentType.Returned or InventoryAdjustmentType.TransferIn;
-        var quantityChanged = isIncrease ? totalUnits : -totalUnits;
+        var quantityChanged = InventoryAdjustment.SignedQuantity(req.AdjustmentType, totalUnits);
 
         var adjustment = req.ToEntity(
             batch.Id,
@@ -91,10 +81,8 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
             totalUnits,
             request.Reason ?? AddBatchCommand.DefaultCreationReason);
 
-        var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
-        // Evaluate low-stock for the variant AFTER the new batch is added.
         variant.RaiseLowStockEventIfNeededWithAdditional(asOf, totalUnits);
 
         _batches.Add(batch);
@@ -104,27 +92,5 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
         await _attachments.UploadAsync("Batch", batch.Id, req.File, cancellationToken);
 
         return Result<Guid>.Success(batch.Id);
-    }
-
-    private static string GenerateBatchNumber(string medicineName, MedicineVariant variant)
-    {
-        // First 3 letters of medicine name (uppercase, alphanumeric only)
-        var namePart = new string(medicineName.Where(char.IsLetterOrDigit).Take(3).ToArray()).ToUpperInvariant();
-        if (string.IsNullOrWhiteSpace(namePart))
-            namePart = "MED";
-
-        // Variant abbreviation: Form (first letter) + Unit (first letter) + Strength
-        var formPart = variant.Form.ToString()[0].ToString().ToUpperInvariant();
-        var unitPart = variant.Unit.ToString()[0].ToString().ToUpperInvariant();
-        var strengthPart = variant.Strength.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture).Replace(".", "");
-        
-        var variantPart = $"{formPart}{unitPart}{strengthPart}";
-        if (string.IsNullOrWhiteSpace(variantPart))
-            variantPart = "VAR";
-
-        // Date part: YYMMDD
-        var datePart = DateTime.UtcNow.ToString("yyMMdd");
-
-        return $"{namePart}-{variantPart}-{datePart}";
     }
 }

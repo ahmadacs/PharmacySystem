@@ -30,7 +30,6 @@ public sealed record RegisterRequest
     [Compare(nameof(Password))]
     public string ConfirmPassword { get; init; } = string.Empty;
 
-    /// <summary>Doctor or Pharmacist — Admin accounts are managed by an administrator.</summary>
     [Required]
     public string Role { get; init; } = string.Empty;
 

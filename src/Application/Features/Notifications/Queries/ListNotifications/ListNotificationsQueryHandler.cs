@@ -32,12 +32,10 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
         if (authFailure is not null)
             return authFailure;
 
-
         var isRead = request.IsRead;
         System.Linq.Expressions.Expression<Func<Notification, bool>> predicate =
             n => n.UserId == userId && (!isRead.HasValue || n.IsRead == isRead.Value);
 
-        // Lean selector: only list-screen columns (no full entity).
         var selector = (System.Linq.Expressions.Expression<Func<Notification, NotificationListItemDto>>)(n => new NotificationListItemDto(
             n.Id,
             n.Type,
