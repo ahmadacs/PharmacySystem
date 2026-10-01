@@ -68,7 +68,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
             }
 
         var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
-        var existingVariantIds = (await _variants.ListAsync(v => v.Id, v => variantIds.Contains(v.Id), cancellationToken: cancellationToken)).ToHashSet();
+        var existingVariantIds = (await _variants.ListReadAsync(v => v.Id, v => variantIds.Contains(v.Id), cancellationToken: cancellationToken)).ToHashSet();
 
         foreach (var item in req.Items)
         {

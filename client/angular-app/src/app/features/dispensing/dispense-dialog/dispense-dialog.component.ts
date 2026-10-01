@@ -14,30 +14,7 @@ import { runSubmit } from '../../../core/utils/dialog-helpers';
 import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../../prescriptions/prescriptions.service';
 import { DispensingService } from '../dispensing.service';
-import { DispensePickerResult } from '../dispense-picker-dialog/dispense-picker-dialog.component';
-
-export type DispenseDialogData = DispensePickerResult | string;
-
-interface DispenseViewItem {
-  id: string;
-  medicineName: string;
-  medicineNameAr: string | null;
-  variantName: string;
-  form: number | null;
-  unit: number | null;
-  strength: number | null;
-  dosageInstructions: string | null;
-  prescribedQuantity: number;
-  remainingQuantity: number;
-  availableQuantity: number | null;
-}
-
-interface DispenseView {
-  shortCode: string;
-  phoneNumber: string;
-  patientName: string;
-  items: DispenseViewItem[];
-}
+import { DispenseDialogData, DispensePickerResult, DispenseView, DispenseViewItem } from '../dispense.models';
 
 function isPicked(data: DispenseDialogData): data is DispensePickerResult {
   return typeof data === 'object' && data !== null && 'lookup' in data;

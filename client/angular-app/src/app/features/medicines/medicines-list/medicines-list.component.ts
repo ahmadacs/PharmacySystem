@@ -29,7 +29,7 @@ import { Permissions } from '../../../core/constants/permissions';
 import { CategoryEnum, MedicineForm, MedicineListItemDto } from '../../../core/models/api.models';
 import { ExportService } from '../../../core/services/export.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { confirmAndMutate, openForResult } from '../../../core/utils/dialog-helpers';
+import { confirmAndMutate, DialogPermissionGuard, openForResult, requireDialogPermission } from '../../../core/utils/dialog-helpers';
 import { numericEnumValues } from '../../../core/utils/entity-helpers';
 import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
@@ -153,23 +153,26 @@ export class MedicinesListComponent {
   openCreate(): void {
     openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', data: null }, () => {
       this.refreshMedicines();
-    });
+    }, this.guard(Permissions.MedicinesCreate));
   }
 
   openEdit(medicine: MedicineListItemDto): void {
     openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', data: medicine }, () => {
       this.refreshMedicines();
-    });
+    }, this.guard(Permissions.MedicinesUpdate));
   }
 
   openDetails(medicine: MedicineListItemDto): void {
+    if (!requireDialogPermission(this.guard(Permissions.MedicinesView))) {
+      return;
+    }
     this.dialog.open(MedicineDetailsDialogComponent, { width: '720px', data: medicine.id });
   }
 
   openAddBatch(medicine: MedicineListItemDto): void {
     openForResult(this.dialog, BatchFormDialogComponent, { width: '520px', data: medicine.id }, () => {
       this.refreshMedicines();
-    });
+    }, this.guard(Permissions.MedicinesUpdate));
   }
 
   async export(format: 'excel' | 'pdf'): Promise<void> {
@@ -188,7 +191,12 @@ export class MedicinesListComponent {
       },
       () => this.medicinesService.remove(medicine.id),
       this.translate.instant('medicines.deleted'),
-      () => this.refreshMedicines()
+      () => this.refreshMedicines(),
+      this.guard(Permissions.MedicinesDelete)
     );
+  }
+
+  private guard(...permissions: string[]): DialogPermissionGuard {
+    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
   }
 }

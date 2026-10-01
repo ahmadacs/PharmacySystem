@@ -57,6 +57,9 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, MockEmailService>();
         services.AddScoped<IStaffService, StaffService>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
+        services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
+        services.AddScoped<IMedicineVariantRepository, MedicineVariantRepository>();
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
         services.AddScoped<IExportDataProvider, ExportDataProvider>();
         services.AddScoped<IExportService, ExportService>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

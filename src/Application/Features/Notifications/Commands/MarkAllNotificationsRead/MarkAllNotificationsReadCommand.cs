@@ -35,7 +35,7 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
         if (authFailure is not null)
             return authFailure;
 
-        var unread = await _notifications.ListAsync(n => n.UserId == userId && !n.IsRead, cancellationToken: cancellationToken);
+        var unread = await _notifications.ListAsync(n => n.UserId == userId && !n.IsRead, tracked: true, cancellationToken: cancellationToken);
 
         var now = DateTime.UtcNow;
         foreach (var notification in unread)

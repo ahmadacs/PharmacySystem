@@ -27,41 +27,41 @@ public sealed class GetPatientPrescriptionsQueryHandler
         var today = DateOnly.FromDateTime(DateTime.Today);
         var cutoff = today.AddDays(-lookback);
 
-        var selector = (Expression<Func<Prescription, PatientPrescriptionHistoryRow>>)(p => new PatientPrescriptionHistoryRow(
-                    p.Id,
-                    p.IssuedDate,
-                    p.Status,
-                    p.Items
-                        .OrderBy(i => i.Id)
-                        .Select(i => new PatientMedicationItemRow(
-                            i.Id,
-                            i.MedicineVariantId,
-                            i.MedicineVariant!.MedicineId,
-                            i.MedicineVariant!.Medicine != null ? i.MedicineVariant.Medicine.Name : "Unknown",
-                            i.MedicineVariant!.Medicine != null ? i.MedicineVariant.Medicine.NameAr : null,
-                            i.MedicineVariant!.Form,
-                            i.MedicineVariant!.Unit,
-                            i.MedicineVariant!.Strength,
-                            i.DosageInstructions,
-                            i.PrescribedQuantity.Value,
-                            i.DispensedQuantity.Value,
-                            i.IsRefillable,
-                            i.RefillsAllowed,
-                            i.RefillsUsed,
-                            i.RefillIntervalDays,
-                            i.LastDispensedAt))
-                        .ToList()));
-
         Expression<Func<Prescription, bool>> predicate =
             p => p.PatientId == request.PatientId
                 && p.Status != PrescriptionStatus.Cancelled && p.Status != PrescriptionStatus.Expired
                 && p.IssuedDate >= cutoff;
 
-        var allRows = await _prescriptions.ListAsync(selector, predicate, cancellationToken);
+        var allRows = await _prescriptions.ListReadAsync(HistoryRowProjection, predicate, cancellationToken);
 
         var rows = allRows.OrderByDirection(r => r.IssuedDate, "desc").ToList();
 
         return Result<IReadOnlyList<PatientPrescriptionHistoryDto>>.Success(
             rows.Select(r => r.ToDto(cutoff)).ToList());
     }
+
+    private static readonly Expression<Func<Prescription, PatientPrescriptionHistoryRow>> HistoryRowProjection = p => new PatientPrescriptionHistoryRow(
+        p.Id,
+        p.IssuedDate,
+        p.Status,
+        p.Items
+            .OrderBy(i => i.Id)
+            .Select(i => new PatientMedicationItemRow(
+                i.Id,
+                i.MedicineVariantId,
+                i.MedicineVariant!.MedicineId,
+                i.MedicineVariant!.Medicine != null ? i.MedicineVariant.Medicine.Name : "Unknown",
+                i.MedicineVariant!.Medicine != null ? i.MedicineVariant.Medicine.NameAr : null,
+                i.MedicineVariant!.Form,
+                i.MedicineVariant!.Unit,
+                i.MedicineVariant!.Strength,
+                i.DosageInstructions,
+                i.PrescribedQuantity.Value,
+                i.DispensedQuantity.Value,
+                i.IsRefillable,
+                i.RefillsAllowed,
+                i.RefillsUsed,
+                i.RefillIntervalDays,
+                i.LastDispensedAt))
+            .ToList());
 }

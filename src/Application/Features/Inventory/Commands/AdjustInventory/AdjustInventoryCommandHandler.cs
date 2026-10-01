@@ -14,8 +14,7 @@ namespace Application.Features.Inventory.Commands;
 
 public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInventoryCommand, Result<Guid>>
 {
-    private readonly IBaseRepository<MedicineVariant> _variants;
-    private readonly IBaseRepository<Medicine> _medicines;
+    private readonly IMedicineVariantRepository _variants;
     private readonly IBaseRepository<MedicineBatch> _batches;
     private readonly IBaseRepository<InventoryAdjustment> _adjustments;
     private readonly IUnitOfWork _uow;
@@ -24,13 +23,12 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public AdjustInventoryCommandHandler(IBaseRepository<MedicineVariant> variants, IBaseRepository<Medicine> medicines, IBaseRepository<MedicineBatch> batches,
+    public AdjustInventoryCommandHandler(IMedicineVariantRepository variants, IBaseRepository<MedicineBatch> batches,
         IBaseRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
         ICurrentUserService currentUser, NotificationOptions notificationOptions, IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {
         _variants = variants;
-        _medicines = medicines;
         _batches = batches;
         _adjustments = adjustments;
         _uow = uow;
@@ -60,14 +58,10 @@ public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInvent
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         batch.RaiseNearExpiryEventIfNeeded(asOf, _notificationOptions.ExpiryWarningDays);
 
-        var eventVariant = await _variants.GetByIdAsync(batch.MedicineVariantId, tracked: true, cancellationToken: cancellationToken);
+        var eventVariant = await _variants.GetWithStockGraphAsync(batch.MedicineVariantId, cancellationToken);
 
         if (eventVariant is not null)
         {
-            await _batches.ListAsync(b => b.MedicineVariantId == batch.MedicineVariantId, cancellationToken: cancellationToken);
-
-            await _medicines.GetByIdAsync(eventVariant.MedicineId, tracked: true, cancellationToken: cancellationToken);
-
             eventVariant.RaiseLowStockEventIfNeeded(asOf);
         }
 

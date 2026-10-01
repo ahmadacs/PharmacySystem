@@ -421,19 +421,80 @@ body {
     0 1px 10px 0 rgb(0 0 0 / 12%);
 }
 
+// ── Toasts (MatSnackBar, top-center via ToastService) ──────────────────
+// Borderless light card in the project palette (paper/ink); severity is
+// indicated by the icon so toasts stay clear and consistent in both themes.
+.mat-mdc-snack-bar-container.app-toast {
+  --mdc-snackbar-container-shape: 8px;
+  --mdc-snackbar-container-color: var(--paper);
+  --mdc-snackbar-supporting-text-color: var(--ink);
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: min(440px, calc(100vw - 32px));
+  margin-top: 76px; // clear the fixed top toolbar
+  border: none;
+  border-radius: 8px;
+  box-shadow:
+    0 2px 6px rgb(30 43 34 / 12%),
+    0 1px 2px rgb(30 43 34 / 8%) !important;
+
+  .mdc-snackbar__surface {
+    width: 100%;
+    min-width: 0;
+    background-color: var(--paper) !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
+    padding: 12px 12px 12px 16px;
+    border-radius: inherit;
+  }
+
+  [dir='rtl'] & .mdc-snackbar__surface {
+    padding: 12px 16px 12px 12px;
+  }
+
+  .app-toast__close {
+    color: var(--ink-soft);
+
+    &:hover {
+      color: var(--ink);
+    }
+  }
+}
+
 .mat-mdc-snack-bar-container.toast-success {
-  --mdc-snackbar-container-color: var(--mat-sys-primary);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-primary);
+  .app-toast__icon {
+    background: var(--status-safe);
+    color: #fff;
+  }
 }
 
 .mat-mdc-snack-bar-container.toast-error {
-  --mdc-snackbar-container-color: var(--mat-sys-error);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-error);
+  .app-toast__icon {
+    background: var(--out);
+    color: #fff;
+  }
+
+  .app-toast__close {
+    color: var(--out);
+  }
 }
 
 .mat-mdc-snack-bar-container.toast-info {
-  --mdc-snackbar-container-color: var(--mat-sys-surface-container-high);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-surface);
+  .app-toast__icon {
+    background: var(--deep-green);
+    color: #fff;
+  }
+}
+
+// Toasts stay light in dark mode too, matching the project's paper palette.
+
+// Small screens: toast becomes a full-width top bar under the toolbar.
+@media (max-width: 599.98px) {
+  .mat-mdc-snack-bar-container.app-toast {
+    min-width: 0;
+    max-width: calc(100vw - 16px);
+    width: calc(100vw - 16px);
+    margin-top: 64px;
+  }
 }
 
 .mat-drawer-side ~ .mat-sidenav-content {

@@ -21,10 +21,12 @@ import {
   MatRow
 } from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
 import { DispensingRecordDto } from '../../../core/models/api.models';
+import { ToastService } from '../../../core/services/toast.service';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { openForResult } from '../../../core/utils/dialog-helpers';
+import { DialogPermissionGuard, openForResult } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -32,7 +34,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { localizedVariantName, pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
 import { MedicineForm, MedicineUnit } from '../../../core/models/api.models';
 import { DispenseDialogComponent } from '../dispense-dialog/dispense-dialog.component';
-import { DispensePickerDialogComponent, DispensePickerResult } from '../dispense-picker-dialog/dispense-picker-dialog.component';
+import { DispensePickerDialogComponent } from '../dispense-picker-dialog/dispense-picker-dialog.component';
+import { DispensePickerResult } from '../dispense.models';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 
 @Component({
@@ -70,6 +73,8 @@ import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 })
 export class DispensingListComponent {
   private readonly dialog = inject(MatDialog);
+  private readonly authStore = inject(AuthStore);
+  private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
 
   protected readonly permissions = Permissions;
@@ -125,7 +130,12 @@ export class DispensingListComponent {
             this.refreshRecords();
           }
         );
-      }
+      },
+      this.guard(Permissions.DispensingCreate)
     );
+  }
+
+  private guard(...permissions: string[]): DialogPermissionGuard {
+    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
   }
 }

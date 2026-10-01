@@ -8,6 +8,7 @@ using Application.Resources;
 using Domain.Entities.Notifications;
 using MediatR;
 using Microsoft.Extensions.Localization;
+using System.Linq.Expressions;
 
 namespace Application.Features.Notifications.Queries;
 
@@ -33,10 +34,10 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
             return authFailure;
 
         var isRead = request.IsRead;
-        System.Linq.Expressions.Expression<Func<Notification, bool>> predicate =
+        Expression<Func<Notification, bool>> predicate =
             n => n.UserId == userId && (!isRead.HasValue || n.IsRead == isRead.Value);
 
-        var selector = (System.Linq.Expressions.Expression<Func<Notification, NotificationListItemDto>>)(n => new NotificationListItemDto(
+        Expression<Func<Notification, NotificationListItemDto>> selector = n => new NotificationListItemDto(
             n.Id,
             n.Type,
             n.Title,
@@ -45,17 +46,20 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
             n.LocalizationKey,
             n.LocalizationParamsJson,
             n.IsRead,
-            n.CreatedAt));
+            n.CreatedAt);
 
         var page = request.NormalizedPage;
         var pageSize = request.NormalizedPageSize(200);
 
-        var totalCount = await _notifications.CountAsync(predicate, cancellationToken);
-        var rows = await _notifications.PagedAsync(
-            selector, predicate, n => n.CreatedAt, true, page, pageSize, cancellationToken);
+        var paged = await _notifications.PagedAsync(
+            selector,
+            predicate,
+            orderBy: n => n.CreatedAt,
+            descending: true,
+            page: page,
+            pageSize: pageSize,
+            cancellationToken: cancellationToken);
 
-        var items = rows.ToPagedList(page, pageSize, totalCount);
-
-        return Result<PagedList<NotificationListItemDto>>.Success(items);
+        return Result<PagedList<NotificationListItemDto>>.Success(paged);
     }
 }

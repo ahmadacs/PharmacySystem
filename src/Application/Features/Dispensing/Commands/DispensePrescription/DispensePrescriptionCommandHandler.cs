@@ -17,7 +17,7 @@ namespace Application.Features.Dispensing.Commands;
 
 public sealed class DispensePrescriptionCommandHandler : IRequestHandler<DispensePrescriptionCommand, Result<DispensePrescriptionResponse>>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IPrescriptionRepository _prescriptions;
     private readonly IBaseRepository<DispensingRecord> _records;
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
@@ -27,7 +27,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public DispensePrescriptionCommandHandler(
-        IBaseRepository<Prescription> prescriptions,
+        IPrescriptionRepository prescriptions,
         IBaseRepository<DispensingRecord> records,
         ICurrentUserService currentUser,
         IStaffService staff,
@@ -59,31 +59,8 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
         var shortCode = (request.Request.ShortCode ?? string.Empty).Trim().ToUpperInvariant();
         var normalizedPhone = PhoneNumbers.NormalizeSaudiPhone(request.Request.PhoneNumber);
 
-        var aggregate = await _prescriptions.ExecuteFirstOrDefaultAsync(
-            _prescriptions.Query(tracked: true)
-                .Where(p => p.ShortCode == shortCode
-                    && p.Patient != null
-                    && p.Patient.PhoneNumber == normalizedPhone)
-                .Select(p => new
-                {
-                    Prescription = p,
-                    Items = p.Items.ToList(),
-                    Variants = p.Items
-                        .Where(i => i.MedicineVariant != null)
-                        .Select(i => i.MedicineVariant!)
-                        .ToList(),
-                    Batches = p.Items
-                        .Where(i => i.MedicineVariant != null)
-                        .SelectMany(i => i.MedicineVariant!.Batches)
-                        .ToList(),
-                    Medicines = p.Items
-                        .Where(i => i.MedicineVariant != null && i.MedicineVariant.Medicine != null)
-                        .Select(i => i.MedicineVariant!.Medicine!)
-                        .ToList()
-                }),
-            cancellationToken);
+        var prescription = await _prescriptions.GetForDispensingAsync(shortCode, normalizedPhone, cancellationToken);
 
-        var prescription = aggregate?.Prescription;
         if (prescription is null)
             return Result<DispensePrescriptionResponse>.Failure(
                 _localizer["ResourceNotFound", nameof(Prescription), shortCode].Value, 404);

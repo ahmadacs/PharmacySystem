@@ -60,7 +60,7 @@ public sealed class NotificationService : INotificationService
         if (notification.Type is not (NotificationType.LowStock or NotificationType.NearExpiry))
             return false;
 
-        return await _notifications.GetAsync(n => (Guid?)n.Id, n => n.UserId == userId && n.Type == notification.Type && n.Data == notification.Data && !n.IsRead, cancellationToken) is not null;
+        return await _notifications.ExistsAsync(n => n.UserId == userId && n.Type == notification.Type && n.Data == notification.Data && !n.IsRead, cancellationToken);
     }
 
     private static object ToPayload(Notification entity) => new

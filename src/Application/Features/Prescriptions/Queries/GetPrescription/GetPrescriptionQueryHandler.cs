@@ -28,41 +28,7 @@ public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptio
     public async Task<Result<PrescriptionDetailsDto>> Handle(GetPrescriptionQuery request, CancellationToken cancellationToken)
     {
 
-        var selector = (Expression<Func<Prescription, PrescriptionDetailsRow>>)(p => new PrescriptionDetailsRow(
-            p.Id,
-            p.ShortCode,
-            p.DoctorId,
-            p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty,
-            p.Patient != null ? p.Patient.DateOfBirth : default,
-            p.Patient != null ? p.Patient.PhoneNumber : null,
-            p.Diagnosis,
-            p.IssuedDate,
-            p.Status,
-            p.CreatedBy,
-            p.CreatedAt,
-            p.Items
-                .OrderBy(i => i.Id)
-                .Select(i => new PrescriptionDetailsItemRow(
-                    i.Id,
-                    i.MedicineVariantId,
-                    i.MedicineVariant != null && i.MedicineVariant.Medicine != null
-                        ? i.MedicineVariant.Medicine.Name : "Unknown",
-                    i.MedicineVariant != null && i.MedicineVariant.Medicine != null
-                        ? i.MedicineVariant.Medicine.NameAr : null,
-                    i.MedicineVariant != null ? (Domain.Enums.MedicineForm?)i.MedicineVariant.Form : null,
-                    i.MedicineVariant != null ? (Domain.Enums.MedicineUnit?)i.MedicineVariant.Unit : null,
-                    i.MedicineVariant != null ? (decimal?)i.MedicineVariant.Strength : null,
-                    i.PrescribedQuantity.Value,
-                    i.DispensedQuantity.Value,
-                    i.DosageInstructions,
-                    i.IsRefillable,
-                    i.RefillsAllowed,
-                    i.RefillsUsed,
-                    i.RefillIntervalDays,
-                    i.LastDispensedAt))
-                .ToList()));
-
-        var row = await _prescriptions.GetAsync(selector, p => p.Id == request.Id, cancellationToken);
+        var row = await _prescriptions.GetReadAsync(PrescriptionProjections.ToDetailsRow, p => p.Id == request.Id, cancellationToken);
         if (row is null)
             return Result<PrescriptionDetailsDto>.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 

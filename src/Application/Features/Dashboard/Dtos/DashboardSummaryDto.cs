@@ -1,14 +1,12 @@
-using Application.Features.Prescriptions.Dtos;
-
 namespace Application.Features.Dashboard.Dtos;
 
 public sealed record DashboardSummaryDto(
+    int TotalMedicines,
+    int TotalVariants,
+    int PrescriptionsCreatedToday,
     int DispensedToday,
-    int Pending,
-    int CreatedToday,
+    int AdjustmentsToday,
     int LowStock,
+    int ExpiredBatches,
     int ExpiringSoon,
-    int Fragmented,
-    DateTime GeneratedAt,
-    IReadOnlyList<PrescriptionListItemDto> LatestPending,
-    IReadOnlyList<PrescriptionListItemDto> LatestFragmented);
+    DateTime GeneratedAt);

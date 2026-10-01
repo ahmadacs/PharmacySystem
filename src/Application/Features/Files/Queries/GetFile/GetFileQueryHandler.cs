@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Files.Common;
@@ -31,14 +32,14 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
     public async Task<Result<(Stream Content, string ContentType, string FileName)>> Handle(GetFileQuery request, CancellationToken cancellationToken)
     {
 
-        var selector = (System.Linq.Expressions.Expression<Func<FileAttachment, FileAttachmentRow>>)(f => new FileAttachmentRow(
+        Expression<Func<FileAttachment, FileAttachmentRow>> selector = f => new FileAttachmentRow(
             f.Id,
             f.EntityType,
             f.EntityId,
             f.FileName,
-            f.BlobPath));
+            f.BlobPath);
 
-        var row = await _files.GetAsync(selector, f => f.Id == request.FileId, cancellationToken);
+        var row = await _files.GetReadAsync(selector, f => f.Id == request.FileId, cancellationToken);
         if (row is null)
             return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["ResourceNotFound", "FileAttachment", request.FileId].Value, 404);
 

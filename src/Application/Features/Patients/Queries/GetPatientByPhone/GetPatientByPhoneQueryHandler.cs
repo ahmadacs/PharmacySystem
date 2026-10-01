@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Patients.Dtos;
@@ -15,14 +16,14 @@ public sealed class GetPatientByPhoneQueryHandler : IRequestHandler<GetPatientBy
     {
         var normalized = Domain.Common.PhoneNumbers.NormalizeSaudiPhone(request.PhoneNumber);
 
-        var selector = (System.Linq.Expressions.Expression<Func<Patient, PatientRow>>)(p => new PatientRow(
+        Expression<Func<Patient, PatientRow>> selector = p => new PatientRow(
             p.Id,
             p.FirstName,
             p.LastName,
             p.DateOfBirth,
-            p.PhoneNumber));
+            p.PhoneNumber);
 
-        var row = await _patients.GetAsync(selector, p => p.PhoneNumber == normalized, cancellationToken);
+        var row = await _patients.GetReadAsync(selector, p => p.PhoneNumber == normalized, cancellationToken);
         return Result<PatientDto?>.Success(row?.ToDto());
     }
 }

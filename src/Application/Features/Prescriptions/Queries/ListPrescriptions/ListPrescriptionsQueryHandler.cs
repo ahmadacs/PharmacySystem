@@ -46,18 +46,6 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
             restrictedToDoctorId = await _staff.GetDoctorIdForUserAsync(userId, cancellationToken);
         }
 
-        var selector = (Expression<Func<Prescription, PrescriptionListRow>>)(p => new PrescriptionListRow(
-                    p.Id,
-                    p.ShortCode,
-                    p.DoctorId,
-                    p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty,
-                    p.Patient != null ? p.Patient.DateOfBirth : default,
-                    p.Patient != null ? p.Patient.PhoneNumber : null,
-                    p.IssuedDate,
-                    p.Status,
-                    p.Items.Count(),
-                    p.CreatedAt));
-
         var doctorId = restrictedToDoctorId;
         var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
         var status = request.Status;
@@ -75,22 +63,21 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
         var pageSize = request.NormalizedPageSize();
         var desc = request.SortDir.IsDescending();
 
-        var totalCount = await _prescriptions.CountAsync(predicate, cancellationToken);
-        List<PrescriptionListRow> rows = request.SortBy?.ToLowerInvariant() switch
+        var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "createdat" => await _prescriptions.PagedAsync(selector, predicate, p => p.CreatedAt, desc, page, pageSize, cancellationToken),
-            "patientname" => await _prescriptions.PagedAsync(selector, predicate, p => p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty, desc, page, pageSize, cancellationToken),
-            "status" => await _prescriptions.PagedAsync(selector, predicate, p => p.Status, desc, page, pageSize, cancellationToken),
-            _ => await _prescriptions.PagedAsync(selector, predicate, p => p.IssuedDate, desc, page, pageSize, cancellationToken)
+            "createdat" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.CreatedAt, desc, page, pageSize, cancellationToken),
+            "patientname" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty, desc, page, pageSize, cancellationToken),
+            "status" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.Status, desc, page, pageSize, cancellationToken),
+            _ => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.IssuedDate, desc, page, pageSize, cancellationToken)
         };
+
+        var rows = paged.Items;
 
         var doctorNamesById = await _staff.GetDoctorNamesAsync(
             rows.Select(p => p.DoctorId).Distinct().Where(id => id != Guid.Empty).ToList(),
             cancellationToken);
 
-        var items = rows
-            .Select(p => p.ToDto(doctorNamesById.GetValueOrDefault(p.DoctorId, string.Empty)))
-            .ToPagedList(page, pageSize, totalCount);
+        var items = paged.Select(p => p.ToDto(doctorNamesById.GetValueOrDefault(p.DoctorId, string.Empty)));
 
         return Result<PagedList<PrescriptionListItemDto>>.Success(items);
     }

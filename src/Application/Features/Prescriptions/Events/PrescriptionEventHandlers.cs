@@ -49,7 +49,7 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
         _logger.LogInformation("Prescription {PrescriptionId} created at {OccurredAtUtc}",
             notification.PrescriptionId, notification.OccurredAtUtc);
 
-        var row = await _prescriptions.GetAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
+        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
         if (row is null)
             return;
 
@@ -113,7 +113,7 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
             "Prescription {PrescriptionId} dispensed ({TotalDispensedQuantity} units) at {OccurredAtUtc}",
             notification.PrescriptionId, notification.TotalDispensedQuantity, notification.OccurredAtUtc);
 
-        var row = await _prescriptions.GetAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
+        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
         if (row is null)
             return;
 

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
@@ -21,24 +22,6 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.ExpiryStatus, asOf, request.WithinDays);
 
-        var selector = (System.Linq.Expressions.Expression<Func<MedicineBatch, MedicineBatchRow>>)(b => new MedicineBatchRow(
-                    b.Id,
-                    b.MedicineVariant!.MedicineId,
-                    b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.Name : "Unknown",
-                    b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.NameAr : null,
-                    b.MedicineVariant!.Form,
-                    b.MedicineVariant!.Unit,
-                    b.MedicineVariant!.Strength,
-                    b.BatchNumber,
-                    b.ManufactureDate,
-                    b.ExpiryDate,
-                    b.QuantityReceived.Value,
-                    b.QuantityAvailable.Value,
-                    b.UnitCost.Amount,
-                    b.SupplierName,
-                    b.CreatedAt,
-                    b.DispensingItems.Sum(i => (int?)i.Quantity.Value) ?? 0));
-
         var medicineId = request.MedicineId;
         var trimmed = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
         System.Linq.Expressions.Expression<Func<MedicineBatch, bool>> predicate =
@@ -51,17 +34,14 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
         var pageSize = request.NormalizedPageSize();
         var desc = request.SortDir.IsDescending();
 
-        var totalCount = await _batches.CountAsync(predicate, cancellationToken);
-        List<MedicineBatchRow> rows = request.SortBy?.ToLowerInvariant() switch
+        var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" => await _batches.PagedAsync(selector, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
-            "batch" => await _batches.PagedAsync(selector, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
-            _ => await _batches.PagedAsync(selector, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
+            "quantity" => await _batches.PagedAsync(BatchRowProjection, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
+            "batch" => await _batches.PagedAsync(BatchRowProjection, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
+            _ => await _batches.PagedAsync(BatchRowProjection, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
         };
 
-        var items = rows
-            .Select(r => r.ToDto(asOf))
-            .ToPagedList(page, pageSize, totalCount);
+        var items = paged.Select(r => r.ToDto(asOf));
 
         return Result<PagedList<MedicineBatchDto>>.Success(items);
     }
@@ -74,4 +54,22 @@ public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Resu
             "expired" => (null, asOf),
             _ => (null, null)
         };
+
+    private static readonly Expression<Func<MedicineBatch, MedicineBatchRow>> BatchRowProjection = b => new MedicineBatchRow(
+        b.Id,
+        b.MedicineVariant!.MedicineId,
+        b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.Name : "Unknown",
+        b.MedicineVariant!.Medicine != null ? b.MedicineVariant.Medicine.NameAr : null,
+        b.MedicineVariant!.Form,
+        b.MedicineVariant!.Unit,
+        b.MedicineVariant!.Strength,
+        b.BatchNumber,
+        b.ManufactureDate,
+        b.ExpiryDate,
+        b.QuantityReceived.Value,
+        b.QuantityAvailable.Value,
+        b.UnitCost.Amount,
+        b.SupplierName,
+        b.CreatedAt,
+        b.DispensingItems.Sum(i => (int?)i.Quantity.Value) ?? 0);
 }

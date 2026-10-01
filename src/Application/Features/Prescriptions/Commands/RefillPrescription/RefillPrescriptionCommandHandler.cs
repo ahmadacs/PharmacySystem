@@ -9,15 +9,13 @@ namespace Application.Features.Prescriptions.Commands;
 
 public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPrescriptionCommand, Result>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
-    private readonly IBaseRepository<PrescriptionItem> _items;
+    private readonly IPrescriptionRepository _prescriptions;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public RefillPrescriptionCommandHandler(IBaseRepository<Prescription> prescriptions, IBaseRepository<PrescriptionItem> items, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public RefillPrescriptionCommandHandler(IPrescriptionRepository prescriptions, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
-        _items = items;
         _uow = uow;
         _localizer = localizer;
     }
@@ -27,11 +25,9 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         if (request.ItemIds is null || request.ItemIds.Count == 0)
             return Result.Failure(_localizer["RefillItemRequired"].Value, 400);
 
-        var prescription = await _prescriptions.GetByIdAsync(request.Id, tracked: true, cancellationToken: cancellationToken);
+        var prescription = await _prescriptions.GetForRefillAsync(request.Id, cancellationToken);
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
-
-        await _items.ListAsync(i => i.PrescriptionId == request.Id, cancellationToken: cancellationToken);
 
         prescription.RegisterItemsRefill(request.ItemIds);
 

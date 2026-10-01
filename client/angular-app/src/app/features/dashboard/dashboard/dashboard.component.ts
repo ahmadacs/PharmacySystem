@@ -2,25 +2,11 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle } from '@angular/material/card';
 import { MatProgressBar } from '@angular/material/progress-bar';
-import {
-  MatTable,
-  MatColumnDef,
-  MatHeaderCellDef,
-  MatCellDef,
-  MatHeaderRowDef,
-  MatRowDef,
-  MatHeaderCell,
-  MatCell,
-  MatHeaderRow,
-  MatRow
-} from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
 import { DashboardSummaryDto } from '../../../core/models/api.models';
 import { LocalizationService } from '../../../core/services/localization.service';
-import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 
 @Component({
   selector: 'app-dashboard',
@@ -32,20 +18,8 @@ import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
     MatCardSubtitle,
     MatCardContent,
     MatProgressBar,
-    MatTable,
-    MatColumnDef,
-    MatHeaderCellDef,
-    MatCellDef,
-    MatHeaderRowDef,
-    MatRowDef,
-    MatHeaderCell,
-    MatCell,
-    MatHeaderRow,
-    MatRow,
     PageHeaderComponent,
-    EmptyStateComponent,
-    TranslatePipe,
-    EnumTranslatePipe
+    TranslatePipe
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -54,20 +28,20 @@ export class DashboardComponent {
   private readonly localization = inject(LocalizationService);
   private readonly translate = inject(TranslateService);
 
-  // Single API call - GET /api/v1/dashboard/summary (one MediatR query, 6 parallel counts + 2 lists)
+  // Single API call - GET /api/v1/dashboard/summary (inventory counters only, no prescriptions)
   protected readonly summary = httpResource<DashboardSummaryDto>(
     () => ({ url: `${environment.apiUrl}/dashboard/summary` }),
     {
       defaultValue: {
+        totalMedicines: 0,
+        totalVariants: 0,
+        prescriptionsCreatedToday: 0,
         dispensedToday: 0,
-        pending: 0,
-        createdToday: 0,
+        adjustmentsToday: 0,
         lowStock: 0,
+        expiredBatches: 0,
         expiringSoon: 0,
-        fragmented: 0,
-        generatedAt: new Date().toISOString(),
-        latestPending: [],
-        latestFragmented: []
+        generatedAt: new Date().toISOString()
       }
     }
   );
@@ -86,16 +60,12 @@ export class DashboardComponent {
     return `${datePart} — ${this.translate.instant('dashboard.dailyLiveUpdate')}`;
   });
 
+  protected readonly totalMedicinesCount = computed(() => this.summary.value().totalMedicines);
+  protected readonly totalVariantsCount = computed(() => this.summary.value().totalVariants);
+  protected readonly createdTodayCount = computed(() => this.summary.value().prescriptionsCreatedToday);
   protected readonly dispensedTodayCount = computed(() => this.summary.value().dispensedToday);
-  protected readonly pendingCount = computed(() => this.summary.value().pending);
-  protected readonly createdTodayCount = computed(() => this.summary.value().createdToday);
+  protected readonly adjustmentsTodayCount = computed(() => this.summary.value().adjustmentsToday);
   protected readonly lowStockCount = computed(() => this.summary.value().lowStock);
+  protected readonly expiredBatchesCount = computed(() => this.summary.value().expiredBatches);
   protected readonly expiringCount = computed(() => this.summary.value().expiringSoon);
-  protected readonly fragmentedCount = computed(() => this.summary.value().fragmented);
-
-  protected readonly latestPending = computed(() => this.summary.value().latestPending);
-  protected readonly latestFragmented = computed(() => this.summary.value().latestFragmented);
-
-  protected readonly pendingColumns = ['patientName', 'issuedDate', 'status', 'itemCount'];
-  protected readonly fragmentedColumns = ['patientName', 'issuedDate', 'status', 'itemCount'];
 }

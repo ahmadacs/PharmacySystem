@@ -1,10 +1,8 @@
 <app-page-header [title]="'prescriptions.title' | translate" [subtitle]="'prescriptions.subtitle' | translate">
-  @if (auth.role() === roles.Doctor) {
-    <button actions mat-flat-button color="primary" *appHasPermission="permissions.PrescriptionsCreate" (click)="openCreate()">
-      <mat-icon>add</mat-icon>
-      {{ 'prescriptions.newPrescription' | translate }}
-    </button>
-  }
+  <button actions mat-flat-button color="primary" *appHasPermission="permissions.PrescriptionsCreate" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    {{ 'prescriptions.newPrescription' | translate }}
+  </button>
 </app-page-header>
 
 <div class="filters">

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
@@ -24,17 +25,6 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
         var (expiryFrom, expiryTo) = GetExpiryRange(request.Status, asOf);
 
-        var selector = (System.Linq.Expressions.Expression<Func<MedicineBatch, ExpiryAlertRow>>)(b => new ExpiryAlertRow(
-                    b.Id,
-                    b.MedicineVariant!.Medicine!.Name,
-                    b.MedicineVariant!.Medicine!.NameAr,
-                    b.MedicineVariant!.Form,
-                    b.MedicineVariant!.Unit,
-                    b.MedicineVariant!.Strength,
-                    b.BatchNumber,
-                    b.ExpiryDate,
-                    b.QuantityAvailable.Value));
-
         var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
         System.Linq.Expressions.Expression<Func<MedicineBatch, bool>> predicate =
             b => (search == null || b.BatchNumber.Contains(search) || b.MedicineVariant!.Medicine!.Name.Contains(search))
@@ -45,17 +35,14 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
         var pageSize = request.NormalizedPageSize(100);
         var desc = request.SortDir.IsDescending();
 
-        var totalCount = await _repo.CountAsync(predicate, cancellationToken);
-        List<ExpiryAlertRow> rows = request.SortBy?.ToLowerInvariant() switch
+        var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "remaining" => await _repo.PagedAsync(selector, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
-            "batch" or "batchnumber" => await _repo.PagedAsync(selector, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
-            _ => await _repo.PagedAsync(selector, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
+            "quantity" or "remaining" => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
+            "batch" or "batchnumber" => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
+            _ => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
         };
 
-        var items = rows
-            .Select(r => r.ToDto(asOf))
-            .ToPagedList(page, pageSize, totalCount);
+        var items = paged.Select(r => r.ToDto(asOf));
 
         return Result<PagedList<ExpiryAlertDto>>.Success(items);
     }
@@ -69,4 +56,15 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
             "safe" => (asOf.AddDays(WarningWithinDays), null),
             _ => (null, null)
         };
+
+    private static readonly Expression<Func<MedicineBatch, ExpiryAlertRow>> ExpiryAlertProjection = b => new ExpiryAlertRow(
+        b.Id,
+        b.MedicineVariant!.Medicine!.Name,
+        b.MedicineVariant!.Medicine!.NameAr,
+        b.MedicineVariant!.Form,
+        b.MedicineVariant!.Unit,
+        b.MedicineVariant!.Strength,
+        b.BatchNumber,
+        b.ExpiryDate,
+        b.QuantityAvailable.Value);
 }

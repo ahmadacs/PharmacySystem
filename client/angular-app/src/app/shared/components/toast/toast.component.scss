@@ -1,0 +1,63 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.app-toast__content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font: var(--mat-sys-body-medium);
+  line-height: 1.5;
+}
+
+.app-toast__icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-toast__message {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.app-toast__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  line-height: 1;
+  margin: 0 -8px 0 0;
+  opacity: 0.85;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+}
+
+[dir='rtl'] .app-toast__close {
+  margin: 0 0 0 -8px;
+}

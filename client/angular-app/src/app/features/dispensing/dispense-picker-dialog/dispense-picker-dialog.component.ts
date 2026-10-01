@@ -17,11 +17,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { SaudiPhoneDigitsDirective } from '../../../shared/directives/saudi-phone-digits.directive';
 import { SAUDI_PHONE_SUFFIX_PATTERN, toFullSaudiPhone } from '../../../shared/validators/phone.validators';
 import { DispensingService } from '../dispensing.service';
-
-export interface DispensePickerResult {
-  lookup: DispensingLookupResponse;
-  phoneNumber: string;
-}
+import { DispensePickerResult } from '../dispense.models';
 
 @Component({
   selector: 'app-dispense-picker-dialog',

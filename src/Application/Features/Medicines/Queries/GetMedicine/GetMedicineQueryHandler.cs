@@ -26,54 +26,7 @@ public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, 
     {
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var selector = (Expression<Func<Medicine, MedicineDetailsRow>>)(m => new MedicineDetailsRow(
-                    m.Id,
-                    m.Name,
-                    m.NameAr,
-                    m.GenericName != null ? m.GenericName.Name : string.Empty,
-                    m.GenericName != null ? m.GenericName.NameAr : null,
-                    m.CategoryEnum,
-                    m.IsControlled,
-                    m.IsActive,
-                    m.Variants
-                        .OrderBy(v => v.Form)
-                        .ThenBy(v => v.Strength)
-                        .Select(v => new VariantWithBatchesRow(
-                            v.IsActive,
-                            new MedicineVariantRow(
-                                v.Id,
-                                v.Form,
-                                v.Unit,
-                                v.Strength,
-                                v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0,
-                                v.ReorderLevel.Value,
-                                v.UnitOfMeasure.BaseUnitName,
-                                v.UnitOfMeasure.PackageUnitName,
-                                v.UnitOfMeasure.UnitsPerPackage,
-                                v.UnitOfMeasure.IsDivisible),
-                            v.Batches
-                                .OrderBy(b => b.ExpiryDate)
-                                .Select(b => new MedicineBatchRow(
-                                    b.Id,
-                                    m.Id,
-                                    m.Name,
-                                    m.NameAr,
-                                    v.Form,
-                                    v.Unit,
-                                    v.Strength,
-                                    b.BatchNumber,
-                                    b.ManufactureDate,
-                                    b.ExpiryDate,
-                                    b.QuantityReceived.Value,
-                                    b.QuantityAvailable.Value,
-                                    b.UnitCost.Amount,
-                                    b.SupplierName,
-                                    b.CreatedAt,
-                                    0))
-                                .ToList()))
-                        .ToList()));
-
-        var row = await _repo.GetAsync(selector, m => m.Id == request.Id, cancellationToken);
+        var row = await _repo.GetReadAsync(MedicineProjections.ToDetailsRow(asOf), m => m.Id == request.Id, cancellationToken);
         if (row is null)
             return Result<MedicineDetailsDto>.Failure(_localizer["ResourceNotFound", "Medicine", request.Id].Value, 404);
 

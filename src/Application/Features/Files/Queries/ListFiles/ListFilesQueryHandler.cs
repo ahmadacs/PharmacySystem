@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
@@ -38,7 +39,7 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
         if (accessFailure is not null)
             return Result<IReadOnlyList<FileAttachmentDto>>.Failure(accessFailure.Error!, accessFailure.StatusCode);
 
-        var selector = (System.Linq.Expressions.Expression<Func<FileAttachment, FileAttachmentDto>>)(f => new FileAttachmentDto(
+        Expression<Func<FileAttachment, FileAttachmentDto>> selector = f => new FileAttachmentDto(
             f.Id,
             f.EntityType.ToString(),
             f.EntityId,
@@ -46,12 +47,12 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
             f.ContentType,
             f.SizeBytes,
             f.BlobPath,
-            f.CreatedAt));
+            f.CreatedAt);
 
-        System.Linq.Expressions.Expression<Func<FileAttachment, bool>> predicate =
+        Expression<Func<FileAttachment, bool>> predicate =
             f => f.EntityType == entityType && f.EntityId == request.EntityId;
 
-        var list = (await _files.ListAsync(selector, predicate, cancellationToken))
+        var list = (await _files.ListReadAsync(selector, predicate, cancellationToken))
             .OrderByDirection(f => f.CreatedAt, "desc")
             .ToList();
         return Result<IReadOnlyList<FileAttachmentDto>>.Success(list);

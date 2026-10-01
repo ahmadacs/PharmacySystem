@@ -14,7 +14,7 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Result<Guid>>
 {
-    private readonly IBaseRepository<MedicineVariant> _variants;
+    private readonly IMedicineVariantRepository _variants;
     private readonly IBaseRepository<MedicineBatch> _batches;
     private readonly IBaseRepository<InventoryAdjustment> _adjustments;
     private readonly IUnitOfWork _uow;
@@ -23,7 +23,7 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public AddBatchCommandHandler(IBaseRepository<MedicineVariant> variants,
+    public AddBatchCommandHandler(IMedicineVariantRepository variants,
         IBaseRepository<MedicineBatch> batches, IBaseRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
         ICurrentUserService currentUser, NotificationOptions notificationOptions, IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
@@ -43,18 +43,8 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
         var req = request.Request;
         var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var aggregate = await _variants.ExecuteFirstOrDefaultAsync(
-            _variants.Query(tracked: true)
-                .Where(v => v.Id == req.MedicineVariantId)
-                .Select(v => new
-                {
-                    Variant = v,
-                    Batches = v.Batches.ToList(),
-                    Medicine = v.Medicine
-                }),
-            cancellationToken);
+        var variant = await _variants.GetForAddBatchAsync(req.MedicineVariantId, cancellationToken);
 
-        var variant = aggregate?.Variant;
         if (variant is null)
             return Result<Guid>.Failure(_localizer["ResourceNotFound", "MedicineVariant", req.MedicineVariantId].Value, 404);
 

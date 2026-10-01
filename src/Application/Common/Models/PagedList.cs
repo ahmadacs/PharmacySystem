@@ -16,6 +16,16 @@ public sealed class PagedList<T>
         PageSize = pageSize;
         TotalCount = totalCount;
     }
+
+    /// <summary>
+    /// Maps items to a new type while preserving the pagination metadata,
+    /// so callers no longer pass <c>Page/PageSize/TotalCount</c> manually.
+    /// </summary>
+    public PagedList<TResult> Select<TResult>(Func<T, TResult> map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        return new PagedList<TResult>(Items.Select(map).ToList(), Page, PageSize, TotalCount);
+    }
 }
 
 public static class PagedListMapping

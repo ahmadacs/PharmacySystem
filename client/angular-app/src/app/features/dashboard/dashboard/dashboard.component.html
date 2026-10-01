@@ -1,6 +1,24 @@
 <app-page-header [title]="'dashboard.dailyTitle' | translate" [subtitle]="dailySubtitle()"></app-page-header>
 
+@if (summary.isLoading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
 <div class="stats">
+  <mat-card class="stat">
+    <mat-card-header>
+      <mat-card-title class="mono">{{ totalMedicinesCount() }}</mat-card-title>
+      <mat-card-subtitle>{{ 'dashboard.stats.totalMedicines' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+
+  <mat-card class="stat">
+    <mat-card-header>
+      <mat-card-title class="mono">{{ totalVariantsCount() }}</mat-card-title>
+      <mat-card-subtitle>{{ 'dashboard.stats.totalVariants' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+
   <mat-card class="stat">
     <mat-card-header>
       <mat-card-title class="mono">{{ createdTodayCount() }}</mat-card-title>
@@ -15,10 +33,24 @@
     </mat-card-header>
   </mat-card>
 
+  <mat-card class="stat">
+    <mat-card-header>
+      <mat-card-title class="mono">{{ adjustmentsTodayCount() }}</mat-card-title>
+      <mat-card-subtitle>{{ 'dashboard.stats.adjustmentsToday' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+
   <mat-card class="stat stat--warn">
     <mat-card-header>
       <mat-card-title class="mono">{{ lowStockCount() }}</mat-card-title>
       <mat-card-subtitle>{{ 'dashboard.stats.lowStockDaily' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+
+  <mat-card class="stat stat--warn">
+    <mat-card-header>
+      <mat-card-title class="mono">{{ expiredBatchesCount() }}</mat-card-title>
+      <mat-card-subtitle>{{ 'dashboard.stats.expiredBatches' | translate }}</mat-card-subtitle>
     </mat-card-header>
   </mat-card>
 
@@ -27,79 +59,5 @@
       <mat-card-title class="mono">{{ expiringCount() }}</mat-card-title>
       <mat-card-subtitle>{{ 'dashboard.stats.expiringDaily' | translate }}</mat-card-subtitle>
     </mat-card-header>
-  </mat-card>
-</div>
-
-<div class="panels">
-  <mat-card class="panel">
-    <mat-card-header>
-      <mat-card-title>{{ 'dashboard.panels.latestPending' | translate }}</mat-card-title>
-      <span class="count">{{ pendingCount() }}</span>
-    </mat-card-header>
-    <mat-card-content>
-      @if (summary.isLoading()) {
-        <mat-progress-bar mode="indeterminate" />
-      }
-      @if (latestPending().length > 0) {
-        <table mat-table [dataSource]="latestPending()">
-          <ng-container matColumnDef="patientName">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.patient' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.patientName }}</td>
-          </ng-container>
-          <ng-container matColumnDef="issuedDate">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.issued' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.issuedDate }}</td>
-          </ng-container>
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.status' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.status | enumTranslate:'PrescriptionStatus' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="itemCount">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.items' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.itemCount }}</td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="pendingColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: pendingColumns"></tr>
-        </table>
-      } @else if (!summary.isLoading()) {
-        <app-empty-state icon="description" [message]="'dashboard.empty.noPending' | translate" />
-      }
-    </mat-card-content>
-  </mat-card>
-
-  <mat-card class="panel">
-    <mat-card-header>
-      <mat-card-title>{{ 'dashboard.panels.latestFragmented' | translate }}</mat-card-title>
-      <span class="count">{{ fragmentedCount() }}</span>
-    </mat-card-header>
-    <mat-card-content>
-      @if (summary.isLoading()) {
-        <mat-progress-bar mode="indeterminate" />
-      }
-      @if (latestFragmented().length > 0) {
-        <table mat-table [dataSource]="latestFragmented()">
-          <ng-container matColumnDef="patientName">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.patient' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.patientName }}</td>
-          </ng-container>
-          <ng-container matColumnDef="issuedDate">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.issued' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.issuedDate }}</td>
-          </ng-container>
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.status' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.status | enumTranslate:'PrescriptionStatus' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="itemCount">
-            <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.tables.items' | translate }}</th>
-            <td mat-cell *matCellDef="let row">{{ row.itemCount }}</td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="fragmentedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: fragmentedColumns"></tr>
-        </table>
-      } @else if (!summary.isLoading()) {
-        <app-empty-state icon="check_circle" [message]="'dashboard.empty.noFragmented' | translate" />
-      }
-    </mat-card-content>
   </mat-card>
 </div>

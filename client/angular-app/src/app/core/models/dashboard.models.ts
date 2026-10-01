@@ -1,13 +1,11 @@
-import { PrescriptionListItemDto } from './prescriptions.models';
-
 export interface DashboardSummaryDto {
+  totalMedicines: number;
+  totalVariants: number;
+  prescriptionsCreatedToday: number;
   dispensedToday: number;
-  pending: number;
-  createdToday: number;
+  adjustmentsToday: number;
   lowStock: number;
+  expiredBatches: number;
   expiringSoon: number;
-  fragmented: number;
   generatedAt: string;
-  latestPending: PrescriptionListItemDto[];
-  latestFragmented: PrescriptionListItemDto[];
 }
