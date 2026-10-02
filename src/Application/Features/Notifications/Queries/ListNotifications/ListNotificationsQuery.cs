@@ -7,4 +7,6 @@ namespace Application.Features.Notifications.Queries;
 public sealed record ListNotificationsQuery : PagedQuery, IRequest<Result<PagedList<NotificationListItemDto>>>
 {
     public bool? IsRead { get; init; }
+
+    public override int MaxPageSize => 200;
 }

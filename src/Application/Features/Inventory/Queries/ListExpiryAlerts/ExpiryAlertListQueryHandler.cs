@@ -31,15 +31,11 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
                 && (!expiryFrom.HasValue || b.ExpiryDate >= expiryFrom.Value)
                 && (!expiryTo.HasValue || b.ExpiryDate < expiryTo.Value);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
-        var desc = request.SortDir.IsDescending();
-
         var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "remaining" => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.QuantityAvailable.Value, desc, page, pageSize, cancellationToken),
-            "batch" or "batchnumber" => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.BatchNumber, desc, page, pageSize, cancellationToken),
-            _ => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.ExpiryDate, desc, page, pageSize, cancellationToken)
+            "quantity" or "remaining" => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.QuantityAvailable.Value, request.ToPagination(), cancellationToken),
+            "batch" or "batchnumber" => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.BatchNumber, request.ToPagination(), cancellationToken),
+            _ => await _repo.PagedAsync(ExpiryAlertProjection, predicate, b => b.ExpiryDate, request.ToPagination(), cancellationToken)
         };
 
         var items = paged.Select(r => r.ToDto(asOf));

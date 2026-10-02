@@ -35,16 +35,12 @@ public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQue
                 && (!form.HasValue || m.Variants.Any(v => v.Form == form.Value))
                 && (!isActive.HasValue || m.IsActive == isActive.Value);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
-        var desc = request.SortDir.IsDescending();
-
         var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "createdat" => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.CreatedAt, desc, page, pageSize, cancellationToken),
-            "category" => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.CategoryEnum, desc, page, pageSize, cancellationToken),
-            "form" => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.Variants.Where(v => v.IsActive).OrderBy(v => v.Form).Select(v => (Domain.Enums.MedicineForm?)v.Form).FirstOrDefault(), desc, page, pageSize, cancellationToken),
-            _ => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.Name, desc, page, pageSize, cancellationToken)
+            "createdat" => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.CreatedAt, request.ToPagination(), cancellationToken),
+            "category" => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.CategoryEnum, request.ToPagination(), cancellationToken),
+            "form" => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.Variants.Where(v => v.IsActive).OrderBy(v => v.Form).Select(v => (Domain.Enums.MedicineForm?)v.Form).FirstOrDefault(), request.ToPagination(), cancellationToken),
+            _ => await _repo.PagedAsync(MedicineProjections.ToListRow(asOf), predicate, m => m.Name, request.ToPagination(), cancellationToken)
         };
 
         var items = paged.Select(r => r.ToDto());

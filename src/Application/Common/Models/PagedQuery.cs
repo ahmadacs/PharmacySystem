@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Application.Common.Extensions;
 
 namespace Application.Common.Models;
 
@@ -19,7 +20,12 @@ public abstract record PagedQuery
     [RegularExpression("^(asc|desc)$", ErrorMessage = "SortDir must be 'asc' or 'desc'.")]
     public virtual string SortDir { get; init; } = "desc";
 
-    public int NormalizedPage => Math.Max(1, Page);
+    public virtual int MaxPageSize => 100;
 
-    public int NormalizedPageSize(int maxPageSize = 100) => Math.Clamp(PageSize, 1, maxPageSize);
+    public int EffectivePage => Math.Max(1, Page);
+
+    public int EffectivePageSize => Math.Clamp(PageSize, 1, MaxPageSize);
+
+    public PaginationParams ToPagination()
+        => new(EffectivePage, EffectivePageSize, SortDir.IsDescending());
 }

@@ -48,16 +48,11 @@ public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotifica
             n.IsRead,
             n.CreatedAt);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(200);
-
         var paged = await _notifications.PagedAsync(
             selector,
             predicate,
             orderBy: n => n.CreatedAt,
-            descending: true,
-            page: page,
-            pageSize: pageSize,
+            request.ToPagination() with { Descending = true },
             cancellationToken: cancellationToken);
 
         return Result<PagedList<NotificationListItemDto>>.Success(paged);

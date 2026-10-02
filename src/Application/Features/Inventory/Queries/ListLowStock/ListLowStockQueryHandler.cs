@@ -25,15 +25,11 @@ public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery
             v => v.IsActive && v.Medicine!.IsActive
                 && v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) <= v.ReorderLevel.Value;
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
-        var desc = request.SortDir.IsDescending();
-
         var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "available" => await _repo.PagedAsync(LowStockProjection(asOf), predicate, v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0, desc, page, pageSize, cancellationToken),
-            "strength" => await _repo.PagedAsync(LowStockProjection(asOf), predicate, v => v.Strength, desc, page, pageSize, cancellationToken),
-            _ => await _repo.PagedAsync(LowStockProjection(asOf), predicate, v => v.Medicine!.Name, desc, page, pageSize, cancellationToken)
+            "quantity" or "available" => await _repo.PagedAsync(LowStockProjection(asOf), predicate, v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0, request.ToPagination(), cancellationToken),
+            "strength" => await _repo.PagedAsync(LowStockProjection(asOf), predicate, v => v.Strength, request.ToPagination(), cancellationToken),
+            _ => await _repo.PagedAsync(LowStockProjection(asOf), predicate, v => v.Medicine!.Name, request.ToPagination(), cancellationToken)
         };
 
         var items = paged.Select(r => r.ToDto());

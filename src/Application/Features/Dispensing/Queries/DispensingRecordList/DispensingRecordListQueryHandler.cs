@@ -31,16 +31,13 @@ public sealed class DispensingRecordListQueryHandler : IRequestHandler<Dispensin
             r => (search == null ||
                     ((r.Prescription != null && r.Prescription.Patient != null &&
                       (r.Prescription.Patient.FirstName.Contains(search) || r.Prescription.Patient.LastName.Contains(search))) ||
-                     (r.Notes != null && r.Notes.Contains(search))))
+                      (r.Notes != null && r.Notes.Contains(search))))
                 && (!fromDate.HasValue || r.DispensedAt >= fromDate.Value)
                 && (!toDate.HasValue || r.DispensedAt <= toDate.Value);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
-
         var paged = await _records.PagedAsync(
             RecordWithItemsProjection, predicate, r => r.DispensedAt,
-            request.SortDir.IsDescending(), page, pageSize, cancellationToken);
+            request.ToPagination(), cancellationToken);
 
         var pharmacistNamesById = await _staff.GetPharmacistNamesAsync(
             paged.Items.Select(x => x.Row.PharmacistId).Distinct().ToList(), cancellationToken);

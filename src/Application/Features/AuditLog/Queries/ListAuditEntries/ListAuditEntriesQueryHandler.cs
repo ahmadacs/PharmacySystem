@@ -30,10 +30,6 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
         ListAuditEntriesQuery request,
         CancellationToken cancellationToken)
     {
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(200);
-        var desc = request.SortDir.IsDescending();
-
         var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
         var entity = request.Entity;
         var action = request.Action;
@@ -48,10 +44,10 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
 
         var pagedEntries = request.SortBy?.ToLowerInvariant() switch
         {
-            "entity" => await _audit.PagedAsync(e => e, predicate, e => e.EntityName, desc, page, pageSize, cancellationToken),
-            "action" => await _audit.PagedAsync(e => e, predicate, e => e.Action, desc, page, pageSize, cancellationToken),
+            "entity" => await _audit.PagedAsync(e => e, predicate, e => e.EntityName, request.ToPagination(), cancellationToken),
+            "action" => await _audit.PagedAsync(e => e, predicate, e => e.Action, request.ToPagination(), cancellationToken),
 
-            _ => await _audit.PagedAsync(e => e, predicate, e => e.ChangedAt, desc, page, pageSize, cancellationToken)
+            _ => await _audit.PagedAsync(e => e, predicate, e => e.ChangedAt, request.ToPagination(), cancellationToken)
         };
 
         var userNames = await _users.GetDisplayNamesAsync(

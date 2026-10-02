@@ -31,14 +31,10 @@ public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<Invent
             a => (!type.HasValue || a.Type == type.Value)
                 && (trimmed == null || a.Reason.Contains(trimmed));
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
-        var desc = request.SortDir.IsDescending();
-
         var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" => await _repo.PagedAsync(AdjustmentRowProjection, predicate, a => a.QuantityChanged, desc, page, pageSize, cancellationToken),
-            _ => await _repo.PagedAsync(AdjustmentRowProjection, predicate, a => a.AdjustedAt, desc, page, pageSize, cancellationToken)
+            "quantity" => await _repo.PagedAsync(AdjustmentRowProjection, predicate, a => a.QuantityChanged, request.ToPagination(), cancellationToken),
+            _ => await _repo.PagedAsync(AdjustmentRowProjection, predicate, a => a.AdjustedAt, request.ToPagination(), cancellationToken)
         };
 
         var rows = paged.Items;

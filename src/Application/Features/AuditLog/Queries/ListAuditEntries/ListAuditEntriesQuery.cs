@@ -19,4 +19,6 @@ public sealed record ListAuditEntriesQuery : PagedQuery, IRequest<Result<PagedLi
     public DateTime? To { get; init; }
 
     public override string? SortBy { get; init; } = "changedAt";
+
+    public override int MaxPageSize => 200;
 }

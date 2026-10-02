@@ -59,16 +59,12 @@ public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescrip
                 && (!fromDate.HasValue || p.IssuedDate >= fromDate.Value)
                 && (!toDate.HasValue || p.IssuedDate <= toDate.Value);
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize();
-        var desc = request.SortDir.IsDescending();
-
         var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "createdat" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.CreatedAt, desc, page, pageSize, cancellationToken),
-            "patientname" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty, desc, page, pageSize, cancellationToken),
-            "status" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.Status, desc, page, pageSize, cancellationToken),
-            _ => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.IssuedDate, desc, page, pageSize, cancellationToken)
+            "createdat" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.CreatedAt, request.ToPagination(), cancellationToken),
+            "patientname" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.Patient != null ? (p.Patient.FirstName + " " + p.Patient.LastName) : string.Empty, request.ToPagination(), cancellationToken),
+            "status" => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.Status, request.ToPagination(), cancellationToken),
+            _ => await _prescriptions.PagedAsync(PrescriptionProjections.ToListRow, predicate, p => p.IssuedDate, request.ToPagination(), cancellationToken)
         };
 
         var rows = paged.Items;

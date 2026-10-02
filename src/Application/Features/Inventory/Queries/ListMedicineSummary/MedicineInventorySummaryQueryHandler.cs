@@ -64,17 +64,13 @@ public sealed class MedicineInventorySummaryQueryHandler
                 || (m.GenericName != null && m.GenericName.NameAr != null && m.GenericName.NameAr.Contains(search)),
         };
 
-        var page = request.NormalizedPage;
-        var pageSize = request.NormalizedPageSize(100);
-        var desc = request.SortDir.IsDescending();
-
         var paged = request.SortBy?.ToLowerInvariant() switch
         {
-            "quantity" or "available" or "totalquantity" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Where(v => v.IsActive).Sum(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value)) ?? 0, desc, page, pageSize, cancellationToken),
-            "reorder" or "reorderlevel" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Where(v => v.IsActive).Sum(v => (int?)v.ReorderLevel.Value) ?? 0, desc, page, pageSize, cancellationToken),
-            "nearestExpiry" or "expiry" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Min(v => v.Batches.Where(b => b.ExpiryDate >= asOf).Min(b => (DateOnly?)b.ExpiryDate)), desc, page, pageSize, cancellationToken),
-            "variantCount" or "variants" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Count(v => v.IsActive), desc, page, pageSize, cancellationToken),
-            _ => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Name, desc, page, pageSize, cancellationToken)
+            "quantity" or "available" or "totalquantity" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Where(v => v.IsActive).Sum(v => v.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value)) ?? 0, request.ToPagination(), cancellationToken),
+            "reorder" or "reorderlevel" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Where(v => v.IsActive).Sum(v => (int?)v.ReorderLevel.Value) ?? 0, request.ToPagination(), cancellationToken),
+            "nearestExpiry" or "expiry" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Min(v => v.Batches.Where(b => b.ExpiryDate >= asOf).Min(b => (DateOnly?)b.ExpiryDate)), request.ToPagination(), cancellationToken),
+            "variantCount" or "variants" => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Variants.Count(v => v.IsActive), request.ToPagination(), cancellationToken),
+            _ => await _repo.PagedAsync(SummaryRowProjection(asOf), predicate, m => m.Name, request.ToPagination(), cancellationToken)
         };
 
         var items = paged.Select(r => r.ToDto());
