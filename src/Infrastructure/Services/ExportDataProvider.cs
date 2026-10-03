@@ -43,7 +43,7 @@ public class ExportDataProvider : IExportDataProvider
             {
                 foreach (var v in m.Variants)
                 {
-                    rows.Add(new MedicineExportRow(m.Name, m.GenericName, m.CategoryEnum.ToString(), v.Form.ToString(), $"{v.Strength} {v.Unit}", v.Stock, m.IsActive));
+                    rows.Add(new MedicineExportRow(m.Name, m.GenericName, m.CategoryEnum.ToString(), v.Form.ToString(), FormattableString.Invariant($"{v.Strength} {v.Unit}"), v.Stock, m.IsActive));
                 }
             }
         }

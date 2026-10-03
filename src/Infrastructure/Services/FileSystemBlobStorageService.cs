@@ -1,3 +1,4 @@
+using System.Globalization;
 using Application.Common.Interfaces;
 using Application.Common.Options;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +23,7 @@ public class FileSystemBlobStorageService : IFileStorageService
     {
         var ext = Path.GetExtension(fileName);
         var blobName = $"{Guid.NewGuid():N}{ext}";
-        var datePath = DateTime.UtcNow.ToString("yyyy/MM/dd");
+        var datePath = DateTime.UtcNow.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
         var relativePath = Path.Combine(datePath, blobName).Replace("\\", "/");
         var fullPath = Path.Combine(_basePath, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);

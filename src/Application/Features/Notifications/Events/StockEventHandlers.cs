@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Application.Common.Interfaces;
 using Domain.Enums;
@@ -48,7 +49,7 @@ public sealed class MedicineLowStockNotificationHandler : INotificationHandler<M
         var create = new NotificationCreate(
             NotificationType.LowStock,
             "Low stock alert",
-            $"Low stock for {notification.MedicineName} {notification.VariantName}: {notification.AvailableStock} (reorder level {notification.ReorderLevel}).",
+            FormattableString.Invariant($"Low stock for {notification.MedicineName} {notification.VariantName}: {notification.AvailableStock} (reorder level {notification.ReorderLevel})."),
             Data: JsonSerializer.Serialize(new { medicineId = notification.MedicineId, variantId = notification.MedicineVariantId }),
             LocalizationKey: "notifications.lowStock",
             LocalizationParamsJson: JsonSerializer.Serialize(new { medicineName = $"{notification.MedicineName} {notification.VariantName}", availableStock = notification.AvailableStock, reorderLevel = notification.ReorderLevel }));
@@ -79,10 +80,10 @@ public sealed class MedicineBatchNearExpiryNotificationHandler : INotificationHa
         var create = new NotificationCreate(
             NotificationType.NearExpiry,
             "Batch near expiry",
-            $"Batch {notification.BatchNumber} expires on {notification.ExpiryDate:dd/MM/yyyy}.",
+            FormattableString.Invariant($"Batch {notification.BatchNumber} expires on {notification.ExpiryDate:dd/MM/yyyy}."),
             Data: JsonSerializer.Serialize(new { batchId = notification.MedicineBatchId }),
             LocalizationKey: "notifications.nearExpiry",
-            LocalizationParamsJson: JsonSerializer.Serialize(new { batchNumber = notification.BatchNumber, expiryDate = notification.ExpiryDate.ToString("dd/MM/yyyy") }));
+            LocalizationParamsJson: JsonSerializer.Serialize(new { batchNumber = notification.BatchNumber, expiryDate = notification.ExpiryDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) }));
 
         return NotificationFanout.SendToStaffAsync(_notifications, create, cancellationToken);
     }
