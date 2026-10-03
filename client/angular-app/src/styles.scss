@@ -462,15 +462,15 @@ body {
 
 .mat-mdc-snack-bar-container.toast-success {
   .app-toast__icon {
-    background: var(--status-safe);
-    color: #fff;
+    background: var(--good-soft);
+    color: var(--good);
   }
 }
 
 .mat-mdc-snack-bar-container.toast-error {
   .app-toast__icon {
-    background: var(--out);
-    color: #fff;
+    background: var(--out-soft);
+    color: var(--out);
   }
 
   .app-toast__close {
@@ -480,12 +480,12 @@ body {
 
 .mat-mdc-snack-bar-container.toast-info {
   .app-toast__icon {
-    background: var(--deep-green);
-    color: #fff;
+    background: var(--primary-soft);
+    color: var(--primary);
   }
 }
 
-// Toasts stay light in dark mode too, matching the project's paper palette.
+// Toasts follow the active theme via --paper/--ink.
 
 // Small screens: toast becomes a full-width top bar under the toolbar.
 @media (max-width: 599.98px) {
