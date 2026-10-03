@@ -5,32 +5,24 @@
 
 // إعطاء background color للـ icon والقائمة مفتوحة
 :host button[aria-expanded='true'] {
-  background: var(--amber-soft) !important;
-  border-color: var(--amber) !important;
-  color: var(--deep-green) !important;
-  --mdc-icon-button-icon-color: var(--deep-green) !important;
+  background: var(--hover) !important;
+  border-color: var(--line) !important;
+  color: var(--primary) !important;
+  --mdc-icon-button-icon-color: var(--primary) !important;
 }
 
 :host button[aria-expanded='true'] mat-icon {
-  color: var(--deep-green) !important;
+  color: var(--primary) !important;
 }
 
 .notification-dropdown {
-  --bg: #F1F3ED;
-  --paper: #FBFAF5;
-  --ink: #1E2B22;
-  --line: #D9D8C8;
-  --deep-green: #28392F;
-  --amber: #B8823C;
-  --amber-soft: #EFE0C4;
-  --unread: #E8EAE7;
-  --unread-hover: #DFE2DD;
-
+  // Theme tokens are inherited from the global stylesheet
+  // (:root / html.dark in styles.scss).
   width: 100%;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 4px;
-  box-shadow: 0 12px 32px rgba(30, 43, 34, 0.14);
+  box-shadow: 0 12px 32px var(--shadow);
   overflow: hidden;
 }
 
@@ -53,8 +45,8 @@
 }
 
 .notification-dropdown__header button {
-  color: var(--deep-green) !important;
-  --mdc-text-button-label-text-color: var(--deep-green) !important;
+  color: var(--primary) !important;
+  --mdc-text-button-label-text-color: var(--primary) !important;
   font-size: 12.5px;
   font-weight: 600;
 }

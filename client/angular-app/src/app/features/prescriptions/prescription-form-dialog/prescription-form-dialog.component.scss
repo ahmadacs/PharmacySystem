@@ -73,7 +73,7 @@
       flex: 1 1 auto;
     }
     .found-patient-bar .history-btn {
-      background-color: #2e7d32;
+      background-color: var(--good);
       color: #fff;
       font-size: 0.8rem;
       height: 34px;
@@ -85,7 +85,7 @@
       height: 1.1rem;
     }
     .found-patient-bar .history-btn:disabled {
-      background-color: color-mix(in srgb, #2e7d32 40%, transparent);
+      background-color: color-mix(in srgb, var(--good) 40%, transparent);
       color: rgba(255, 255, 255, 0.7);
     }
     .items {
@@ -216,7 +216,7 @@
       font-size: 2rem;
       width: 2rem;
       height: 2rem;
-      color: #2e7d32;
+      color: var(--good);
       flex-shrink: 0;
     }
     .new-patient-banner .banner-text {
@@ -231,7 +231,7 @@
     }
     .new-patient-banner .banner-text span {
       font-size: 0.85rem;
-      color: #2e7d32;
+      color: var(--good);
       opacity: 0.92;
     }
     @keyframes fadeSlideIn {

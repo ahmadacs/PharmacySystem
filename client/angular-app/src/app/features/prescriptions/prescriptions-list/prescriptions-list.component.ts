@@ -1,6 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
@@ -21,7 +21,6 @@ import {
   MatHeaderRow,
   MatRow
 } from '@angular/material/table';
-import { MatTooltip } from '@angular/material/tooltip';
 import { NgClass } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
@@ -34,7 +33,6 @@ import { DialogPermissionGuard, openForResult, requireDialogPermission } from '.
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { DispenseDialogComponent } from '../../dispensing/dispense-dialog/dispense-dialog.component';
 import { PrescriptionDetailsDialogComponent } from '../prescription-details-dialog/prescription-details-dialog.component';
 import { PrescriptionFormDialogComponent } from '../prescription-form-dialog/prescription-form-dialog.component';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
@@ -54,7 +52,6 @@ export const PRESCRIPTION_STATUSES: PrescriptionStatus[] = [
     MatSelect,
     MatOption,
     MatButton,
-    MatIconButton,
     MatIcon,
     MatTable,
     MatColumnDef,
@@ -70,7 +67,6 @@ export const PRESCRIPTION_STATUSES: PrescriptionStatus[] = [
     MatSortHeader,
     MatPaginator,
     MatProgressBar,
-    MatTooltip,
     NgClass,
     PageHeaderComponent,
     EmptyStateComponent,
@@ -89,13 +85,7 @@ export class PrescriptionsListComponent {
 
   protected readonly permissions = Permissions;
   protected readonly statuses = PRESCRIPTION_STATUSES;
-  protected readonly displayedColumns = computed(() => {
-    const columns = ['shortCode', 'patientName', 'doctorName', 'issuedDate', 'status', 'itemCount'];
-    if (this.auth.hasPermission(Permissions.DispensingCreate)) {
-      columns.push('actions');
-    }
-    return columns;
-  });
+  protected readonly displayedColumns = ['shortCode', 'patientName', 'doctorName', 'issuedDate', 'status', 'itemCount'];
 
   protected readonly table = createPagedTable({ defaultSortBy: 'issuedDate', defaultSortDir: 'desc' });
   protected readonly page = this.table.page;
@@ -150,12 +140,6 @@ export class PrescriptionsListComponent {
       return;
     }
     this.dialog.open(PrescriptionDetailsDialogComponent, { width: '720px', data: prescription.id });
-  }
-
-  openDispense(prescription: PrescriptionListItemDto): void {
-    openForResult(this.dialog, DispenseDialogComponent, { width: '560px', data: prescription.id }, () => {
-      this.refreshPrescriptions();
-    }, this.guard(Permissions.DispensingCreate));
   }
 
   private guard(...permissions: string[]): DialogPermissionGuard {

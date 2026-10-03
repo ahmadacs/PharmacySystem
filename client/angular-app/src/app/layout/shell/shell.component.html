@@ -6,7 +6,7 @@
     (openedChange)="sidenavOpened.set($event)"
   >
     <div class="shell__brand">
-      <mat-icon>local_pharmacy</mat-icon>
+      <mat-icon>medical_services</mat-icon>
       <span>{{ 'common.appName' | translate }}</span>
     </div>
     <mat-nav-list>
@@ -27,10 +27,26 @@
       </button>
       <span class="topbar__spacer"></span>
       <div class="top-actions">
-        <div class="lang-switch">
-          <button [class.active]="localizationService.currentLang() === 'ar'" (click)="localizationService.currentLang.set('ar')">AR</button>
-          <button [class.active]="localizationService.currentLang() === 'en'" (click)="localizationService.currentLang.set('en')">EN</button>
-        </div>
+        <button
+          class="icon-btn theme-toggle"
+          (click)="themeService.toggle()"
+          [attr.aria-label]="(themeService.dark() ? 'shell.lightMode' : 'shell.darkMode') | translate"
+          [attr.title]="(themeService.dark() ? 'shell.lightMode' : 'shell.darkMode') | translate"
+        >
+          @if (themeService.dark()) {
+            <mat-icon>light_mode</mat-icon>
+          } @else {
+            <mat-icon>dark_mode</mat-icon>
+          }
+        </button>
+        <button
+          class="icon-btn lang-btn"
+          (click)="localizationService.toggle()"
+          [attr.aria-label]="'common.language' | translate"
+          [attr.title]="'common.language' | translate"
+        >
+          <mat-icon>language</mat-icon>
+        </button>
         <app-notification-bell />
         <button class="user-btn" [matMenuTriggerFor]="userMenu" [attr.aria-label]="'common.userMenu' | translate">
           <div class="avatar">{{ firstName()[0] || 'U' }}</div>

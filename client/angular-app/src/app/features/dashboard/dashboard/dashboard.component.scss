@@ -1,22 +1,6 @@
-// Local tokens from html.html - independent per component (حرفياً)
+// Theme tokens are inherited from the global stylesheet
+// (:root / html.dark in styles.scss).
 :host {
-  --bg: #F1F3ED;
-  --paper: #FBFAF5;
-  --ink: #1E2B22;
-  --ink-soft: #4B5A50;
-  --line: #D9D8C8;
-  --deep-green: #28392F;
-  --deep-green-2: #324A3C;
-  --amber: #B8823C;
-  --amber-soft: #EFE0C4;
-  --good: #3F7A5C;
-  --good-soft: #DCEAE0;
-  --low: #B8823C;
-  --low-soft: #F3E6CB;
-  --out: #A63F32;
-  --out-soft: #F3DBD6;
-  --expiry: #6B5B7A;
-  --expiry-soft: #E7E1EE;
   display: block;
   background: var(--bg);
   color: var(--ink);
@@ -215,7 +199,7 @@ tbody tr:last-child td,
 
 tbody tr:hover,
 .mat-mdc-row:hover {
-  background: rgba(0, 0, 0, 0.015);
+  background: var(--hover);
 }
 
 .drug-name {
@@ -243,7 +227,7 @@ tbody tr:hover,
 
 .status-pill.low {
   background: var(--low-soft);
-  color: #8A6224;
+  color: var(--low);
 }
 
 .status-pill.out {
@@ -274,7 +258,7 @@ tbody tr:hover,
   font-weight: 600;
 }
 
-.pill.wait { background: var(--low-soft); color: #8A6224; }
+.pill.wait { background: var(--low-soft); color: var(--low); }
 .pill.ready { background: var(--good-soft); color: var(--good); }
 .pill.done { background: var(--bg); color: var(--ink-soft); }
 

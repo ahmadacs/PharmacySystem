@@ -6,8 +6,6 @@
 }
 
 .table-card {
-  --line: #D9D8C8;
-  --paper: #FBFAF5;
   border-radius: 4px;
   overflow-x: auto;
   background: var(--paper);
@@ -73,9 +71,4 @@ td.mat-mdc-cell {
 .badge-expired {
   background: var(--line);
   color: var(--mat-sys-on-surface-variant);
-}
-
-.col-actions {
-  text-align: right;
-  width: 120px;
 }

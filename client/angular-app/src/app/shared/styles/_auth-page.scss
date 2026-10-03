@@ -1,14 +1,6 @@
-// Auth - Ledger identity
+// Theme tokens are inherited from the global stylesheet
+// (:root / html.dark in styles.scss).
 .auth-page {
-  --bg: #F1F3ED;
-  --paper: #FBFAF5;
-  --ink: #1E2B22;
-  --ink-soft: #4B5A50;
-  --line: #D9D8C8;
-  --deep-green: #28392F;
-  --amber: #B8823C;
-  --amber-soft: #EFE0C4;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,7 +16,7 @@
     top: 0;
     left: 0;
     right: 0;
-    --mdc-linear-progress-active-indicator-color: var(--amber);
+    --mdc-linear-progress-active-indicator-color: var(--primary);
   }
 
   &__card {
@@ -34,7 +26,7 @@
     background: var(--paper) !important;
     border: 1px solid var(--line);
     border-radius: 4px;
-    box-shadow: 0 8px 24px rgba(30, 43, 34, 0.08) !important;
+    box-shadow: 0 8px 24px var(--shadow) !important;
     overflow: hidden;
   }
 
@@ -53,8 +45,8 @@
     width: 2.5rem;
     height: 2.5rem;
     margin-bottom: 0.75rem;
-    color: var(--deep-green);
-    background: var(--amber-soft);
+    color: var(--primary);
+    background: var(--primary-soft);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -89,17 +81,17 @@
     :host ::ng-deep .mat-focused .mdc-notched-outline__leading,
     :host ::ng-deep .mat-focused .mdc-notched-outline__notch,
     :host ::ng-deep .mat-focused .mdc-notched-outline__trailing {
-      border-color: var(--amber) !important;
+      border-color: var(--primary) !important;
     }
   }
 
   &__submit {
     width: 100%;
     margin-top: 1.25rem;
-    background: var(--deep-green) !important;
-    color: #F4EEDD !important;
-    --mdc-filled-button-container-color: var(--deep-green) !important;
-    --mdc-filled-button-label-text-color: #F4EEDD !important;
+    background: var(--primary) !important;
+    color: var(--on-primary) !important;
+    --mdc-filled-button-container-color: var(--primary) !important;
+    --mdc-filled-button-label-text-color: var(--on-primary) !important;
     border-radius: 4px !important;
     font-weight: 600;
   }
@@ -111,7 +103,7 @@
     border-top: 1px solid var(--line);
     background: var(--paper);
     a {
-      color: var(--deep-green);
+      color: var(--primary);
       text-decoration: none;
       font-size: 0.85rem;
       font-weight: 500;

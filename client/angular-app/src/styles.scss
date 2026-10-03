@@ -16,27 +16,86 @@ html {
   );
 }
 
+html.dark {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+        theme-type: dark
+      ),
+      typography: Roboto,
+      density: 0
+    )
+  );
+}
+
 :root {
+  color-scheme: light;
   --status-critical: var(--mat-sys-error);
   --status-warning: #f57c00;
-  --status-safe: #2e7d32;
-  --bg: #F1F3ED;
-  --paper: #FBFAF5;
-  --ink: #1E2B22;
-  --ink-soft: #4B5A50;
-  --line: #D9D8C8;
-  --deep-green: #28392F;
-  --deep-green-2: #324A3C;
-  --amber: #B8823C;
-  --amber-soft: #EFE0C4;
-  --good: #3F7A5C;
-  --good-soft: #DCEAE0;
+  --status-safe: #2563EB;
+  // Light — modern pure-white theme: page is pure #FFFFFF,
+  // surfaces step down in soft grey tints. Neutral slate primary,
+  // no gold accent in chrome; gold remains only in warning statuses.
+  --bg: #FFFFFF;
+  --paper: #F4F6F8;
+  --paper-2: #ECEFF3;
+  --ink: #141A21;
+  --ink-soft: #5D6878;
+  --line: #E3E7ED;
+  --primary: #1C2532;
+  --primary-2: #2B3648;
+  --primary-soft: rgba(28, 37, 50, 0.07);
+  --on-primary: #FFFFFF;
+  --good: #2563EB;
+  --good-soft: #DBE7FD;
   --low: #B8823C;
   --low-soft: #F3E6CB;
   --out: #A63F32;
   --out-soft: #F3DBD6;
   --expiry: #6B5B7A;
   --expiry-soft: #E7E1EE;
+  --sidenav-bg: #FFFFFF;
+  --sidenav-text: #5D6878;
+  --sidenav-text-active: #141A21;
+  --unread: #E9ECEF;
+  --unread-hover: #DEE3E8;
+  --hover: rgba(20, 26, 33, 0.05);
+  --shadow: rgba(20, 26, 33, 0.1);
+}
+
+// Dark — modern slate (NOT pure black): lifted surfaces on a
+// #14181F page so cards, dialogs and tables stay distinct.
+html.dark {
+  color-scheme: dark;
+  --status-warning: #F0A24A;
+  --status-safe: #6EA8FE;
+  --bg: #14181F;
+  --paper: #1D232E;
+  --paper-2: #242C39;
+  --ink: #E9EDF3;
+  --ink-soft: #9AA6B8;
+  --line: #2C3543;
+  --primary: #E8ECF2;
+  --primary-2: #FFFFFF;
+  --primary-soft: rgba(232, 236, 242, 0.12);
+  --on-primary: #14181F;
+  --good: #6EA8FE;
+  --good-soft: rgba(110, 168, 254, 0.16);
+  --low: #D2A24C;
+  --low-soft: rgba(210, 162, 76, 0.16);
+  --out: #E08A7D;
+  --out-soft: rgba(224, 138, 125, 0.16);
+  --expiry: #B3A3CC;
+  --expiry-soft: rgba(179, 163, 204, 0.16);
+  --sidenav-bg: #171C24;
+  --sidenav-text: #AEB9C7;
+  --sidenav-text-active: #FFFFFF;
+  --unread: #242C39;
+  --unread-hover: #2C3543;
+  --hover: rgba(255, 255, 255, 0.07);
+  --shadow: rgba(0, 0, 0, 0.45);
 }
 
 // تعميم لون #D9D8C8 لكل الجداول و إصلاح الخلفيات البيضاء
@@ -83,7 +142,7 @@ table,
   overflow: hidden !important;
   border: 1px solid var(--line) !important;
   border-radius: 4px !important;
-  box-shadow: 0 12px 32px rgba(30, 43, 34, 0.14) !important;
+  box-shadow: 0 12px 32px var(--shadow) !important;
   background: var(--paper) !important;
 }
 
@@ -121,23 +180,23 @@ table,
   height: 0 !important;
 }
 
-// مسافة بين التبويبات في كل الصفحات + لون الحقل المختار بدل الأزرق
+// لون التبويب النشط يتبع primary المناسب لكل مود
 .mat-mdc-tab-group {
-  --mdc-tab-indicator-active-indicator-color: var(--amber) !important;
-  --mat-tab-header-active-label-text-color: var(--deep-green) !important;
+  --mdc-tab-indicator-active-indicator-color: var(--primary) !important;
+  --mat-tab-header-active-label-text-color: var(--primary) !important;
   --mat-tab-header-inactive-label-text-color: var(--ink-soft) !important;
 }
 
 .mdc-tab-indicator__content--underline {
-  border-color: var(--amber) !important;
+  border-color: var(--primary) !important;
   border-top-width: 2px !important;
 }
 
-// غير خلفية رقم الإشعارات من الأحمر
+// Notification count badge — standard red in both themes.
 .mat-badge-content,
 .mat-mdc-badge .mat-badge-content {
-  background: var(--amber) !important;
-  background-color: var(--amber) !important;
+  background: var(--out) !important;
+  background-color: var(--out) !important;
   color: #fff !important;
   font-family: 'JetBrains Mono', sans-serif !important;
 }
@@ -176,7 +235,7 @@ table,
   --mdc-filled-text-field-label-text-color: var(--ink-soft) !important;
   --mdc-filled-text-field-caret-color: var(--ink) !important;
   --mat-form-field-input-text-color: var(--ink) !important;
-  --mat-form-field-input-text-placeholder-color: rgba(30, 43, 34, 0.6) !important;
+  --mat-form-field-input-text-placeholder-color: var(--ink-soft) !important;
   --mat-select-trigger-text-color: var(--ink) !important;
   --mat-form-field-leading-icon-color: var(--ink-soft) !important;
   --mat-form-field-trailing-icon-color: var(--ink-soft) !important;
@@ -207,16 +266,16 @@ select:-webkit-autofill {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-// لون الحقل المختار (input/select) بدل الأزرق
+// لون الحقل المختار (input/select)
 .mat-focused .mdc-notched-outline__leading,
 .mat-focused .mdc-notched-outline__notch,
 .mat-focused .mdc-notched-outline__trailing {
-  border-color: var(--amber) !important;
+  border-color: var(--primary) !important;
 }
 
 .mat-focused .mat-mdc-floating-label,
 .mat-focused .mat-icon {
-  color: var(--amber) !important;
+  color: var(--primary) !important;
 }
 
 .mat-mdc-form-field .mat-mdc-text-field-wrapper {
@@ -238,14 +297,14 @@ select:-webkit-autofill {
 }
 
 .mdc-line-ripple::after {
-  border-bottom-color: var(--amber) !important;
+  border-bottom-color: var(--primary) !important;
 }
 
 // تلوين dropdown list
 .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled),
 .mat-mdc-option:hover:not(.mdc-list-item--disabled),
 .mat-mdc-autocomplete-panel .mat-mdc-option.mat-mdc-option-active {
-  background-color: var(--amber-soft) !important;
+  background-color: var(--primary-soft) !important;
 }
 
 .mat-mdc-select-panel,
@@ -271,7 +330,7 @@ select:-webkit-autofill {
   min-width: 220px !important;
   border: 1px solid var(--line) !important;
   border-radius: 4px !important;
-  box-shadow: 0 12px 32px rgba(30, 43, 34, 0.14) !important;
+  box-shadow: 0 12px 32px var(--shadow) !important;
   overflow: hidden !important;
 }
 
@@ -283,11 +342,11 @@ select:-webkit-autofill {
 
 // هوفر ملوّن بلون الهوية بدل الأبيض - الأكثر شيوعاً في القوائم الحديثة
 .user-menu-panel .mat-mdc-menu-item:hover {
-  background: rgba(40, 57, 47, 0.07) !important;
+  background: var(--hover) !important;
 }
 
 .user-menu-panel .mat-mdc-menu-item.logout-item:hover {
-  background: rgba(166, 63, 50, 0.08) !important;
+  background: var(--out-soft) !important;
 }
 
 // تسجيل خروج بالاحمر مع الأيقونة - في الـ dropdown
@@ -327,12 +386,12 @@ select:-webkit-autofill {
 .mat-mdc-dialog-actions .mdc-button--unelevated,
 .mat-mdc-dialog-actions .mat-mdc-unelevated-button,
 .mat-mdc-dialog-actions .mat-mdc-raised-button {
-  --mdc-filled-button-container-color: var(--deep-green) !important;
-  --mdc-filled-button-label-text-color: #F4EEDD !important;
-  --mdc-protected-button-container-color: var(--deep-green) !important;
-  --mdc-protected-button-label-text-color: #F4EEDD !important;
-  background-color: var(--deep-green) !important;
-  color: #F4EEDD !important;
+  --mdc-filled-button-container-color: var(--primary) !important;
+  --mdc-filled-button-label-text-color: var(--on-primary) !important;
+  --mdc-protected-button-container-color: var(--primary) !important;
+  --mdc-protected-button-label-text-color: var(--on-primary) !important;
+  background-color: var(--primary) !important;
+  color: var(--on-primary) !important;
 }
 
 .mat-mdc-dialog-actions .mat-mdc-button,
@@ -350,10 +409,10 @@ select:-webkit-autofill {
 .mat-mdc-unelevated-button.mat-primary,
 .mat-mdc-raised-button.mat-primary,
 .mat-mdc-flat-button.mat-primary {
-  --mdc-filled-button-container-color: var(--deep-green) !important;
-  --mdc-filled-button-label-text-color: #F4EEDD !important;
-  background-color: var(--deep-green) !important;
-  color: #F4EEDD !important;
+  --mdc-filled-button-container-color: var(--primary) !important;
+  --mdc-filled-button-label-text-color: var(--on-primary) !important;
+  background-color: var(--primary) !important;
+  color: var(--on-primary) !important;
 }
 
 .mat-mdc-outlined-button,
@@ -405,13 +464,33 @@ select:-webkit-autofill {
 }
 
 body {
-  color-scheme: light;
   background-color: var(--bg);
   color: var(--ink);
   font-family: 'IBM Plex Sans Arabic', sans-serif;
   font: var(--mat-sys-body-medium);
   margin: 0;
   height: 100%;
+}
+
+// Smooth theme switching (light ↔ dark)
+body,
+.shell,
+.table-card,
+.panel,
+.mat-mdc-card,
+.mat-mdc-dialog-surface,
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.mat-mdc-table,
+.mat-mdc-row,
+.mat-mdc-header-row,
+.mat-mdc-cell,
+.mat-mdc-header-cell,
+.mat-mdc-paginator,
+.topbar .search,
+.icon-btn,
+.user-btn {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
 .mat-elevation-z2 {
@@ -434,8 +513,8 @@ body {
   border: none;
   border-radius: 8px;
   box-shadow:
-    0 2px 6px rgb(30 43 34 / 12%),
-    0 1px 2px rgb(30 43 34 / 8%) !important;
+    0 2px 6px var(--shadow),
+    0 1px 2px var(--shadow) !important;
 
   .mdc-snackbar__surface {
     width: 100%;
