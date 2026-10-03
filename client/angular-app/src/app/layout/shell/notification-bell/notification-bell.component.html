@@ -28,19 +28,31 @@
       }
 
       @for (notification of notifications(); track notification.id) {
-        <button
-          mat-menu-item
+        <div
           class="notification-item"
           [class.notification-item--unread]="!notification.isRead"
-          (click)="open(notification)"
         >
-          <mat-icon class="notification-item__icon">{{ iconFor(notification.type) }}</mat-icon>
-          <div class="notification-item__body">
-            <span class="notification-item__title">{{ translateTitle(notification) }}</span>
-            <span class="notification-item__message">{{ translateMessage(notification) }}</span>
-            <span class="notification-item__time">{{ notification.createdAt | riyadhDate: 'short' }}</span>
-          </div>
-        </button>
+          <button
+            mat-menu-item
+            class="notification-item__open"
+            (click)="open(notification)"
+          >
+            <mat-icon class="notification-item__icon">{{ iconFor(notification.type) }}</mat-icon>
+            <div class="notification-item__body">
+              <span class="notification-item__title">{{ translateTitle(notification) }}</span>
+              <span class="notification-item__message">{{ translateMessage(notification) }}</span>
+              <span class="notification-item__time">{{ notification.createdAt | riyadhDate: 'short' }}</span>
+            </div>
+          </button>
+          <button
+            mat-icon-button
+            class="notification-item__delete"
+            (click)="deleteNotification(notification, $event)"
+            [attr.aria-label]="'common.delete' | translate"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
       }
     </div>
   </div>

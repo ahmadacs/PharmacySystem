@@ -585,7 +585,9 @@
     "newPrescriptionTitle": "وصفة جديدة",
     "newPrescription": "وصفة جديدة للمريض {{patientName}} ({{count}} عنصر)",
     "dispensedTitle": "تم صرف الوصفة",
-    "dispensed": "تم صرف وصفة المريض {{patientName}}"
+    "dispensed": "تم صرف وصفة المريض {{patientName}}",
+    "deleteConfirm": "حذف هذا الإشعار؟ لا يمكن التراجع عن ذلك.",
+    "deleted": "تم حذف الإشعار."
   },
   "export": {
     "success": "تم تصدير {{type}} بصيغة {{format}}"

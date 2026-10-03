@@ -29,4 +29,10 @@ export class NotificationApiService {
       this.http.post<void>(`${this.baseUrl}/read-all`, null, { withCredentials: true })
     );
   }
+
+  delete(id: string): Promise<void> {
+    return firstValueFrom(
+      this.http.delete<void>(`${this.baseUrl}/${id}`, { withCredentials: true })
+    );
+  }
 }

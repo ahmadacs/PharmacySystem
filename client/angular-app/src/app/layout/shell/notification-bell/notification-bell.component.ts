@@ -2,11 +2,13 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatBadge } from '@angular/material/badge';
 import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
 import { NotificationApiService } from '../../../core/services/notification-api.service';
+import { confirmAndMutate } from '../../../core/utils/dialog-helpers';
 import { SignalrService } from '../../../core/services/signalr.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { NotificationDto, NotificationType } from '../../../core/models/api.models';
@@ -27,6 +29,7 @@ export class NotificationBellComponent {
   private readonly router = inject(Router);
   private readonly authStore = inject(AuthStore);
   private readonly translate = inject(TranslateService);
+  private readonly dialog = inject(MatDialog);
 
   private readonly notificationsSignal = signal<NotificationDto[]>([]);
   protected readonly notifications = this.notificationsSignal.asReadonly();
@@ -64,6 +67,23 @@ export class NotificationBellComponent {
   async markAllRead(): Promise<void> {
     await this.api.markAllRead();
     this.notificationsSignal.update((list) => list.map((n) => ({ ...n, isRead: true })));
+  }
+
+  async deleteNotification(notification: NotificationDto, event: MouseEvent): Promise<void> {
+    event.stopPropagation();
+    await confirmAndMutate(
+      this.dialog,
+      this.toast,
+      {
+        title: this.translate.instant('common.delete'),
+        message: this.translate.instant('notifications.deleteConfirm'),
+        confirmLabel: this.translate.instant('common.delete'),
+        danger: true,
+      },
+      () => this.api.delete(notification.id),
+      this.translate.instant('notifications.deleted'),
+      () => this.notificationsSignal.update((list) => list.filter((n) => n.id !== notification.id)),
+    );
   }
 
   protected open(notification: NotificationDto): void {

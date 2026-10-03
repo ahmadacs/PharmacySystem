@@ -585,7 +585,9 @@
     "newPrescriptionTitle": "New prescription",
     "newPrescription": "A new prescription for {{patientName}} ({{count}} item(s)) has been created.",
     "dispensedTitle": "Prescription dispensed",
-    "dispensed": "Prescription for {{patientName}} has been dispensed."
+    "dispensed": "Prescription for {{patientName}} has been dispensed.",
+    "deleteConfirm": "Delete this notification? This cannot be undone.",
+    "deleted": "Notification deleted."
   },
   "export": {
     "success": "Exported {{type}} as {{format}}"
