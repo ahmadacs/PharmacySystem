@@ -56,10 +56,10 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IEmailService, MockEmailService>();
         services.AddScoped<IStaffService, StaffService>();
-        services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
-        services.AddScoped(typeof(IBaseRepositoryWithSoftDelete<>), typeof(BaseRepositoryWithSoftDelete<>));
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped(typeof(IRepositoryWithSoftDelete<>), typeof(RepositoryWithSoftDelete<>));
         services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
-        services.AddScoped(typeof(IBaseRepositoryWithHardDelete<>), typeof(BaseRepositoryWithHardDelete<>));
+        services.AddScoped(typeof(IRepositoryWithHardDelete<>), typeof(RepositoryWithHardDelete<>));
         services.AddScoped<IMedicineVariantRepository, MedicineVariantRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
         services.AddScoped<IExportDataProvider, ExportDataProvider>();

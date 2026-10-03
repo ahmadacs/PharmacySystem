@@ -12,13 +12,13 @@ public sealed record MarkAllNotificationsReadCommand : IRequest<Result>;
 
 public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<MarkAllNotificationsReadCommand, Result>
 {
-    private readonly IBaseRepository<Notification> _notifications;
+    private readonly IRepository<Notification> _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public MarkAllNotificationsReadCommandHandler(
-        IBaseRepository<Notification> notifications,
+        IRepository<Notification> notifications,
         ICurrentUserService currentUser,
         IUnitOfWork uow,
         IStringLocalizer<SharedResource> localizer)

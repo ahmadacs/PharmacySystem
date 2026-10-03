@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace Application.Common.Interfaces;
 
-public interface IBaseRepository<TEntity> where TEntity : IEntity
+public interface IRepository<TEntity> where TEntity : IEntity
 {
     Task<TEntity?> GetAsync(
         Expression<Func<TEntity, bool>> predicate,

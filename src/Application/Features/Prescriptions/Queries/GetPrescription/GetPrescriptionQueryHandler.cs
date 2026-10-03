@@ -11,12 +11,12 @@ namespace Application.Features.Prescriptions.Queries;
 
 public sealed class GetPrescriptionQueryHandler : IRequestHandler<GetPrescriptionQuery, Result<PrescriptionDetailsDto>>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly IStaffService _staff;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public GetPrescriptionQueryHandler(
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         IStaffService staff,
         IStringLocalizer<SharedResource> localizer)
     {

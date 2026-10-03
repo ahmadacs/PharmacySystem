@@ -11,9 +11,9 @@ namespace Infrastructure.Notifications;
 [Authorize]
 public sealed class NotificationsHub : Hub
 {
-    private readonly Application.Common.Interfaces.IBaseRepository<Notification> _notifications;
+    private readonly Application.Common.Interfaces.IRepository<Notification> _notifications;
 
-    public NotificationsHub(Application.Common.Interfaces.IBaseRepository<Notification> notifications)
+    public NotificationsHub(Application.Common.Interfaces.IRepository<Notification> notifications)
     {
         _notifications = notifications;
     }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
-public sealed class PrescriptionRepository : BaseRepository<Prescription>, IPrescriptionRepository
+public sealed class PrescriptionRepository : Repository<Prescription>, IPrescriptionRepository
 {
     public PrescriptionRepository(ApplicationDbContext db) : base(db)
     {

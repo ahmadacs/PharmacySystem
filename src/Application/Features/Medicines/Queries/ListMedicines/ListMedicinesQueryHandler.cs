@@ -10,9 +10,9 @@ namespace Application.Features.Medicines.Queries;
 
 public sealed class ListMedicinesQueryHandler : IRequestHandler<ListMedicinesQuery, Result<PagedList<MedicineListItemDto>>>
 {
-    private readonly IBaseRepository<Medicine> _repo;
+    private readonly IRepository<Medicine> _repo;
 
-    public ListMedicinesQueryHandler(IBaseRepository<Medicine> repo)
+    public ListMedicinesQueryHandler(IRepository<Medicine> repo)
     {
         _repo = repo;
     }

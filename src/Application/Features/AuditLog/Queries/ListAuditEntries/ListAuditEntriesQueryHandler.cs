@@ -15,11 +15,11 @@ public sealed class ListAuditEntriesQueryHandler : IRequestHandler<ListAuditEntr
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private readonly IBaseRepository<AuditEntry> _audit;
+    private readonly IRepository<AuditEntry> _audit;
     private readonly IUserManager _users;
 
     public ListAuditEntriesQueryHandler(
-        IBaseRepository<AuditEntry> audit,
+        IRepository<AuditEntry> audit,
         IUserManager users)
     {
         _audit = audit;

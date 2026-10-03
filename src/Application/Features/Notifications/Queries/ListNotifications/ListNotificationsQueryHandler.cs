@@ -14,11 +14,11 @@ namespace Application.Features.Notifications.Queries;
 
 public sealed class ListNotificationsQueryHandler : IRequestHandler<ListNotificationsQuery, Result<PagedList<NotificationListItemDto>>>
 {
-    private readonly IBaseRepository<Notification> _notifications;
+    private readonly IRepository<Notification> _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public ListNotificationsQueryHandler(IBaseRepository<Notification> notifications, ICurrentUserService currentUser, IStringLocalizer<SharedResource> localizer)
+    public ListNotificationsQueryHandler(IRepository<Notification> notifications, ICurrentUserService currentUser, IStringLocalizer<SharedResource> localizer)
     {
         _notifications = notifications;
         _currentUser = currentUser;

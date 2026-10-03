@@ -13,13 +13,13 @@ namespace Application.Features.Prescriptions.Queries;
 
 public sealed class ListPrescriptionsQueryHandler : IRequestHandler<ListPrescriptionsQuery, Result<PagedList<PrescriptionListItemDto>>>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public ListPrescriptionsQueryHandler(
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         ICurrentUserService currentUser,
         IStaffService staff,
         IStringLocalizer<SharedResource> localizer)

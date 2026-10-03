@@ -10,12 +10,12 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class CreateVariantCommandHandler : IRequestHandler<CreateVariantCommand, Result<Guid>>
 {
-    private readonly IBaseRepository<Medicine> _medicines;
-    private readonly IBaseRepository<MedicineVariant> _variants;
+    private readonly IRepository<Medicine> _medicines;
+    private readonly IRepository<MedicineVariant> _variants;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateVariantCommandHandler(IBaseRepository<Medicine> medicines, IBaseRepository<MedicineVariant> variants, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public CreateVariantCommandHandler(IRepository<Medicine> medicines, IRepository<MedicineVariant> variants, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _medicines = medicines;
         _variants = variants;

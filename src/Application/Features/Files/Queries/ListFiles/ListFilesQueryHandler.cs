@@ -14,12 +14,12 @@ namespace Application.Features.Files.Queries.ListFiles;
 
 public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Result<IReadOnlyList<FileAttachmentDto>>>
 {
-    private readonly IBaseRepository<FileAttachment> _files;
+    private readonly IRepository<FileAttachment> _files;
     private readonly IFileAccessChecker _access;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public ListFilesQueryHandler(
-        IBaseRepository<FileAttachment> files,
+        IRepository<FileAttachment> files,
         IFileAccessChecker access,
         IStringLocalizer<SharedResource> localizer)
     {

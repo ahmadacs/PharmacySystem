@@ -31,7 +31,7 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
 
     private const long DefaultMaxSize = 5 * 1024 * 1024;
 
-    private readonly IBaseRepository<FileAttachment> _files;
+    private readonly IRepository<FileAttachment> _files;
     private readonly IFileStorageService _storage;
     private readonly IUnitOfWork _uow;
     private readonly IFileAccessChecker _access;
@@ -39,7 +39,7 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
     private readonly FileStorageOptions _options;
 
     public UploadFileCommandHandler(
-        IBaseRepository<FileAttachment> files,
+        IRepository<FileAttachment> files,
         IFileStorageService storage,
         IUnitOfWork uow,
         IOptions<FileStorageOptions> options,

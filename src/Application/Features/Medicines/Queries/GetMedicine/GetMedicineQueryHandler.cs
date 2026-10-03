@@ -11,11 +11,11 @@ namespace Application.Features.Medicines.Queries;
 
 public sealed class GetMedicineQueryHandler : IRequestHandler<GetMedicineQuery, Result<MedicineDetailsDto>>
 {
-    private readonly IBaseRepository<Medicine> _repo;
+    private readonly IRepository<Medicine> _repo;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public GetMedicineQueryHandler(
-        IBaseRepository<Medicine> repo,
+        IRepository<Medicine> repo,
         IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;

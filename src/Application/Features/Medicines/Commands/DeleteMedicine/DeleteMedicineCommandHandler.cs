@@ -9,11 +9,11 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class DeleteMedicineCommandHandler : IRequestHandler<DeleteMedicineCommand, Result>
 {
-    private readonly IBaseRepositoryWithSoftDelete<Medicine> _repo;
+    private readonly IRepositoryWithSoftDelete<Medicine> _repo;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public DeleteMedicineCommandHandler(IBaseRepositoryWithSoftDelete<Medicine> repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public DeleteMedicineCommandHandler(IRepositoryWithSoftDelete<Medicine> repo, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _repo = repo;
         _uow = uow;

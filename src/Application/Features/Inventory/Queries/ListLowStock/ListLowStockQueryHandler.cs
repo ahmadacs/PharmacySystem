@@ -10,9 +10,9 @@ namespace Application.Features.Inventory.Queries;
 
 public sealed class ListLowStockQueryHandler : IRequestHandler<ListLowStockQuery, Result<PagedList<LowStockDto>>>
 {
-    private readonly IBaseRepository<MedicineVariant> _repo;
+    private readonly IRepository<MedicineVariant> _repo;
 
-    public ListLowStockQueryHandler(IBaseRepository<MedicineVariant> repo)
+    public ListLowStockQueryHandler(IRepository<MedicineVariant> repo)
     {
         _repo = repo;
     }

@@ -11,9 +11,9 @@ namespace Application.Features.Inventory.Queries;
 public sealed class MedicineInventorySummaryQueryHandler
     : IRequestHandler<MedicineInventorySummaryQuery, Result<PagedList<MedicineInventorySummaryDto>>>
 {
-    private readonly IBaseRepository<Medicine> _repo;
+    private readonly IRepository<Medicine> _repo;
 
-    public MedicineInventorySummaryQueryHandler(IBaseRepository<Medicine> repo)
+    public MedicineInventorySummaryQueryHandler(IRepository<Medicine> repo)
     {
         _repo = repo;
     }

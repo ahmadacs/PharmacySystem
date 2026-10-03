@@ -14,19 +14,19 @@ namespace Application.Features.Files.Common;
 
 public sealed class FileAccessChecker : IFileAccessChecker
 {
-    private readonly IBaseRepository<Medicine> _medicines;
-    private readonly IBaseRepository<MedicineBatch> _batches;
-    private readonly IBaseRepository<InventoryAdjustment> _adjustments;
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Medicine> _medicines;
+    private readonly IRepository<MedicineBatch> _batches;
+    private readonly IRepository<InventoryAdjustment> _adjustments;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly ICurrentUserService _currentUser;
     private readonly IResourceAuthorizationService _resourceAuth;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public FileAccessChecker(
-        IBaseRepository<Medicine> medicines,
-        IBaseRepository<MedicineBatch> batches,
-        IBaseRepository<InventoryAdjustment> adjustments,
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Medicine> medicines,
+        IRepository<MedicineBatch> batches,
+        IRepository<InventoryAdjustment> adjustments,
+        IRepository<Prescription> prescriptions,
         ICurrentUserService currentUser,
         IResourceAuthorizationService resourceAuth,
         IStringLocalizer<SharedResource> localizer)
@@ -125,7 +125,7 @@ public sealed class FileAccessChecker : IFileAccessChecker
     private bool HasAny(params string[] permissions)
         => permissions.Any(p => _currentUser.Permissions.Contains(p));
 
-    private static Task<bool> ExistsAsync<TEntity>(IBaseRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
+    private static Task<bool> ExistsAsync<TEntity>(IRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
         where TEntity : Domain.Common.BaseEntity
         => repo.ExistsAsync(e => e.Id == id, cancellationToken);
 

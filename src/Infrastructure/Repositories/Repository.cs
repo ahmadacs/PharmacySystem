@@ -7,13 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
-public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : class, IEntity
+public class Repository<TEntity> : IRepository<TEntity> where TEntity : class, IEntity
 {
     private const int MaxPageSize = 200;
 
     protected readonly ApplicationDbContext Db;
 
-    public BaseRepository(ApplicationDbContext db)
+    public Repository(ApplicationDbContext db)
     {
         Db = db;
     }

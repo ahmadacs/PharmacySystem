@@ -2,7 +2,7 @@ using Domain.Entities.Medicines;
 
 namespace Application.Common.Interfaces;
 
-public interface IMedicineVariantRepository : IBaseRepository<MedicineVariant>
+public interface IMedicineVariantRepository : IRepository<MedicineVariant>
 {
     Task<MedicineVariant?> GetForAddBatchAsync(Guid variantId, CancellationToken cancellationToken = default);
 

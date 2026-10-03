@@ -10,9 +10,9 @@ namespace Application.Features.Inventory.Queries;
 
 public sealed class BatchListQueryHandler : IRequestHandler<BatchListQuery, Result<PagedList<MedicineBatchDto>>>
 {
-    private readonly IBaseRepository<MedicineBatch> _batches;
+    private readonly IRepository<MedicineBatch> _batches;
 
-    public BatchListQueryHandler(IBaseRepository<MedicineBatch> batches)
+    public BatchListQueryHandler(IRepository<MedicineBatch> batches)
     {
         _batches = batches;
     }

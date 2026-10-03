@@ -11,12 +11,12 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class UpdateMedicineCommandHandler : IRequestHandler<UpdateMedicineCommand, Result>
 {
-    private readonly IBaseRepository<Medicine> _medicines;
-    private readonly IBaseRepository<GenericName> _generics;
+    private readonly IRepository<Medicine> _medicines;
+    private readonly IRepository<GenericName> _generics;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public UpdateMedicineCommandHandler(IBaseRepository<Medicine> medicines, IBaseRepository<GenericName> generics, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public UpdateMedicineCommandHandler(IRepository<Medicine> medicines, IRepository<GenericName> generics, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _medicines = medicines;
         _generics = generics;

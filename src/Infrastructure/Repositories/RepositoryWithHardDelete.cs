@@ -4,10 +4,10 @@ using Infrastructure.Persistence;
 
 namespace Infrastructure.Repositories;
 
-public sealed class BaseRepositoryWithHardDelete<TEntity> : BaseRepository<TEntity>, IBaseRepositoryWithHardDelete<TEntity>
+public sealed class RepositoryWithHardDelete<TEntity> : Repository<TEntity>, IRepositoryWithHardDelete<TEntity>
     where TEntity : class, IHardDelete
 {
-    public BaseRepositoryWithHardDelete(ApplicationDbContext db) : base(db)
+    public RepositoryWithHardDelete(ApplicationDbContext db) : base(db)
     {
     }
 

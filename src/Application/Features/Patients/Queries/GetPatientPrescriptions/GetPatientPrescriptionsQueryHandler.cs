@@ -13,9 +13,9 @@ namespace Application.Features.Patients.Queries.GetPatientPrescriptions;
 public sealed class GetPatientPrescriptionsQueryHandler
     : IRequestHandler<GetPatientPrescriptionsQuery, Result<IReadOnlyList<PatientPrescriptionHistoryDto>>>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
 
-    public GetPatientPrescriptionsQueryHandler(IBaseRepository<Prescription> prescriptions)
+    public GetPatientPrescriptionsQueryHandler(IRepository<Prescription> prescriptions)
     {
         _prescriptions = prescriptions;
     }

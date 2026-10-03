@@ -12,13 +12,13 @@ public sealed record DeleteNotificationCommand(Guid NotificationId) : IRequest<R
 
 public sealed class DeleteNotificationCommandHandler : IRequestHandler<DeleteNotificationCommand, Result>
 {
-    private readonly IBaseRepositoryWithHardDelete<Notification> _notifications;
+    private readonly IRepositoryWithHardDelete<Notification> _notifications;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public DeleteNotificationCommandHandler(
-        IBaseRepositoryWithHardDelete<Notification> notifications,
+        IRepositoryWithHardDelete<Notification> notifications,
         ICurrentUserService currentUser,
         IUnitOfWork uow,
         IStringLocalizer<SharedResource> localizer)

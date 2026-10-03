@@ -15,9 +15,9 @@ namespace Application.Features.Prescriptions.Commands;
 
 public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePrescriptionCommand, Result<Guid>>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
-    private readonly IBaseRepository<MedicineVariant> _variants;
-    private readonly IBaseRepository<Patient> _patients;
+    private readonly IRepository<Prescription> _prescriptions;
+    private readonly IRepository<MedicineVariant> _variants;
+    private readonly IRepository<Patient> _patients;
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
@@ -25,9 +25,9 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CreatePrescriptionCommandHandler(
-        IBaseRepository<Prescription> prescriptions,
-        IBaseRepository<MedicineVariant> variants,
-        IBaseRepository<Patient> patients,
+        IRepository<Prescription> prescriptions,
+        IRepository<MedicineVariant> variants,
+        IRepository<Patient> patients,
         ICurrentUserService currentUser,
         IStaffService staff,
         IUnitOfWork uow,

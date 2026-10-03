@@ -9,7 +9,7 @@ public static class MedicineMapping
 {
 
     public static async Task<GenericName> ResolveGenericNameAsync(
-        IBaseRepository<GenericName> generics,
+        IRepository<GenericName> generics,
         string name,
         string? nameAr,
         CancellationToken cancellationToken)

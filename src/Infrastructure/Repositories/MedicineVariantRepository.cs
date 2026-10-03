@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
-public sealed class MedicineVariantRepository : BaseRepository<MedicineVariant>, IMedicineVariantRepository
+public sealed class MedicineVariantRepository : Repository<MedicineVariant>, IMedicineVariantRepository
 {
     public MedicineVariantRepository(ApplicationDbContext db) : base(db)
     {

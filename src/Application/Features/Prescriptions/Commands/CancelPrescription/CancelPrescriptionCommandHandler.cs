@@ -9,12 +9,12 @@ namespace Application.Features.Prescriptions.Commands;
 
 public sealed class CancelPrescriptionCommandHandler : IRequestHandler<CancelPrescriptionCommand, Result>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CancelPrescriptionCommandHandler(
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         IUnitOfWork uow,
         IStringLocalizer<SharedResource> localizer)
     {

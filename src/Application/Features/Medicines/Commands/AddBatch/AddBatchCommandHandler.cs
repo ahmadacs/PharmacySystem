@@ -15,8 +15,8 @@ namespace Application.Features.Medicines.Commands;
 public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Result<Guid>>
 {
     private readonly IMedicineVariantRepository _variants;
-    private readonly IBaseRepository<MedicineBatch> _batches;
-    private readonly IBaseRepository<InventoryAdjustment> _adjustments;
+    private readonly IRepository<MedicineBatch> _batches;
+    private readonly IRepository<InventoryAdjustment> _adjustments;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentUserService _currentUser;
     private readonly NotificationOptions _notificationOptions;
@@ -24,7 +24,7 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Re
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public AddBatchCommandHandler(IMedicineVariantRepository variants,
-        IBaseRepository<MedicineBatch> batches, IBaseRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
+        IRepository<MedicineBatch> batches, IRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
         ICurrentUserService currentUser, NotificationOptions notificationOptions, IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {

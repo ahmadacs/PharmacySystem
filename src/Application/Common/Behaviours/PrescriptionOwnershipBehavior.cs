@@ -11,12 +11,12 @@ public sealed class PrescriptionOwnershipBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly IResourceAuthorizationService _resourceAuth;
     private readonly ICurrentUserService _currentUser;
 
     public PrescriptionOwnershipBehavior(
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         IResourceAuthorizationService resourceAuth,
         ICurrentUserService currentUser)
     {

@@ -12,13 +12,13 @@ namespace Application.Features.Files.Queries.GetFile;
 
 public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(Stream Content, string ContentType, string FileName)>>
 {
-    private readonly IBaseRepository<FileAttachment> _files;
+    private readonly IRepository<FileAttachment> _files;
     private readonly IFileStorageService _storage;
     private readonly IFileAccessChecker _access;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public GetFileQueryHandler(
-        IBaseRepository<FileAttachment> files,
+        IRepository<FileAttachment> files,
         IFileStorageService storage,
         IFileAccessChecker access,
         IStringLocalizer<SharedResource> localizer)

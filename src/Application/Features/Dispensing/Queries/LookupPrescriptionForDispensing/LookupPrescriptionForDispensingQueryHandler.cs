@@ -14,11 +14,11 @@ namespace Application.Features.Dispensing.Queries.LookupPrescriptionForDispensin
 public sealed class LookupPrescriptionForDispensingQueryHandler
     : IRequestHandler<LookupPrescriptionForDispensingQuery, Result<DispensingLookupResponse>>
 {
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public LookupPrescriptionForDispensingQueryHandler(
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;

@@ -9,8 +9,8 @@ namespace Application.Features.Patients.Queries.GetPatientByPhone;
 
 public sealed class GetPatientByPhoneQueryHandler : IRequestHandler<GetPatientByPhoneQuery, Result<PatientDto?>>
 {
-    private readonly IBaseRepository<Patient> _patients;
-    public GetPatientByPhoneQueryHandler(IBaseRepository<Patient> patients) => _patients = patients;
+    private readonly IRepository<Patient> _patients;
+    public GetPatientByPhoneQueryHandler(IRepository<Patient> patients) => _patients = patients;
 
     public async Task<Result<PatientDto?>> Handle(GetPatientByPhoneQuery request, CancellationToken cancellationToken)
     {

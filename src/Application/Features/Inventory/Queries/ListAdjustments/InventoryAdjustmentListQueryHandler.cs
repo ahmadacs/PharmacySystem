@@ -11,10 +11,10 @@ namespace Application.Features.Inventory.Queries;
 
 public sealed class InventoryAdjustmentListQueryHandler : IRequestHandler<InventoryAdjustmentListQuery, Result<PagedList<InventoryAdjustmentDto>>>
 {
-    private readonly IBaseRepository<InventoryAdjustment> _repo;
+    private readonly IRepository<InventoryAdjustment> _repo;
     private readonly IUserManager _users;
 
-    public InventoryAdjustmentListQueryHandler(IBaseRepository<InventoryAdjustment> repo, IUserManager users)
+    public InventoryAdjustmentListQueryHandler(IRepository<InventoryAdjustment> repo, IUserManager users)
     {
         _repo = repo;
         _users = users;

@@ -10,10 +10,10 @@ namespace Application.Features.Dispensing.Queries;
 
 public sealed class DispensingRecordListQueryHandler : IRequestHandler<DispensingRecordListQuery, Result<PagedList<DispensingRecordDto>>>
 {
-    private readonly IBaseRepository<DispensingRecord> _records;
+    private readonly IRepository<DispensingRecord> _records;
     private readonly IStaffService _staff;
 
-    public DispensingRecordListQueryHandler(IBaseRepository<DispensingRecord> records, IStaffService staff)
+    public DispensingRecordListQueryHandler(IRepository<DispensingRecord> records, IStaffService staff)
     {
         _records = records;
         _staff = staff;

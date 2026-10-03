@@ -15,16 +15,16 @@ namespace Application.Features.Inventory.Commands;
 public sealed class AdjustInventoryCommandHandler : IRequestHandler<AdjustInventoryCommand, Result<Guid>>
 {
     private readonly IMedicineVariantRepository _variants;
-    private readonly IBaseRepository<MedicineBatch> _batches;
-    private readonly IBaseRepository<InventoryAdjustment> _adjustments;
+    private readonly IRepository<MedicineBatch> _batches;
+    private readonly IRepository<InventoryAdjustment> _adjustments;
     private readonly IUnitOfWork _uow;
     private readonly ICurrentUserService _currentUser;
     private readonly NotificationOptions _notificationOptions;
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public AdjustInventoryCommandHandler(IMedicineVariantRepository variants, IBaseRepository<MedicineBatch> batches,
-        IBaseRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
+    public AdjustInventoryCommandHandler(IMedicineVariantRepository variants, IRepository<MedicineBatch> batches,
+        IRepository<InventoryAdjustment> adjustments, IUnitOfWork uow,
         ICurrentUserService currentUser, NotificationOptions notificationOptions, IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {

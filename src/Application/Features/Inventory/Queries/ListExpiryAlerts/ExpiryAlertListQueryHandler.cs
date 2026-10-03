@@ -13,9 +13,9 @@ public sealed class ExpiryAlertListQueryHandler : IRequestHandler<ExpiryAlertLis
     private const int CriticalWithinDays = 30;
     private const int WarningWithinDays = 90;
 
-    private readonly IBaseRepository<MedicineBatch> _repo;
+    private readonly IRepository<MedicineBatch> _repo;
 
-    public ExpiryAlertListQueryHandler(IBaseRepository<MedicineBatch> repo)
+    public ExpiryAlertListQueryHandler(IRepository<MedicineBatch> repo)
     {
         _repo = repo;
     }

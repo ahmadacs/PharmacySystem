@@ -12,13 +12,13 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicineCommand, Result<Guid>>
 {
-    private readonly IBaseRepository<Medicine> _medicines;
-    private readonly IBaseRepository<GenericName> _generics;
+    private readonly IRepository<Medicine> _medicines;
+    private readonly IRepository<GenericName> _generics;
     private readonly IUnitOfWork _uow;
     private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateMedicineCommandHandler(IBaseRepository<Medicine> medicines, IBaseRepository<GenericName> generics, IUnitOfWork uow, IAttachmentUploadService attachments, IStringLocalizer<SharedResource> localizer)
+    public CreateMedicineCommandHandler(IRepository<Medicine> medicines, IRepository<GenericName> generics, IUnitOfWork uow, IAttachmentUploadService attachments, IStringLocalizer<SharedResource> localizer)
     {
         _medicines = medicines;
         _generics = generics;

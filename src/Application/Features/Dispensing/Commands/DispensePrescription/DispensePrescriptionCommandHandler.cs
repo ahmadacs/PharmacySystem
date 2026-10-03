@@ -18,7 +18,7 @@ namespace Application.Features.Dispensing.Commands;
 public sealed class DispensePrescriptionCommandHandler : IRequestHandler<DispensePrescriptionCommand, Result<DispensePrescriptionResponse>>
 {
     private readonly IPrescriptionRepository _prescriptions;
-    private readonly IBaseRepository<DispensingRecord> _records;
+    private readonly IRepository<DispensingRecord> _records;
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
@@ -28,7 +28,7 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
 
     public DispensePrescriptionCommandHandler(
         IPrescriptionRepository prescriptions,
-        IBaseRepository<DispensingRecord> records,
+        IRepository<DispensingRecord> records,
         ICurrentUserService currentUser,
         IStaffService staff,
         IUnitOfWork uow,

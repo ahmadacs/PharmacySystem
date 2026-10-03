@@ -31,12 +31,12 @@ public sealed record PrescriptionDispensedNotification(
 public sealed class PrescriptionCreatedNotificationHandler : INotificationHandler<PrescriptionCreatedNotification>
 {
     private readonly ILogger<PrescriptionCreatedNotificationHandler> _logger;
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly INotificationService _notifications;
 
     public PrescriptionCreatedNotificationHandler(
         ILogger<PrescriptionCreatedNotificationHandler> logger,
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         INotificationService notifications)
     {
         _logger = logger;
@@ -94,12 +94,12 @@ public sealed class PrescriptionLifecycleLoggingHandler
 public sealed class PrescriptionDispensedNotificationHandler : INotificationHandler<PrescriptionDispensedNotification>
 {
     private readonly ILogger<PrescriptionDispensedNotificationHandler> _logger;
-    private readonly IBaseRepository<Prescription> _prescriptions;
+    private readonly IRepository<Prescription> _prescriptions;
     private readonly INotificationService _notifications;
 
     public PrescriptionDispensedNotificationHandler(
         ILogger<PrescriptionDispensedNotificationHandler> logger,
-        IBaseRepository<Prescription> prescriptions,
+        IRepository<Prescription> prescriptions,
         INotificationService notifications)
     {
         _logger = logger;

@@ -9,11 +9,11 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class DeleteBatchCommandHandler : IRequestHandler<DeleteBatchCommand, Result>
 {
-    private readonly IBaseRepositoryWithSoftDelete<MedicineBatch> _batches;
+    private readonly IRepositoryWithSoftDelete<MedicineBatch> _batches;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public DeleteBatchCommandHandler(IBaseRepositoryWithSoftDelete<MedicineBatch> batches, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public DeleteBatchCommandHandler(IRepositoryWithSoftDelete<MedicineBatch> batches, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _batches = batches;
         _uow = uow;

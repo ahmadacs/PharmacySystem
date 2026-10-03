@@ -13,13 +13,13 @@ public sealed class NotificationService : INotificationService
     private readonly ApplicationDbContext _db;
     private readonly IHubContext<NotificationsHub> _hub;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IBaseRepository<Notification> _notifications;
+    private readonly IRepository<Notification> _notifications;
 
     public NotificationService(
         ApplicationDbContext db,
         IHubContext<NotificationsHub> hub,
         UserManager<ApplicationUser> userManager,
-        IBaseRepository<Notification> notifications)
+        IRepository<Notification> notifications)
     {
         _db = db;
         _hub = hub;
