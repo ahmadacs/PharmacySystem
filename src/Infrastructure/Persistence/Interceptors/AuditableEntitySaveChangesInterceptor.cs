@@ -1,10 +1,9 @@
+using System.Globalization;
 using System.Text.Json;
 using Application.Common.Interfaces;
 using Domain.Common;
 using Domain.Entities.Audit;
-using Domain.Entities.Notifications;
 using Domain.Enums;
-using Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -23,10 +22,7 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         if (eventData.Context is not null)
-        {
-            ApplyAuditRulesAndSoftDelete(eventData.Context);
-            RecordAuditEntries(eventData.Context);
-        }
+            Process(eventData.Context);
 
         return base.SavingChanges(eventData, result);
     }
@@ -37,20 +33,55 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
         CancellationToken cancellationToken = default)
     {
         if (eventData.Context is not null)
-        {
-            ApplyAuditRulesAndSoftDelete(eventData.Context);
-            RecordAuditEntries(eventData.Context);
-        }
+            Process(eventData.Context);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private void ApplyAuditRulesAndSoftDelete(DbContext context)
+    // Order is load-bearing and enforced here by construction:
+    //   1. ApplySoftDeleteLifecycle (Deleted -> Modified + IsDeleted = true;
+    //      IsDeleted true -> false detected as restore, DeletedBy/At cleared).
+    //   2. ApplyAuditMetadata (converted/restored rows get ModifiedBy/ModifiedAt).
+    //   3. CreateAuditEntries (sees final states, classifies Deleted vs Updated).
+    // Do not reorder these calls.
+    private void Process(DbContext context)
     {
         var userId = _currentUser.UserId;
         var now = DateTime.UtcNow;
 
-        foreach (var entry in context.ChangeTracker.Entries<BaseEntity>())
+        ApplySoftDeleteLifecycle(context, userId, now);
+        ApplyAuditMetadata(context, userId, now);
+
+        var auditEntries = CreateAuditEntries(context, userId, now);
+
+        if (auditEntries.Count > 0)
+            context.Set<AuditEntry>().AddRange(auditEntries);
+    }
+
+    private static void ApplySoftDeleteLifecycle(DbContext context, Guid? userId, DateTime now)
+    {
+        foreach (var entry in context.ChangeTracker.Entries<ISoftDelete>())
+        {
+            if (entry.State == EntityState.Deleted)
+            {
+                entry.State = EntityState.Modified;
+                entry.Entity.IsDeleted = true;
+                entry.Entity.DeletedBy = userId;
+                entry.Entity.DeletedAt = now;
+                continue;
+            }
+
+            if (entry.State == EntityState.Modified && IsRestoreTransition(entry, entry.Entity))
+            {
+                entry.Entity.DeletedBy = null;
+                entry.Entity.DeletedAt = null;
+            }
+        }
+    }
+
+    private static void ApplyAuditMetadata(DbContext context, Guid? userId, DateTime now)
+    {
+        foreach (var entry in context.ChangeTracker.Entries<IAuditable>())
         {
             switch (entry.State)
             {
@@ -63,33 +94,32 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
                     entry.Entity.ModifiedBy = userId;
                     entry.Entity.ModifiedAt = now;
                     break;
-
-                case EntityState.Deleted:
-                    entry.State = EntityState.Modified;
-                    entry.Entity.IsDeleted = true;
-                    entry.Entity.DeletedBy = userId;
-                    entry.Entity.DeletedAt = now;
-                    break;
             }
         }
     }
 
-    private void RecordAuditEntries(DbContext context)
+    private static List<AuditEntry> CreateAuditEntries(DbContext context, Guid? userId, DateTime now)
     {
-        var userId = _currentUser.UserId;
-        var now = DateTime.UtcNow;
         var auditEntries = new List<AuditEntry>();
 
         foreach (var entry in context.ChangeTracker.Entries())
         {
-            if (entry.Entity is AuditEntry or RefreshToken or Notification or not BaseEntity)
+            if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
+                continue;
+
+            var entity = entry.Entity;
+
+            if (entity is not IAuditable)
+                continue;
+
+            if (entity is not IEntity trackable)
                 continue;
 
             var action = entry.State switch
             {
                 EntityState.Added => AuditAction.Created,
                 EntityState.Deleted => AuditAction.Deleted,
-                EntityState.Modified when ((BaseEntity)entry.Entity).IsDeleted => AuditAction.Deleted,
+                EntityState.Modified when IsSoftDeleteTransition(entry, entity) => AuditAction.Deleted,
                 EntityState.Modified => AuditAction.Updated,
                 _ => (AuditAction?)null
             };
@@ -97,41 +127,91 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
             if (action is null)
                 continue;
 
-            var changesJson = action is AuditAction.Updated or AuditAction.Created ? CaptureChanges(entry, action.Value) : null;
+            string? changesJson;
+            if (action == AuditAction.Updated)
+            {
+                var isRestore = IsRestoreTransition(entry, entity);
+                changesJson = CaptureChanges(entry, action.Value, isRestore);
+                if (changesJson is null)
+                    continue;
+            }
+            else if (action == AuditAction.Created)
+            {
+                changesJson = CaptureChanges(entry, action.Value);
+            }
+            else
+            {
+                changesJson = null;
+            }
 
             auditEntries.Add(new AuditEntry(
-                entry.Entity.GetType().Name,
-                ((BaseEntity)entry.Entity).Id,
+                entity.GetType().Name,
+                trackable.Id,
                 action.Value,
                 userId,
                 now,
                 changesJson));
         }
 
-        if (auditEntries.Count > 0)
-            context.Set<AuditEntry>().AddRange(auditEntries);
+        return auditEntries;
     }
 
-    private static string? CaptureChanges(EntityEntry entry, AuditAction action)
+    private static bool IsSoftDeleteTransition(EntityEntry entry, object entity)
+    {
+        if (entity is not ISoftDelete softDelete || softDelete.IsDeleted is not true)
+            return false;
+
+        const string propertyName = nameof(ISoftDelete.IsDeleted);
+        if (entry.Metadata.FindProperty(propertyName) is null)
+            return false;
+
+        var property = entry.Property(propertyName);
+        return property.IsModified
+            && property.CurrentValue is true
+            && (property.OriginalValue is false || property.OriginalValue is null);
+    }
+
+    private static bool IsRestoreTransition(EntityEntry entry, object entity)
+    {
+        if (entity is not ISoftDelete softDelete || softDelete.IsDeleted is not false)
+            return false;
+
+        const string propertyName = nameof(ISoftDelete.IsDeleted);
+        if (entry.Metadata.FindProperty(propertyName) is null)
+            return false;
+
+        var property = entry.Property(propertyName);
+        return property.IsModified
+            && property.CurrentValue is false
+            && property.OriginalValue is true;
+    }
+
+    private static string? CaptureChanges(EntityEntry entry, AuditAction action, bool includeRestoreFlip = false)
     {
         var changes = new List<AuditChangeRecord>();
 
-        foreach (var property in entry.Properties)
+        foreach (var propertyMeta in entry.Metadata.GetProperties())
         {
-            var name = property.Metadata.Name;
-            if (IsSkippedProperty(name, property.Metadata.ClrType))
+            if (IsSkippedProperty(propertyMeta.Name, propertyMeta.ClrType))
+                continue;
+
+            var property = entry.Property(propertyMeta.Name);
+            var name = propertyMeta.Name;
+
+            if (action == AuditAction.Created)
+            {
+                var createdValue = property.CurrentValue;
+                if (createdValue is null)
+                    continue;
+                changes.Add(new AuditChangeRecord(name, null, FormatValue(createdValue)));
+                continue;
+            }
+
+            if (!property.IsModified)
                 continue;
 
             var oldValue = property.OriginalValue;
             var newValue = property.CurrentValue;
-
-            if (action == AuditAction.Created)
-            {
-                if (newValue is null)
-                    continue;
-                changes.Add(new AuditChangeRecord(name, null, FormatValue(newValue)));
-                continue;
-            }
 
             if (Equals(oldValue, newValue))
                 continue;
@@ -168,24 +248,28 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
             }
         }
 
+        if (includeRestoreFlip)
+            changes.Add(new AuditChangeRecord(nameof(ISoftDelete.IsDeleted), FormatValue(true), FormatValue(false)));
+
         return changes.Count == 0 ? null : JsonSerializer.Serialize(changes, JsonOptions);
     }
 
     private static bool IsSkippedProperty(string name, Type clrType)
         => clrType == typeof(byte[])
-            || name is nameof(BaseEntity.CreatedBy) or nameof(BaseEntity.CreatedAt)
-                or nameof(BaseEntity.ModifiedBy) or nameof(BaseEntity.ModifiedAt)
-                or nameof(BaseEntity.DeletedBy) or nameof(BaseEntity.DeletedAt)
-                or nameof(BaseEntity.IsDeleted);
+            || name is nameof(IAuditable.CreatedBy) or nameof(IAuditable.CreatedAt)
+                or nameof(IAuditable.ModifiedBy) or nameof(IAuditable.ModifiedAt)
+                or nameof(ISoftDelete.DeletedBy) or nameof(ISoftDelete.DeletedAt)
+                or nameof(ISoftDelete.IsDeleted);
 
     private static string? FormatValue(object? value)
         => value switch
         {
             null => null,
-            DateOnly date => date.ToString("yyyy-MM-dd"),
-            DateTime dateTime => dateTime.ToString("yyyy-MM-dd HH:mm:ss"),
+            DateOnly date => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            DateTime dateTime => dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
             bool boolean => boolean.ToString().ToLowerInvariant(),
             byte[] => "[binary]",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
             _ => value.ToString()
         };
 

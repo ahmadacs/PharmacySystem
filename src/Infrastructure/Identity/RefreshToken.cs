@@ -2,8 +2,11 @@ using Domain.Common;
 
 namespace Infrastructure.Identity;
 
-public class RefreshToken : BaseEntity
+public class RefreshToken : IHardDelete
 {
+    public Guid Id { get; private set; } = Guid.NewGuid();
+    public DateTime CreatedAt { get; private set; }
+
     public Guid UserId { get; private set; }
     public ApplicationUser? User { get; private set; }
 
@@ -24,6 +27,7 @@ public class RefreshToken : BaseEntity
         UserId = userId;
         TokenHash = tokenHash;
         ExpiresAtUtc = expiresAtUtc;
+        CreatedAt = DateTime.UtcNow;
     }
 
     public bool IsExpired(DateTime asOfUtc) => asOfUtc >= ExpiresAtUtc;

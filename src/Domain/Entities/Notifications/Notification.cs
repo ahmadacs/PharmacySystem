@@ -3,8 +3,11 @@ using Domain.Enums;
 
 namespace Domain.Entities.Notifications;
 
-public class Notification : BaseEntity
+public class Notification : IHardDelete
 {
+    public Guid Id { get; private set; } = Guid.NewGuid();
+    public DateTime CreatedAt { get; private set; }
+
     public Guid UserId { get; private set; }
     public NotificationType Type { get; private set; }
     public string Title { get; private set; } = string.Empty;
@@ -35,6 +38,7 @@ public class Notification : BaseEntity
         Data = data;
         LocalizationKey = localizationKey;
         LocalizationParamsJson = localizationParamsJson;
+        CreatedAt = DateTime.UtcNow;
     }
 
     public void MarkRead(DateTime at)

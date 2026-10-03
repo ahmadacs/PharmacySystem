@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IStaffService, StaffService>();
         services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
         services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
+        services.AddScoped(typeof(IHardDeleteRepository<>), typeof(HardDeleteRepository<>));
         services.AddScoped<IMedicineVariantRepository, MedicineVariantRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
         services.AddScoped<IExportDataProvider, ExportDataProvider>();
