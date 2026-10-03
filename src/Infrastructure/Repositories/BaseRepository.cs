@@ -136,10 +136,4 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         ArgumentNullException.ThrowIfNull(entity);
         Db.Set<TEntity>().Add(entity);
     }
-
-    public void Remove(TEntity entity)
-    {
-        ArgumentNullException.ThrowIfNull(entity);
-        Db.Set<TEntity>().Remove(entity);
-    }
 }

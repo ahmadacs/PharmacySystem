@@ -1,6 +1,6 @@
 namespace Domain.Common;
 
-public abstract class BaseEntity : IAuditable, ISoftDelete, IEntity
+public abstract class BaseEntity : IAuditable, ISoftDelete
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid? CreatedBy { get; set; }

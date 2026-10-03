@@ -43,6 +43,4 @@ public interface IBaseRepository<TEntity> where TEntity : IEntity
     Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 
     void Add(TEntity entity);
-
-    void Remove(TEntity entity);
 }

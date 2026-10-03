@@ -1,6 +1,6 @@
 namespace Domain.Common
 {
-    public interface ISoftDelete
+    public interface ISoftDelete : IEntity
     {
         bool IsDeleted { get; set; }
         Guid? DeletedBy { get; set; }

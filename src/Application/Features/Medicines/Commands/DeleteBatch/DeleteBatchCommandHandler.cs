@@ -9,11 +9,11 @@ namespace Application.Features.Medicines.Commands;
 
 public sealed class DeleteBatchCommandHandler : IRequestHandler<DeleteBatchCommand, Result>
 {
-    private readonly IBaseRepository<MedicineBatch> _batches;
+    private readonly IBaseRepositoryWithSoftDelete<MedicineBatch> _batches;
     private readonly IUnitOfWork _uow;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public DeleteBatchCommandHandler(IBaseRepository<MedicineBatch> batches, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
+    public DeleteBatchCommandHandler(IBaseRepositoryWithSoftDelete<MedicineBatch> batches, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _batches = batches;
         _uow = uow;
@@ -26,7 +26,7 @@ public sealed class DeleteBatchCommandHandler : IRequestHandler<DeleteBatchComma
         if (batch is null)
             return Result.Failure(_localizer["ResourceNotFound", "MedicineBatch", request.Id].Value, 404);
 
-        _batches.Remove(batch);
+        _batches.SoftDelete(batch);
         await _uow.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
