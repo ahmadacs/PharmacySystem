@@ -102,9 +102,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
         return result;
     }
 
-    private List<object> CollectDomainEvents()
+    private List<IDomainEvent> CollectDomainEvents()
     {
-        var entities = ChangeTracker.Entries<BaseEntity>().Select(e => e.Entity).ToList();
+        var entities = ChangeTracker.Entries<IHasDomainEvents>().Select(e => e.Entity).ToList();
         var domainEvents = entities.SelectMany(e => e.DomainEvents).ToList();
 
         foreach (var entity in entities)
@@ -113,7 +113,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
         return domainEvents;
     }
 
-    private Task DispatchDomainEventsAsync(List<object> domainEvents, CancellationToken cancellationToken)
+    private Task DispatchDomainEventsAsync(List<IDomainEvent> domainEvents, CancellationToken cancellationToken)
         => domainEvents.Count == 0
             ? Task.CompletedTask
             : _domainEventDispatcher.DispatchAsync(domainEvents, cancellationToken);

@@ -8,7 +8,7 @@ using Domain.Exceptions;
 
 namespace Domain.Entities.Prescriptions;
 
-public class Prescription : BaseEntity
+public class Prescription : BaseAggregateRoot
 {
     public const int ShortCodeLength = 8;
 

@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Features.Notifications.Events;
 using Application.Features.Prescriptions.Events;
+using Domain.Common;
 using Domain.Events;
 using MediatR;
 
@@ -15,7 +16,7 @@ public sealed class DomainEventDispatcher : IDomainEventDispatcher
         _mediator = mediator;
     }
 
-    public async Task DispatchAsync(IReadOnlyCollection<object> domainEvents, CancellationToken cancellationToken = default)
+    public async Task DispatchAsync(IReadOnlyCollection<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
     {
         foreach (var domainEvent in domainEvents)
         {
@@ -24,7 +25,7 @@ public sealed class DomainEventDispatcher : IDomainEventDispatcher
         }
     }
 
-    private static INotification ToNotification(object domainEvent) => domainEvent switch
+    private static INotification ToNotification(IDomainEvent domainEvent) => domainEvent switch
     {
         PrescriptionCreatedEvent e => new PrescriptionCreatedNotification(e.PrescriptionId, e.OccurredAtUtc),
         PrescriptionCancelledEvent e => new PrescriptionCancelledNotification(e.PrescriptionId, e.OccurredAtUtc),

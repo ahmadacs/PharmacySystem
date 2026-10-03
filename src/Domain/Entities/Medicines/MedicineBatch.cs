@@ -8,7 +8,7 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities.Medicines;
 
-public class MedicineBatch : BaseEntity
+public class MedicineBatch : BaseAggregateRoot
 {
     public Guid MedicineVariantId { get; private set; }
     public MedicineVariant? MedicineVariant { get; private set; }

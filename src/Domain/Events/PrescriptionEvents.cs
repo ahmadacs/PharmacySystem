@@ -1,6 +1,8 @@
 namespace Domain.Events;
 
-public abstract record DomainEvent(DateTime OccurredAtUtc);
+using Domain.Common;
+
+public abstract record DomainEvent(DateTime OccurredAtUtc) : IDomainEvent;
 
 public record PrescriptionCreatedEvent(Guid PrescriptionId, DateTime OccurredAtUtc)
     : DomainEvent(OccurredAtUtc);

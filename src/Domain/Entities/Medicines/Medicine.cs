@@ -3,7 +3,7 @@ using Domain.Enums;
 
 namespace Domain.Entities.Medicines;
 
-public class Medicine : BaseEntity
+public class Medicine : BaseAggregateRoot
 {
     public string Name { get; private set; } = string.Empty;
     public string? NameAr { get; private set; }
