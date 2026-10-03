@@ -33,4 +33,11 @@ public sealed class NotificationsController(ISender sender) : ApiControllerBase(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public Task<IActionResult> MarkAllRead(CancellationToken cancellationToken)
         => NoContent(new MarkAllNotificationsReadCommand(), cancellationToken);
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+        => NoContent(new DeleteNotificationCommand(id), cancellationToken);
 }
