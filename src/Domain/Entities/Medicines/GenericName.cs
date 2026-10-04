@@ -2,7 +2,7 @@ using Domain.Common;
 
 namespace Domain.Entities.Medicines;
 
-public class GenericName : BaseEntity
+public class GenericName : Entity
 {
     public string Name { get; private set; } = string.Empty;
     public string? NameAr { get; private set; }

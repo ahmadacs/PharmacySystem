@@ -1,6 +1,6 @@
 namespace Domain.Common;
 
-public abstract class BaseAggregateRoot : BaseEntity, IHasDomainEvents
+public abstract class AggregateRoot : Entity, IHasDomainEvents
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 

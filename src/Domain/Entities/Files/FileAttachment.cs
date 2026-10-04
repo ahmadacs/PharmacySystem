@@ -3,7 +3,7 @@ using Domain.Enums;
 
 namespace Domain.Entities.Files;
 
-public class FileAttachment : BaseEntity
+public class FileAttachment : Entity
 {
     public FileEntityType EntityType { get; private set; }
     public Guid EntityId { get; private set; }

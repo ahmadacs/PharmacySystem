@@ -126,7 +126,7 @@ public sealed class FileAccessChecker : IFileAccessChecker
         => permissions.Any(p => _currentUser.Permissions.Contains(p));
 
     private static Task<bool> ExistsAsync<TEntity>(IRepository<TEntity> repo, Guid id, CancellationToken cancellationToken)
-        where TEntity : Domain.Common.BaseEntity
+        where TEntity : Domain.Common.Entity
         => repo.ExistsAsync(e => e.Id == id, cancellationToken);
 
     private Result Denied(string messageKey)

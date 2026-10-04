@@ -3,7 +3,7 @@ using LicenseNumberVo = Domain.ValueObjects.LicenseNumber;
 
 namespace Domain.Entities.Staff;
 
-public class Pharmacist : BaseEntity
+public class Pharmacist : Entity
 {
     public Guid UserId { get; private set; }
     public LicenseNumberVo LicenseNumber { get; private set; } = null!;

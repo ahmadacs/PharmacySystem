@@ -3,7 +3,7 @@ using Domain.Entities.Prescriptions;
 
 namespace Domain.Entities.Patients;
 
-public class Patient : BaseEntity
+public class Patient : Entity
 {
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;

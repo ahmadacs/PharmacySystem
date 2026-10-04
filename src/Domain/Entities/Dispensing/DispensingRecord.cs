@@ -4,7 +4,7 @@ using Domain.Entities.Staff;
 
 namespace Domain.Entities.Dispensing;
 
-public class DispensingRecord : BaseAggregateRoot
+public class DispensingRecord : AggregateRoot
 {
     public Guid PrescriptionId { get; private set; }
     public Prescription? Prescription { get; private set; }

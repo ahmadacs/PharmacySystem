@@ -4,7 +4,7 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities.Dispensing;
 
-public class DispensingRecordItem : BaseEntity
+public class DispensingRecordItem : Entity
 {
     public Guid DispensingRecordId { get; private set; }
     public Guid PrescriptionItemId { get; private set; }

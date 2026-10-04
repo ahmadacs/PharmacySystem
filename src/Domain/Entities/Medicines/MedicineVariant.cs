@@ -6,7 +6,7 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities.Medicines;
 
-public class MedicineVariant : BaseAggregateRoot
+public class MedicineVariant : AggregateRoot
 {
     public Guid MedicineId { get; private set; }
     public Medicine? Medicine { get; private set; }

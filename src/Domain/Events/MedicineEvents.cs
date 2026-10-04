@@ -1,5 +1,7 @@
 namespace Domain.Events;
 
+using Domain.Common;
+
 public record MedicineLowStockEvent(
     Guid MedicineId,
     Guid MedicineVariantId,

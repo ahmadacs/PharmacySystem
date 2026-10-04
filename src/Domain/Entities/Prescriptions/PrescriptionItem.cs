@@ -6,7 +6,7 @@ using Domain.ValueObjects;
 
 namespace Domain.Entities.Prescriptions;
 
-public class PrescriptionItem : BaseEntity
+public class PrescriptionItem : Entity
 {
     public Guid PrescriptionId { get; private set; }
     public Guid MedicineVariantId { get; private set; }

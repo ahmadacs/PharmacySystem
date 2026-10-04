@@ -4,7 +4,7 @@ using Domain.Enums;
 
 namespace Domain.Entities.Inventory;
 
-public class InventoryAdjustment : BaseEntity
+public class InventoryAdjustment : Entity
 {
     public Guid MedicineBatchId { get; private set; }
     public MedicineBatch? MedicineBatch { get; private set; }
