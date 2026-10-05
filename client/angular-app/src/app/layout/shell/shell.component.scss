@@ -461,11 +461,46 @@
 
   .shell .topbar {
     flex-wrap: wrap;
+    gap: 12px;
   }
 
   .shell .search {
     max-width: 100%;
     flex-basis: 100%;
     order: 3;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .shell__content {
+    padding: 16px 12px;
+    min-width: 0;
+  }
+
+  .shell .topbar {
+    padding-inline: 12px;
+    margin-bottom: 16px;
+  }
+
+  // User name/role text crowds the bell + language + theme buttons
+  // on narrow phones — keep avatar + chevron only.
+  .shell .user-btn .who {
+    display: none;
+  }
+
+  .shell .user-btn {
+    padding-inline: 6px;
+    gap: 0;
+  }
+
+  .shell .user-btn .chev {
+    display: none;
+  }
+
+  .shell .top-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
   }
 }

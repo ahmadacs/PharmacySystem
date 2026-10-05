@@ -116,6 +116,9 @@ export class ShellComponent {
 
   openChangePassword(): void {
     this.dialog.open(ChangePasswordDialogComponent, {
+      width: '440px',
+      maxWidth: '95vw',
+      maxHeight: '90dvh',
       data: { email: this.authStore.currentUser()?.email }
     });
   }

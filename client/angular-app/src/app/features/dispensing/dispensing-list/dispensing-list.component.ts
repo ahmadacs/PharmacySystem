@@ -21,12 +21,10 @@ import {
   MatRow
 } from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
-import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
 import { DispensingRecordDto } from '../../../core/models/api.models';
-import { ToastService } from '../../../core/services/toast.service';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { DialogPermissionGuard, openForResult } from '../../../core/utils/dialog-helpers';
+import { openForResult, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -73,8 +71,7 @@ import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 })
 export class DispensingListComponent {
   private readonly dialog = inject(MatDialog);
-  private readonly authStore = inject(AuthStore);
-  private readonly toast = inject(ToastService);
+  private readonly dialogGuards = inject(DialogGuardService);
   private readonly translate = inject(TranslateService);
 
   protected readonly permissions = Permissions;
@@ -120,22 +117,18 @@ export class DispensingListComponent {
     openForResult(
       this.dialog,
       DispensePickerDialogComponent,
-      { width: '560px' },
+      { width: '560px', maxWidth: '95vw', maxHeight: '90dvh' },
       (picked: DispensePickerResult) => {
         openForResult(
           this.dialog,
           DispenseDialogComponent,
-          { width: '560px', data: picked },
+          { width: '560px', maxWidth: '95vw', maxHeight: '90dvh', data: picked },
           () => {
             this.refreshRecords();
           }
         );
       },
-      this.guard(Permissions.DispensingCreate)
+      this.dialogGuards.guard(Permissions.DispensingCreate)
     );
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
   }
 }

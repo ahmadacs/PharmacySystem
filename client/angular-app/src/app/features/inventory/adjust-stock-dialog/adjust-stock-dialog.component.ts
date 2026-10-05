@@ -17,7 +17,6 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
-  FileUploadDto,
   InventoryAdjustmentType,
   InventoryAdjustmentTypeEnum,
   MedicineBatchDto,
@@ -242,23 +241,9 @@ export class AdjustStockDialogComponent {
       this.submitting,
       async () => {
         const value = this.form.getRawValue();
-        let fileDto: FileUploadDto | undefined;
-
-        if (this.file()) {
-          this.fileUploading.set(true);
-          const file = this.file()!;
-          const base64Content = await this.fileService.fileToBase64(file);
-          fileDto = {
-            fileName: file.name,
-            contentType: file.type,
-            sizeBytes: file.size,
-            base64Content
-          };
-          this.fileUploading.set(false);
-        }
 
         if (this.isInbound()) {
-          await this.inventoryService.receive({
+          const created = await this.inventoryService.receive({
             medicineVariantId: value.medicineVariantId as string,
             manufactureDate: toDateString(value.manufactureDate)!,
             expiryDate: toDateString(value.expiryDate)!,
@@ -266,18 +251,32 @@ export class AdjustStockDialogComponent {
             unitCost: value.unitCost,
             supplierName: value.supplierName || null,
             reason: value.reason,
-            adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum],
-            file: fileDto
+            adjustmentType: InventoryAdjustmentTypeEnum[value.type as keyof typeof InventoryAdjustmentTypeEnum]
           });
+          if (this.file()) {
+            this.fileUploading.set(true);
+            try {
+              await this.fileService.upload('Batch', created.id, this.file()!);
+            } finally {
+              this.fileUploading.set(false);
+            }
+          }
           this.toast.show(this.translate.instant('dialogs.adjustStock.received'), 'success');
         } else {
-          await this.inventoryService.adjust({
+          const created = await this.inventoryService.adjust({
             medicineBatchId: value.medicineBatchId as string,
             type: value.type as InventoryAdjustmentType,
             quantity: value.quantity,
-            reason: value.reason,
-            file: fileDto
+            reason: value.reason
           });
+          if (this.file()) {
+            this.fileUploading.set(true);
+            try {
+              await this.fileService.upload('InventoryAdjustment', created.id, this.file()!);
+            } finally {
+              this.fileUploading.set(false);
+            }
+          }
           this.toast.show(this.translate.instant('dialogs.adjustStock.adjusted'), 'success');
         }
       },

@@ -118,6 +118,7 @@ h1, h2, h3, .serif {
   border-radius: 4px !important;
   overflow: hidden;
   box-shadow: none !important;
+  min-width: 0;
 
   .mat-mdc-card-header {
     display: flex;
@@ -142,6 +143,8 @@ h1, h2, h3, .serif {
 
   .mat-mdc-card-content {
     padding: 0 !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -158,8 +161,15 @@ h1, h2, h3, .serif {
 }
 
 // ===== Inventory table (حرفياً من html.html) =====
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
 table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   margin-top: 6px;
 }
@@ -272,6 +282,28 @@ tbody tr:hover,
 }
 
 @media (max-width: 600px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat {
+    padding: 14px 12px;
+
+    .mat-mdc-card-title {
+      font-size: 20px;
+    }
+
+    .mat-mdc-card-subtitle {
+      font-size: 11.5px;
+    }
+  }
+
+  .panels {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 399.98px) {
   .stats {
     grid-template-columns: 1fr;
   }

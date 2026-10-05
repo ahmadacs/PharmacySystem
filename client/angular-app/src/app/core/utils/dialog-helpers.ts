@@ -1,5 +1,5 @@
 import { ComponentType } from '@angular/cdk/portal';
-import { WritableSignal } from '@angular/core';
+import { Injectable, inject, WritableSignal } from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
@@ -24,6 +24,70 @@ export interface DialogPermissionGuard {
   translate: TranslateService;
   /** At least one must be held (mirrors route guards accepting alternatives). */
   permissions: string[];
+}
+
+/**
+ * Central factory replacing the 7x repeated
+ * `private guard(...permissions)` in list/dialog components.
+ *
+ * WARNING: `useDialogGuard()` calls `inject()` internally, so it is ONLY
+ * safe in an injection context (field initializers / constructors).
+ * Calling it inside a click handler / method (e.g.
+ * `openForResult(..., useDialogGuard(P))`) throws NG0203 and the dialog
+ * never opens. For event handlers, inject `DialogGuardService` once as a
+ * field and call `dialogGuards.guard(...)` instead — that performs no
+ * `inject()` at call time and is always safe.
+ */
+export function useDialogGuard(...permissions: string[]): DialogPermissionGuard {
+  return {
+    authStore: inject(AuthStore),
+    toast: inject(ToastService),
+    translate: inject(TranslateService),
+    permissions,
+  };
+}
+
+/**
+ * Root-provided guard factory safe to call from ANY context, including
+ * event handlers. Inject it once as a component field (injection context):
+ *
+ *   private readonly dialogGuards = inject(DialogGuardService);
+ *
+ * then in handlers:
+ *
+ *   openForResult(..., this.dialogGuards.guard(Permissions.X))
+ *
+ * No `inject()` runs at call time — the service captured its deps at
+ * construction — so NG0203 can never fire and dialogs always open.
+ */
+@Injectable({ providedIn: 'root' })
+export class DialogGuardService {
+  private readonly authStore = inject(AuthStore);
+  private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
+
+  guard(...permissions: string[]): DialogPermissionGuard {
+    return {
+      authStore: this.authStore,
+      toast: this.toast,
+      translate: this.translate,
+      permissions,
+    };
+  }
+
+  allows(...permissions: string[]): boolean {
+    return permissions.some((p) => this.authStore.hasPermission(p));
+  }
+}
+
+/** Explicit factory with no `inject()` — safe in event handlers. */
+export function createDialogGuard(
+  authStore: AuthStore,
+  toast: ToastService,
+  translate: TranslateService,
+  ...permissions: string[]
+): DialogPermissionGuard {
+  return { authStore, toast, translate, permissions };
 }
 
 /** Shows an "access denied" toast and returns false when access is denied. */
@@ -81,7 +145,12 @@ export async function confirmAndMutate(
   }
   const confirmed = await firstValueFrom(
     dialog
-      .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, { data })
+      .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
+        data,
+        width: '440px',
+        maxWidth: '95vw',
+        maxHeight: '90dvh',
+      })
       .afterClosed(),
   );
   if (!confirmed) {

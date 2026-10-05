@@ -4,6 +4,13 @@
   flex-wrap: wrap;
   margin: 1.25rem 0 1.5rem;
   padding-inline: 4px;
+  min-width: 0;
+}
+
+.filters > * {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 // مسافة بين التبويبات في كل الصفحات + لون الحقل المختار

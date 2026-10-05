@@ -24,7 +24,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
-import { confirmAndMutate, DialogPermissionGuard } from '../../../core/utils/dialog-helpers';
+import { confirmAndMutate, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../prescriptions.service';
 import { ExportService } from '../../../core/services/export.service';
@@ -64,6 +64,7 @@ export class PrescriptionDetailsDialogComponent {
   private readonly prescriptionsService = inject(PrescriptionsService);
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(MatDialog);
+  private readonly dialogGuards = inject(DialogGuardService);
   private readonly authStore = inject(AuthStore);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionDetailsDialogComponent>);
   private readonly exportService = inject(ExportService);
@@ -135,7 +136,7 @@ export class PrescriptionDetailsDialogComponent {
       () => this.prescriptionsService.cancel(id),
       this.translate.instant('dialogs.prescriptionDetails.cancelled'),
       () => this.dialogRef.close(true),
-      this.guard(Permissions.PrescriptionsManageOwn)
+      this.dialogGuards.guard(Permissions.PrescriptionsManageOwn)
     );
   }
 
@@ -150,10 +151,6 @@ export class PrescriptionDetailsDialogComponent {
 
   protected openImages(entityType: FileEntityType, entityId: string): void {
     this.viewer.open(entityType, entityId);
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
   }
 
   async refillItem(prescriptionId: string, itemId: string): Promise<void> {

@@ -32,7 +32,6 @@ import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
-import { FileUploadDto } from '../../../core/models/inventory.models';
 import { PrescriptionsService } from '../prescriptions.service';
 import { MedicineLookupService } from '../medicine-lookup.service';
 import { FoundPatient } from '../patient-lookup.service';
@@ -150,6 +149,7 @@ export class PrescriptionFormDialogComponent {
     this.dialog.open(PatientDetailsDialogComponent, {
       width: '920px',
       maxWidth: '94vw',
+      maxHeight: '90dvh',
       data: {
         patient,
         history: this.medsHistory,
@@ -483,17 +483,7 @@ export class PrescriptionFormDialogComponent {
       this.submitting,
       async () => {
         const value = this.form.getRawValue();
-        let fileDto: FileUploadDto | undefined;
-        if (this.file()) {
-          const selected = this.file()!;
-          fileDto = {
-            fileName: selected.name,
-            contentType: selected.type,
-            sizeBytes: selected.size,
-            base64Content: await this.fileService.fileToBase64(selected)
-          };
-        }
-        await this.prescriptionsService.create({
+        const created = await this.prescriptionsService.create({
           patientFirstName: value.patientFirstName,
           patientLastName: value.patientLastName,
           patientDateOfBirth: toDateString(value.patientDateOfBirth)!,
@@ -507,9 +497,11 @@ export class PrescriptionFormDialogComponent {
             isRefillable: item['isRefillable'] as boolean,
             refillsAllowed: item['refillsAllowed'] as number,
             refillIntervalDays: Number(item['refillIntervalDays']) || 0
-          })),
-          file: fileDto
+          }))
         });
+        if (this.file()) {
+          await this.fileService.upload('Prescription', created.id, this.file()!);
+        }
       },
       () => {
         this.toast.show(this.translate.instant('dialogs.prescriptionForm.created'), 'success');

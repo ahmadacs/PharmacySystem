@@ -8,7 +8,7 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { MatOption } from '@angular/material/autocomplete';
+import { MatOption } from '@angular/material/select';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
@@ -22,7 +22,6 @@ import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
 import { numericEnumValues } from '../../../core/utils/entity-helpers';
-import { FileUploadDto } from '../../../core/models/inventory.models';
 import { MedicinesService } from '../medicines.service';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -60,8 +59,8 @@ export class MedicineFormDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<MedicineFormDialogComponent>);
   private readonly translate = inject(TranslateService);
 
-  readonly isEdit = inject(MAT_DIALOG_DATA) !== null;
   private readonly medicine = inject<MedicineListItemDto | null>(MAT_DIALOG_DATA);
+  readonly isEdit = this.medicine != null;
 
   protected readonly submitting = signal(false);
   protected readonly file = signal<File | null>(null);
@@ -158,17 +157,7 @@ export class MedicineFormDialogComponent {
           });
           this.toast.show(this.translate.instant('medicines.updated'), 'success');
         } else {
-          let fileDto: FileUploadDto | undefined;
-          if (this.file()) {
-            const selected = this.file()!;
-            fileDto = {
-              fileName: selected.name,
-              contentType: selected.type,
-              sizeBytes: selected.size,
-              base64Content: await this.fileService.fileToBase64(selected)
-            };
-          }
-          await this.medicinesService.create({
+          const created = await this.medicinesService.create({
             name: value.name,
             nameAr: value.nameAr || undefined,
             genericName: value.genericName,
@@ -184,9 +173,11 @@ export class MedicineFormDialogComponent {
               packageUnitName: v['packageUnitName'],
               unitsPerPackage: v['unitsPerPackage'],
               isDivisible: v['isDivisible']
-            })),
-            file: fileDto
+            }))
           });
+          if (this.file()) {
+            await this.fileService.upload('Medicine', created.id, this.file()!);
+          }
           this.toast.show(this.translate.instant('medicines.created'), 'success');
         }
       },

@@ -29,7 +29,7 @@ import { Permissions } from '../../../core/constants/permissions';
 import { CategoryEnum, MedicineForm, MedicineListItemDto } from '../../../core/models/api.models';
 import { ExportService } from '../../../core/services/export.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { confirmAndMutate, DialogPermissionGuard, openForResult, requireDialogPermission } from '../../../core/utils/dialog-helpers';
+import { confirmAndMutate, openForResult, requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import { numericEnumValues } from '../../../core/utils/entity-helpers';
 import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
@@ -84,6 +84,7 @@ export class MedicinesListComponent {
   private readonly medicinesService = inject(MedicinesService);
   private readonly toast = inject(ToastService);
   private readonly authStore = inject(AuthStore);
+  private readonly dialogGuards = inject(DialogGuardService);
   private readonly exportService = inject(ExportService);
   protected readonly translate = inject(TranslateService);
 
@@ -151,28 +152,28 @@ export class MedicinesListComponent {
   }
 
   openCreate(): void {
-    openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', data: null }, () => {
+    openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', maxWidth: '95vw', maxHeight: '90dvh', data: null }, () => {
       this.refreshMedicines();
-    }, this.guard(Permissions.MedicinesCreate));
+    }, this.dialogGuards.guard(Permissions.MedicinesCreate));
   }
 
   openEdit(medicine: MedicineListItemDto): void {
-    openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', data: medicine }, () => {
+    openForResult(this.dialog, MedicineFormDialogComponent, { width: '640px', maxWidth: '95vw', maxHeight: '90dvh', data: medicine }, () => {
       this.refreshMedicines();
-    }, this.guard(Permissions.MedicinesUpdate));
+    }, this.dialogGuards.guard(Permissions.MedicinesUpdate));
   }
 
   openDetails(medicine: MedicineListItemDto): void {
-    if (!requireDialogPermission(this.guard(Permissions.MedicinesView))) {
+    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.MedicinesView))) {
       return;
     }
-    this.dialog.open(MedicineDetailsDialogComponent, { width: '720px', data: medicine.id });
+    this.dialog.open(MedicineDetailsDialogComponent, { width: '720px', maxWidth: '95vw', maxHeight: '90dvh', data: medicine.id });
   }
 
   openAddBatch(medicine: MedicineListItemDto): void {
-    openForResult(this.dialog, BatchFormDialogComponent, { width: '520px', data: medicine.id }, () => {
+    openForResult(this.dialog, BatchFormDialogComponent, { width: '520px', maxWidth: '95vw', maxHeight: '90dvh', data: medicine.id }, () => {
       this.refreshMedicines();
-    }, this.guard(Permissions.MedicinesUpdate));
+    }, this.dialogGuards.guard(Permissions.MedicinesUpdate));
   }
 
   async export(format: 'excel' | 'pdf'): Promise<void> {
@@ -192,11 +193,7 @@ export class MedicinesListComponent {
       () => this.medicinesService.remove(medicine.id),
       this.translate.instant('medicines.deleted'),
       () => this.refreshMedicines(),
-      this.guard(Permissions.MedicinesDelete)
+      this.dialogGuards.guard(Permissions.MedicinesDelete)
     );
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
   }
 }

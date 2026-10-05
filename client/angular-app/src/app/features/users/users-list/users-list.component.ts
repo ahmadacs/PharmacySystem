@@ -23,12 +23,11 @@ import {
 } from '@angular/material/table';
 import { MatTooltip } from '@angular/material/tooltip';
 import { environment } from '../../../../environments/environment';
-import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
 import { UserDto, UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { confirmAndMutate, DialogPermissionGuard, openForResult } from '../../../core/utils/dialog-helpers';
+import { confirmAndMutate, openForResult, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -78,8 +77,8 @@ export class UsersListComponent {
   private readonly dialog = inject(MatDialog);
   private readonly usersService = inject(UsersService);
   private readonly toast = inject(ToastService);
-  private readonly authStore = inject(AuthStore);
   private readonly translate = inject(TranslateService);
+  private readonly dialogGuards = inject(DialogGuardService);
 
   protected readonly permissions = Permissions;
   protected readonly roles = USER_ROLES;
@@ -120,9 +119,9 @@ export class UsersListComponent {
   }
 
   openCreate(): void {
-    openForResult(this.dialog, UserFormDialogComponent, { width: '560px' }, () => {
+    openForResult(this.dialog, UserFormDialogComponent, { width: '560px', maxWidth: '95vw', maxHeight: '90dvh' }, () => {
       this.refreshUsers();
-    }, this.guard(Permissions.UsersManage));
+    }, this.dialogGuards.guard(Permissions.UsersManage));
   }
 
   async toggleActive(user: UserDto): Promise<void> {
@@ -138,11 +137,7 @@ export class UsersListComponent {
       () => this.usersService.setActive(user.id, !user.isActive),
       this.translate.instant(user.isActive ? 'users.deactivated' : 'users.activated'),
       () => this.refreshUsers(),
-      this.guard(Permissions.UsersManage)
+      this.dialogGuards.guard(Permissions.UsersManage)
     );
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
   }
 }

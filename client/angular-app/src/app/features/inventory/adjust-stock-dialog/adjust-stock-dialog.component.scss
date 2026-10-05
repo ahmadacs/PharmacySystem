@@ -3,13 +3,18 @@
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      min-width: 420px;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .subtitle {
       margin: -0.5rem 0 0.5rem;
       // Outside mat-dialog-content, so it needs the same side gutter or its
       // text clips at the dialog edge (as seen on small screens).
-      padding: 16px 24px;
+      padding: 16px 24px 0;
+      box-sizing: border-box;
+      max-width: 100%;
       color: var(--mat-sys-on-surface-variant);
       font-size: 0.875rem;
     }
@@ -31,8 +36,12 @@
     .row {
       display: flex;
       gap: 1rem;
+      flex-wrap: wrap;
+      min-width: 0;
     }
     .grow {
       flex: 1 1 180px;
+      min-width: 0;
+      max-width: 100%;
     }
   

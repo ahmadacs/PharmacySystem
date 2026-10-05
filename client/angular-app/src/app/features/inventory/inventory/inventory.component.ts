@@ -23,14 +23,12 @@ import {
   MatRow
 } from '@angular/material/table';
 import { Permissions } from '../../../core/constants/permissions';
-import { AuthStore } from '../../../core/auth/auth.store';
-import { ToastService } from '../../../core/services/toast.service';
 import {
   InventoryAdjustmentType,
   MedicineInventorySummaryDto
 } from '../../../core/models/api.models';
 import { pickLocalizedGenericName, pickLocalizedMedicineName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
-import { DialogPermissionGuard, openForResult, requireDialogPermission } from '../../../core/utils/dialog-helpers';
+import { openForResult, requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import type { PagedTable } from '../../../core/utils/paged-table.utils';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -84,8 +82,7 @@ import { BatchExpiryStatus, InventoryFacade, StatusFilter, StockFilter } from '.
 })
 export class InventoryComponent {
   private readonly dialog = inject(MatDialog);
-  private readonly authStore = inject(AuthStore);
-  private readonly toast = inject(ToastService);
+  private readonly dialogGuards = inject(DialogGuardService);
   protected readonly translate = inject(TranslateService);
   protected readonly facade = inject(InventoryFacade);
 
@@ -120,12 +117,13 @@ export class InventoryComponent {
 
   // ---- Medicine detail dialog (medicine -> variants -> batches) ----
   protected openDetail(row: MedicineInventorySummaryDto): void {
-    if (!requireDialogPermission(this.guard(Permissions.InventoryView))) {
+    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.InventoryView))) {
       return;
     }
     this.dialog.open(MedicineDetailDialogComponent, {
       width: '800px',
       maxWidth: '95vw',
+      maxHeight: '90dvh',
       data: { id: row.id, name: row.name }
     });
   }
@@ -139,12 +137,8 @@ export class InventoryComponent {
   }
 
   openAdjust(): void {
-    openForResult(this.dialog, AdjustStockDialogComponent, { width: '520px' }, () => {
+    openForResult(this.dialog, AdjustStockDialogComponent, { width: '520px', maxWidth: '95vw', maxHeight: '90dvh' }, () => {
       this.facade.reloadAfterAdjust();
-    }, this.guard(Permissions.InventoryAdjust));
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
+    }, this.dialogGuards.guard(Permissions.InventoryAdjust));
   }
 }

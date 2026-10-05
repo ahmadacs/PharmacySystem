@@ -22,14 +22,12 @@ import {
   MatRow
 } from '@angular/material/table';
 import { NgClass } from '@angular/common';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
-import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
 import { PrescriptionListItemDto, PrescriptionStatus } from '../../../core/models/api.models';
-import { ToastService } from '../../../core/services/toast.service';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { DialogPermissionGuard, openForResult, requireDialogPermission } from '../../../core/utils/dialog-helpers';
+import { openForResult, requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -79,9 +77,7 @@ export const PRESCRIPTION_STATUSES: PrescriptionStatus[] = [
 })
 export class PrescriptionsListComponent {
   private readonly dialog = inject(MatDialog);
-  protected readonly auth = inject(AuthStore);
-  private readonly toast = inject(ToastService);
-  private readonly translate = inject(TranslateService);
+  private readonly dialogGuards = inject(DialogGuardService);
 
   protected readonly permissions = Permissions;
   protected readonly statuses = PRESCRIPTION_STATUSES;
@@ -126,23 +122,20 @@ export class PrescriptionsListComponent {
       {
         width: '980px',
         maxWidth: '96vw',
+        maxHeight: '90dvh',
         panelClass: 'sidenav-aware-dialog'
       },
       () => {
         this.refreshPrescriptions();
       },
-      this.guard(Permissions.PrescriptionsCreate)
+      this.dialogGuards.guard(Permissions.PrescriptionsCreate)
     );
   }
 
   openDetails(prescription: PrescriptionListItemDto): void {
-    if (!requireDialogPermission(this.guard(Permissions.PrescriptionsManageOwn, Permissions.PrescriptionsManageAll))) {
+    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.PrescriptionsManageOwn, Permissions.PrescriptionsManageAll))) {
       return;
     }
-    this.dialog.open(PrescriptionDetailsDialogComponent, { width: '720px', data: prescription.id });
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.auth, toast: this.toast, translate: this.translate, permissions };
+    this.dialog.open(PrescriptionDetailsDialogComponent, { width: '720px', maxWidth: '95vw', maxHeight: '90dvh', data: prescription.id });
   }
 }

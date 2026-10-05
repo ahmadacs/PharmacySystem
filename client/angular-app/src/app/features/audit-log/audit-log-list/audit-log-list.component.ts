@@ -20,13 +20,11 @@ import {
   MatRow
 } from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
-import { AuthStore } from '../../../core/auth/auth.store';
 import { Permissions } from '../../../core/constants/permissions';
-import { ToastService } from '../../../core/services/toast.service';
-import { DialogPermissionGuard, requireDialogPermission } from '../../../core/utils/dialog-helpers';
+import { requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
 import { AuditAction, AuditEntryDto } from '../../../core/models/api.models';
 import { createPagedResource, createPagedTable, buildPagedParams } from '../../../core/utils/paged-table.utils';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
@@ -83,9 +81,7 @@ export class AuditLogListComponent {
   protected readonly action = signal('');
 
   private readonly dialog = inject(MatDialog);
-  private readonly authStore = inject(AuthStore);
-  private readonly toast = inject(ToastService);
-  private readonly translate = inject(TranslateService);
+  private readonly dialogGuards = inject(DialogGuardService);
 
   protected readonly audit = createPagedResource<AuditEntryDto>(() => {
     const params = buildPagedParams(this.table, { action: this.action() || null });
@@ -107,14 +103,10 @@ export class AuditLogListComponent {
   }
 
   protected openDetails(row: AuditEntryDto): void {
-    if (!requireDialogPermission(this.guard(Permissions.AuditLogView))) {
+    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.AuditLogView))) {
       return;
     }
-    this.dialog.open(AuditLogDetailsDialogComponent, { width: '720px', data: row });
-  }
-
-  private guard(...permissions: string[]): DialogPermissionGuard {
-    return { authStore: this.authStore, toast: this.toast, translate: this.translate, permissions };
+    this.dialog.open(AuditLogDetailsDialogComponent, { width: '720px', maxWidth: '95vw', maxHeight: '90dvh', data: row });
   }
 
   protected shortId(id: string): string {
