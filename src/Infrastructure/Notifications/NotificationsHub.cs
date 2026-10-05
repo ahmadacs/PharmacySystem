@@ -1,9 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Application.Common.Security;
 using Domain.Entities.Notifications;
 using Microsoft.AspNetCore.Authorization;
-using System.Linq;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Infrastructure.Notifications;
@@ -23,9 +21,6 @@ public sealed class NotificationsHub : Hub
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
-
-            foreach (var role in Context.User?.FindAll(JwtClaimTypes.Role).Select(c => c.Value).Distinct() ?? Enumerable.Empty<string>())
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"role:{role}");
 
             if (Guid.TryParse(userId, out var uid))
             {

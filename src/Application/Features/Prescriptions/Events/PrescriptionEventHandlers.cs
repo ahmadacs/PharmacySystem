@@ -5,30 +5,11 @@ using Application.Common.Security;
 using Domain.Entities.Prescriptions;
 using Domain.Enums;
 using Domain.Events;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Prescriptions.Events;
 
-public sealed record PrescriptionCreatedNotification(Guid PrescriptionId, DateTime OccurredAtUtc)
-    : PrescriptionCreatedEvent(PrescriptionId, OccurredAtUtc), INotification;
-
-public sealed record PrescriptionCancelledNotification(Guid PrescriptionId, DateTime OccurredAtUtc)
-    : PrescriptionCancelledEvent(PrescriptionId, OccurredAtUtc), INotification;
-
-public sealed record PrescriptionRefilledNotification(
-    Guid PrescriptionId,
-    IReadOnlyList<Guid> PrescriptionItemIds,
-    DateTime OccurredAtUtc)
-    : PrescriptionRefilledEvent(PrescriptionId, PrescriptionItemIds, OccurredAtUtc), INotification;
-
-public sealed record PrescriptionDispensedNotification(
-    Guid PrescriptionId,
-    DateTime OccurredAtUtc,
-    int TotalDispensedQuantity)
-    : PrescriptionDispensedEvent(PrescriptionId, OccurredAtUtc, TotalDispensedQuantity), INotification;
-
-public sealed class PrescriptionCreatedNotificationHandler : INotificationHandler<PrescriptionCreatedNotification>
+public sealed class PrescriptionCreatedNotificationHandler : IDomainEventHandler<PrescriptionCreatedEvent>
 {
     private readonly ILogger<PrescriptionCreatedNotificationHandler> _logger;
     private readonly IRepository<Prescription> _prescriptions;
@@ -44,12 +25,12 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
         _notifications = notifications;
     }
 
-    public async Task Handle(PrescriptionCreatedNotification notification, CancellationToken cancellationToken)
+    public async Task HandleAsync(PrescriptionCreatedEvent domainEvent, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Prescription {PrescriptionId} created at {OccurredAtUtc}",
-            notification.PrescriptionId, notification.OccurredAtUtc);
+            domainEvent.PrescriptionId, domainEvent.OccurredAtUtc);
 
-        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
+        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == domainEvent.PrescriptionId, cancellationToken);
         if (row is null)
             return;
 
@@ -65,33 +46,87 @@ public sealed class PrescriptionCreatedNotificationHandler : INotificationHandle
     }
 }
 
-public sealed class PrescriptionLifecycleLoggingHandler
-    : INotificationHandler<PrescriptionCancelledNotification>,
-      INotificationHandler<PrescriptionRefilledNotification>
+public sealed class PrescriptionCancelledNotificationHandler : IDomainEventHandler<PrescriptionCancelledEvent>
 {
-    private readonly ILogger<PrescriptionLifecycleLoggingHandler> _logger;
+    private readonly ILogger<PrescriptionCancelledNotificationHandler> _logger;
+    private readonly IRepository<Prescription> _prescriptions;
+    private readonly INotificationService _notifications;
 
-    public PrescriptionLifecycleLoggingHandler(ILogger<PrescriptionLifecycleLoggingHandler> logger)
+    public PrescriptionCancelledNotificationHandler(
+        ILogger<PrescriptionCancelledNotificationHandler> logger,
+        IRepository<Prescription> prescriptions,
+        INotificationService notifications)
     {
         _logger = logger;
+        _prescriptions = prescriptions;
+        _notifications = notifications;
     }
 
-    public Task Handle(PrescriptionCancelledNotification notification, CancellationToken cancellationToken)
+    public async Task HandleAsync(PrescriptionCancelledEvent domainEvent, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Prescription {PrescriptionId} cancelled at {OccurredAtUtc}",
-            notification.PrescriptionId, notification.OccurredAtUtc);
-        return Task.CompletedTask;
-    }
+            domainEvent.PrescriptionId, domainEvent.OccurredAtUtc);
 
-    public Task Handle(PrescriptionRefilledNotification notification, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Prescription {PrescriptionId} refilled ({ItemCount} item(s)) at {OccurredAtUtc}",
-            notification.PrescriptionId, notification.PrescriptionItemIds.Count, notification.OccurredAtUtc);
-        return Task.CompletedTask;
+        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == domainEvent.PrescriptionId, cancellationToken);
+        if (row is null)
+            return;
+
+        var create = new NotificationCreate(
+            NotificationType.PrescriptionCancelled,
+            "Prescription cancelled",
+            $"Prescription for {row.PatientName} has been cancelled.",
+            Data: JsonSerializer.Serialize(new { prescriptionId = row.Id }),
+            LocalizationKey: "notifications.cancelled",
+            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName = row.PatientName }));
+
+        await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
+
+        if (row.DoctorUserId.HasValue)
+            await _notifications.SendToUserAsync(row.DoctorUserId.Value, create, cancellationToken);
     }
 }
 
-public sealed class PrescriptionDispensedNotificationHandler : INotificationHandler<PrescriptionDispensedNotification>
+public sealed class PrescriptionRefilledNotificationHandler : IDomainEventHandler<PrescriptionRefilledEvent>
+{
+    private readonly ILogger<PrescriptionRefilledNotificationHandler> _logger;
+    private readonly IRepository<Prescription> _prescriptions;
+    private readonly INotificationService _notifications;
+
+    public PrescriptionRefilledNotificationHandler(
+        ILogger<PrescriptionRefilledNotificationHandler> logger,
+        IRepository<Prescription> prescriptions,
+        INotificationService notifications)
+    {
+        _logger = logger;
+        _prescriptions = prescriptions;
+        _notifications = notifications;
+    }
+
+    public async Task HandleAsync(PrescriptionRefilledEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Prescription {PrescriptionId} refilled ({ItemCount} item(s)) at {OccurredAtUtc}",
+            domainEvent.PrescriptionId, domainEvent.PrescriptionItemIds.Count, domainEvent.OccurredAtUtc);
+
+        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == domainEvent.PrescriptionId, cancellationToken);
+        if (row is null)
+            return;
+
+        var create = new NotificationCreate(
+            NotificationType.PrescriptionRefilled,
+            "Prescription refilled",
+            $"Prescription for {row.PatientName} refilled ({domainEvent.PrescriptionItemIds.Count} item(s)).",
+            Data: JsonSerializer.Serialize(new { prescriptionId = row.Id }),
+            LocalizationKey: "notifications.refilled",
+            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName = row.PatientName, count = domainEvent.PrescriptionItemIds.Count }));
+
+        await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
+
+        if (row.DoctorUserId.HasValue)
+            await _notifications.SendToUserAsync(row.DoctorUserId.Value, create, cancellationToken);
+    }
+}
+
+public sealed class PrescriptionDispensedNotificationHandler : IDomainEventHandler<PrescriptionDispensedEvent>
 {
     private readonly ILogger<PrescriptionDispensedNotificationHandler> _logger;
     private readonly IRepository<Prescription> _prescriptions;
@@ -107,13 +142,13 @@ public sealed class PrescriptionDispensedNotificationHandler : INotificationHand
         _notifications = notifications;
     }
 
-    public async Task Handle(PrescriptionDispensedNotification notification, CancellationToken cancellationToken)
+    public async Task HandleAsync(PrescriptionDispensedEvent domainEvent, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(
             "Prescription {PrescriptionId} dispensed ({TotalDispensedQuantity} units) at {OccurredAtUtc}",
-            notification.PrescriptionId, notification.TotalDispensedQuantity, notification.OccurredAtUtc);
+            domainEvent.PrescriptionId, domainEvent.TotalDispensedQuantity, domainEvent.OccurredAtUtc);
 
-        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == notification.PrescriptionId, cancellationToken);
+        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == domainEvent.PrescriptionId, cancellationToken);
         if (row is null)
             return;
 

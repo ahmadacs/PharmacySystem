@@ -138,6 +138,9 @@
   <data name="FileEmpty" xml:space="preserve">
     <value>الملف فارغ.</value>
   </data>
+  <data name="BlobNotFound" xml:space="preserve">
+    <value>محتوى الملف غير موجود.</value>
+  </data>
   <data name="ExtensionMismatch" xml:space="preserve">
     <value>امتداد الملف '{0}' لا يطابق نوع المحتوى '{1}'.</value>
   </data>

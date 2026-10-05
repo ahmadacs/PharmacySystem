@@ -103,6 +103,9 @@ export class NotificationBellComponent {
         return '/prescriptions';
       case 'PrescriptionDispensed':
         return this.authStore.hasPermission(Permissions.DispensingView) ? '/dispensing' : '/prescriptions';
+      case 'PrescriptionCancelled':
+      case 'PrescriptionRefilled':
+        return '/prescriptions';
     }
   }
 
@@ -116,6 +119,10 @@ export class NotificationBellComponent {
         return 'description';
       case 'PrescriptionDispensed':
         return 'local_pharmacy';
+      case 'PrescriptionCancelled':
+        return 'cancel';
+      case 'PrescriptionRefilled':
+        return 'autorenew';
     }
   }
 
@@ -127,7 +134,10 @@ export class NotificationBellComponent {
       case 'PrescriptionCreated':
         return 'info';
       case 'PrescriptionDispensed':
+      case 'PrescriptionRefilled':
         return 'success';
+      case 'PrescriptionCancelled':
+        return 'info';
     }
   }
 
@@ -141,7 +151,9 @@ export class NotificationBellComponent {
       LowStock: 'notifications.lowStockTitle',
       NearExpiry: 'notifications.nearExpiryTitle',
       PrescriptionCreated: 'notifications.newPrescriptionTitle',
-      PrescriptionDispensed: 'notifications.dispensedTitle'
+      PrescriptionDispensed: 'notifications.dispensedTitle',
+      PrescriptionCancelled: 'notifications.cancelledTitle',
+      PrescriptionRefilled: 'notifications.refilledTitle'
     };
     const fallbackKey = typeTitleMap[notification.type];
     if (fallbackKey) {
@@ -165,7 +177,9 @@ export class NotificationBellComponent {
           LowStock: 'notifications.lowStock',
           NearExpiry: 'notifications.nearExpiry',
           PrescriptionCreated: 'notifications.newPrescription',
-          PrescriptionDispensed: 'notifications.dispensed'
+          PrescriptionDispensed: 'notifications.dispensed',
+          PrescriptionCancelled: 'notifications.cancelled',
+          PrescriptionRefilled: 'notifications.refilled'
         };
         const k = typeKeyMap[notification.type];
         if (k) {

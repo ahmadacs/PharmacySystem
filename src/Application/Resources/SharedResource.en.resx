@@ -138,6 +138,9 @@
   <data name="FileEmpty" xml:space="preserve">
     <value>File is empty.</value>
   </data>
+  <data name="BlobNotFound" xml:space="preserve">
+    <value>File content not found.</value>
+  </data>
   <data name="ExtensionMismatch" xml:space="preserve">
     <value>File extension '{0}' does not match content type '{1}'.</value>
   </data>

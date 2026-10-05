@@ -586,6 +586,10 @@
     "newPrescription": "وصفة جديدة للمريض {{patientName}} ({{count}} عنصر)",
     "dispensedTitle": "تم صرف الوصفة",
     "dispensed": "تم صرف وصفة المريض {{patientName}}",
+    "cancelledTitle": "تم إلغاء الوصفة",
+    "cancelled": "تم إلغاء وصفة المريض {{patientName}}",
+    "refilledTitle": "تم تجديد صرف الوصفة",
+    "refilled": "تم تجديد صرف وصفة المريض {{patientName}} ({{count}} عنصر)",
     "deleteConfirm": "حذف هذا الإشعار؟ لا يمكن التراجع عن ذلك.",
     "deleted": "تم حذف الإشعار."
   },

@@ -20,11 +20,28 @@ public static class DependencyInjection
         });
 
         services.AddScoped<DispensingDomainService>();
-        services.AddScoped<IAttachmentUploadService, AttachmentUploadService>();
         services.AddScoped<IFileAccessChecker, FileAccessChecker>();
+
+        RegisterDomainEventHandlers(services);
 
         services.AddLocalization();
 
         return services;
+    }
+
+    private static void RegisterDomainEventHandlers(IServiceCollection services)
+    {
+        var handlerOpenType = typeof(IDomainEventHandler<>);
+        var candidates = Assembly.GetExecutingAssembly().GetTypes()
+            .Where(t => !t.IsAbstract && !t.IsInterface);
+
+        foreach (var implementation in candidates)
+        {
+            var handlerInterfaces = implementation.GetInterfaces()
+                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == handlerOpenType);
+
+            foreach (var handlerInterface in handlerInterfaces)
+                services.AddScoped(handlerInterface, implementation);
+        }
     }
 }

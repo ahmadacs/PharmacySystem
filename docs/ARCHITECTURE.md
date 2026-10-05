@@ -42,7 +42,7 @@ flowchart TB
 - **File Blob Storage** — Docker volume `uploads-data`, path `/app/uploads/yyyy/MM/dd/{guid}.{ext}`, 5 MB limit, types `jpeg/png/pdf`.
 - **Scalar / OpenAPI** — `/scalar`, `/openapi/v1.json`, JWT Bearer enabled.
 - **Health Check** — `/health` liveness probe.
-- **SignalR Hub** — `/hubs/notifications` with events `PrescriptionCreated`, `PrescriptionDispensed`, `MedicineLowStock`, `MedicineBatchNearExpiry`.
+- **SignalR Hub** — `/hubs/notifications` with events `PrescriptionCreated`, `PrescriptionDispensed`, `PrescriptionCancelled`, `PrescriptionRefilled`, `MedicineLowStock`, `MedicineBatchNearExpiry`.
 
 ## Technology Stack
 

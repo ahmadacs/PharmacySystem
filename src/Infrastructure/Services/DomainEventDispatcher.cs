@@ -1,41 +1,30 @@
 using Application.Common.Interfaces;
-using Application.Features.Notifications.Events;
-using Application.Features.Prescriptions.Events;
 using Domain.Common;
-using Domain.Events;
-using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Services;
 
 public sealed class DomainEventDispatcher : IDomainEventDispatcher
 {
-    private readonly IMediator _mediator;
+    private readonly IServiceProvider _serviceProvider;
 
-    public DomainEventDispatcher(IMediator mediator)
+    public DomainEventDispatcher(IServiceProvider serviceProvider)
     {
-        _mediator = mediator;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task DispatchAsync(IReadOnlyCollection<IDomainEvent> domainEvents, CancellationToken cancellationToken = default)
     {
         foreach (var domainEvent in domainEvents)
-        {
-            var notification = ToNotification(domainEvent);
-            await _mediator.Publish(notification, cancellationToken);
-        }
+            await DispatchSingleAsync((dynamic)domainEvent, cancellationToken).ConfigureAwait(false);
     }
 
-    private static INotification ToNotification(IDomainEvent domainEvent) => domainEvent switch
+    private async Task DispatchSingleAsync<TEvent>(TEvent domainEvent, CancellationToken cancellationToken)
+        where TEvent : IDomainEvent
     {
-        PrescriptionCreatedEvent e => new PrescriptionCreatedNotification(e.PrescriptionId, e.OccurredAtUtc),
-        PrescriptionCancelledEvent e => new PrescriptionCancelledNotification(e.PrescriptionId, e.OccurredAtUtc),
-        PrescriptionRefilledEvent e => new PrescriptionRefilledNotification(e.PrescriptionId, e.PrescriptionItemIds, e.OccurredAtUtc),
-        PrescriptionDispensedEvent e => new PrescriptionDispensedNotification(
-            e.PrescriptionId, e.OccurredAtUtc, e.TotalDispensedQuantity),
-        MedicineLowStockEvent e => new MedicineLowStockNotification(
-            e.MedicineId, e.MedicineVariantId, e.MedicineName, e.VariantName, e.AvailableStock, e.ReorderLevel, e.OccurredAtUtc),
-        MedicineBatchNearExpiryEvent e => new MedicineBatchNearExpiryNotification(
-            e.MedicineBatchId, e.MedicineVariantId, e.BatchNumber, e.ExpiryDate, e.OccurredAtUtc),
-        _ => throw new NotSupportedException($"No notification mapping for '{domainEvent.GetType().Name}'.")
-    };
+        var handlers = _serviceProvider.GetServices<IDomainEventHandler<TEvent>>();
+
+        foreach (var handler in handlers)
+            await handler.HandleAsync(domainEvent, cancellationToken).ConfigureAwait(false);
+    }
 }

@@ -586,6 +586,10 @@
     "newPrescription": "A new prescription for {{patientName}} ({{count}} item(s)) has been created.",
     "dispensedTitle": "Prescription dispensed",
     "dispensed": "Prescription for {{patientName}} has been dispensed.",
+    "cancelledTitle": "Prescription cancelled",
+    "cancelled": "Prescription for {{patientName}} has been cancelled.",
+    "refilledTitle": "Prescription refilled",
+    "refilled": "Prescription for {{patientName}} refilled ({{count}} item(s)).",
     "deleteConfirm": "Delete this notification? This cannot be undone.",
     "deleted": "Notification deleted."
   },
