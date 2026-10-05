@@ -3,7 +3,6 @@ using Application.Common.Models;
 using Application.Common.Security;
 using Application.Features.Prescriptions.Common;
 using Application.Resources;
-using Domain.Entities.Files;
 using Domain.Entities.Inventory;
 using Domain.Entities.Medicines;
 using Domain.Entities.Prescriptions;
@@ -40,83 +39,56 @@ public sealed class FileAccessChecker : IFileAccessChecker
         _localizer = localizer;
     }
 
-    public async Task<Result?> EnsureCanAttachAsync(FileEntityType entityType, Guid entityId, CancellationToken cancellationToken)
+    public Task<Result?> EnsureCanAttachAsync(FileEntityType entityType, Guid entityId, CancellationToken cancellationToken)
+        => EnsureAsync(entityType, entityId, forAttach: true, cancellationToken);
+
+    public Task<Result?> EnsureCanViewAsync(FileEntityType entityType, Guid entityId, CancellationToken cancellationToken)
+        => EnsureAsync(entityType, entityId, forAttach: false, cancellationToken);
+
+    private async Task<Result?> EnsureAsync(FileEntityType entityType, Guid entityId, bool forAttach, CancellationToken cancellationToken)
     {
         if (entityType == FileEntityType.Prescription)
-            return await CheckPrescriptionAsync(entityId, missingAsNotFound: true, cancellationToken);
+            return await CheckPrescriptionAsync(entityId, cancellationToken);
 
-        if (entityType == FileEntityType.Medicine)
+        // Single table: required permissions + parent existence per entity type.
+        string[] permissions = (entityType, forAttach) switch
         {
-            if (!HasAny(Permissions.Medicines.Create, Permissions.Medicines.Update))
-                return Denied("FileUploadMedicine");
-            if (!await ExistsAsync(_medicines, entityId, cancellationToken))
-                return NotFound("Medicine", entityId);
-            return null;
-        }
+            (FileEntityType.Medicine, true) => [Permissions.Medicines.Create, Permissions.Medicines.Update],
+            (FileEntityType.Medicine, false) => [Permissions.Medicines.View],
+            (FileEntityType.Batch, _) => [Permissions.Inventory.View, Permissions.Inventory.Adjust],
+            (_, true) => [Permissions.Inventory.Adjust],
+            _ => [Permissions.Inventory.View, Permissions.Inventory.Adjust],
+        };
 
-        if (entityType == FileEntityType.Batch)
+        string deniedKey = (entityType, forAttach) switch
         {
-            if (!HasAny(Permissions.Inventory.View, Permissions.Inventory.Adjust))
-                return Denied("FileUploadBatch");
-            if (!await ExistsAsync(_batches, entityId, cancellationToken))
-                return NotFound("MedicineBatch", entityId);
-            return null;
-        }
+            (FileEntityType.Medicine, true) => "FileUploadMedicine",
+            (FileEntityType.Medicine, false) => "FileViewMedicine",
+            (FileEntityType.Batch, true) => "FileUploadBatch",
+            (FileEntityType.Batch, false) => "FileViewBatch",
+            (_, true) => "FileUploadInventory",
+            _ => "FileViewInventory",
+        };
 
-        if (!HasAny(Permissions.Inventory.Adjust))
-            return Denied("FileUploadInventory");
-        if (!await ExistsAsync(_adjustments, entityId, cancellationToken))
-            return NotFound("InventoryAdjustment", entityId);
-        return null;
+        if (!HasAny(permissions))
+            return Denied(deniedKey);
+
+        var (exists, resource) = entityType switch
+        {
+            FileEntityType.Medicine => (await ExistsAsync(_medicines, entityId, cancellationToken), "Medicine"),
+            FileEntityType.Batch => (await ExistsAsync(_batches, entityId, cancellationToken), "MedicineBatch"),
+            _ => (await ExistsAsync(_adjustments, entityId, cancellationToken), "InventoryAdjustment"),
+        };
+
+        return exists ? null : NotFound(resource, entityId);
     }
 
-    public async Task<Result?> EnsureCanViewAsync(FileEntityType entityType, Guid entityId, CancellationToken cancellationToken)
-    {
-        if (entityType == FileEntityType.Prescription)
-            return await CheckPrescriptionAsync(entityId, missingAsNotFound: true, cancellationToken);
-
-        if (entityType == FileEntityType.Medicine)
-        {
-            if (!HasAny(Permissions.Medicines.View))
-                return Denied("FileViewMedicine");
-            if (!await ExistsAsync(_medicines, entityId, cancellationToken))
-                return NotFound("Medicine", entityId);
-            return null;
-        }
-
-        if (entityType == FileEntityType.Batch)
-        {
-            if (!HasAny(Permissions.Inventory.View, Permissions.Inventory.Adjust))
-                return Denied("FileViewBatch");
-            if (!await ExistsAsync(_batches, entityId, cancellationToken))
-                return NotFound("MedicineBatch", entityId);
-            return null;
-        }
-
-        if (!HasAny(Permissions.Inventory.View, Permissions.Inventory.Adjust))
-            return Denied("FileViewInventory");
-        if (!await ExistsAsync(_adjustments, entityId, cancellationToken))
-            return NotFound("InventoryAdjustment", entityId);
-        return null;
-    }
-
-    public async Task<Result?> EnsureCanViewAsync(FileAttachment attachment, CancellationToken cancellationToken)
-    {
-        if (attachment.EntityType == FileEntityType.Medicine)
-            return HasAny(Permissions.Medicines.View) ? null : Denied("FileViewMedicine");
-
-        if (attachment.EntityType is FileEntityType.Batch or FileEntityType.InventoryAdjustment)
-            return HasAny(Permissions.Inventory.View, Permissions.Inventory.Adjust) ? null : Denied("FileViewInventory");
-
-        return await CheckPrescriptionAsync(attachment.EntityId, missingAsNotFound: false, cancellationToken);
-    }
-
-    private async Task<Result?> CheckPrescriptionAsync(Guid prescriptionId, bool missingAsNotFound, CancellationToken cancellationToken)
+    private async Task<Result?> CheckPrescriptionAsync(Guid prescriptionId, CancellationToken cancellationToken)
     {
         var prescription = await _prescriptions.GetByIdAsync(prescriptionId, cancellationToken: cancellationToken);
 
         if (prescription is null)
-            return missingAsNotFound ? NotFound("Prescription", prescriptionId) : null;
+            return NotFound("Prescription", prescriptionId);
 
         await _resourceAuth.EnsureCanAccessPrescriptionAsync(prescription, PrescriptionOperation.View, cancellationToken);
         return null;

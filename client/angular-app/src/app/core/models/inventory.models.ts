@@ -36,19 +36,11 @@ export interface LowStockDto {
   strength: number | null;
 }
 
-export interface FileUploadDto {
-  fileName: string;
-  contentType: string;
-  sizeBytes: number;
-  base64Content: string;
-}
-
 export interface AdjustInventoryRequest {
   medicineBatchId: string;
   type: InventoryAdjustmentType;
   quantity: number;
   reason: string;
-  file?: FileUploadDto;
 }
 
 export interface ReceiveInventoryRequest {
@@ -60,7 +52,6 @@ export interface ReceiveInventoryRequest {
   supplierName: string | null;
   reason: string;
   adjustmentType: InventoryAdjustmentTypeEnum;
-  file?: FileUploadDto;
 }
 
 export interface InventoryAdjustmentDto {

@@ -1,4 +1,4 @@
-export type NotificationType = 'LowStock' | 'NearExpiry' | 'PrescriptionCreated' | 'PrescriptionDispensed';
+export type NotificationType = 'LowStock' | 'NearExpiry' | 'PrescriptionCreated' | 'PrescriptionDispensed' | 'PrescriptionCancelled' | 'PrescriptionRefilled';
 
 export interface NotificationDto {
   id: string;

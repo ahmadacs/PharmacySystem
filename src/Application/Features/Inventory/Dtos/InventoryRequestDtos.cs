@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Common.Attributes;
-using Application.Features.Files.Dtos;
 using Application.Features.Medicines.Dtos;
 using Domain.Enums;
 
@@ -19,8 +18,6 @@ public sealed record AdjustInventoryRequest
 
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
-
-    public FileUploadDto? File { get; init; }
 }
 
 public sealed record ReceiveInventoryRequest
@@ -48,6 +45,4 @@ public sealed record ReceiveInventoryRequest
 
     [Required, StringLength(500)]
     public string Reason { get; init; } = string.Empty;
-
-    public FileUploadDto? File { get; init; }
 }

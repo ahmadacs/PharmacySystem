@@ -17,8 +17,7 @@ public static class InventoryMapping
             PackagesReceived = request.PackagesReceived,
             UnitCost = request.UnitCost,
             SupplierName = request.SupplierName,
-            AdjustmentType = request.AdjustmentType,
-            File = request.File
+            AdjustmentType = request.AdjustmentType
         };
 
     private const int CriticalWithinDays = 30;

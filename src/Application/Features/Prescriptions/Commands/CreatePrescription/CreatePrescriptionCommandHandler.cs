@@ -1,7 +1,6 @@
 using Application.Common.Security;
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Features.Files.Common;
 using Application.Features.Patients.Dtos;
 using Application.Features.Prescriptions.Dtos;
 using Application.Resources;
@@ -21,7 +20,6 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
     private readonly ICurrentUserService _currentUser;
     private readonly IStaffService _staff;
     private readonly IUnitOfWork _uow;
-    private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
     public CreatePrescriptionCommandHandler(
@@ -31,7 +29,6 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         ICurrentUserService currentUser,
         IStaffService staff,
         IUnitOfWork uow,
-        IAttachmentUploadService attachments,
         IStringLocalizer<SharedResource> localizer)
     {
         _prescriptions = prescriptions;
@@ -40,7 +37,6 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
         _currentUser = currentUser;
         _staff = staff;
         _uow = uow;
-        _attachments = attachments;
         _localizer = localizer;
     }
 
@@ -80,8 +76,6 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
 
         _prescriptions.Add(prescription);
         await _uow.SaveChangesAsync(cancellationToken);
-
-            await _attachments.UploadAsync("Prescription", prescription.Id, req.File, cancellationToken);
 
             return Result<Guid>.Success(prescription.Id);
     }

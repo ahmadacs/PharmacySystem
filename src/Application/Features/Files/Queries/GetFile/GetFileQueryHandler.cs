@@ -2,9 +2,9 @@ using System.Linq.Expressions;
 using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Files.Common;
-using Application.Features.Files.Dtos;
 using Application.Resources;
 using Domain.Entities.Files;
+using Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Localization;
 
@@ -31,9 +31,7 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
 
     public async Task<Result<(Stream Content, string ContentType, string FileName)>> Handle(GetFileQuery request, CancellationToken cancellationToken)
     {
-
-        Expression<Func<FileAttachment, FileAttachmentRow>> selector = f => new FileAttachmentRow(
-            f.Id,
+        Expression<Func<FileAttachment, FileRef>> selector = f => new FileRef(
             f.EntityType,
             f.EntityId,
             f.FileName,
@@ -43,13 +41,18 @@ public sealed class GetFileQueryHandler : IRequestHandler<GetFileQuery, Result<(
         if (row is null)
             return Result<(Stream Content, string ContentType, string FileName)>.Failure(_localizer["ResourceNotFound", "FileAttachment", request.FileId].Value, 404);
 
+        // NOTE: do NOT build a transient FileAttachment here for the access
+        // check — its ctor rejects sizeBytes <= 0 and throws ArgumentException
+        // (was: 500 on EVERY download). The (entityType, entityId) overload
+        // checks the same permissions plus parent existence.
         var accessFailure = await _access.EnsureCanViewAsync(
-            new FileAttachment(row.EntityType, row.EntityId, row.FileName, "application/octet-stream", 0, row.BlobPath),
-            cancellationToken);
+            row.EntityType, row.EntityId, cancellationToken);
         if (accessFailure is not null)
             return Result<(Stream Content, string ContentType, string FileName)>.Failure(accessFailure.Error!, accessFailure.StatusCode);
 
         var (content, contentType) = await _storage.OpenReadAsync(row.BlobPath, cancellationToken);
         return Result<(Stream Content, string ContentType, string FileName)>.Success((content, contentType, row.FileName));
     }
+
+    private sealed record FileRef(FileEntityType EntityType, Guid EntityId, string FileName, string BlobPath);
 }

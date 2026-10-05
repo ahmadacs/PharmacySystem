@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Common.Attributes;
-using Application.Features.Files.Dtos;
 
 namespace Application.Features.Prescriptions.Dtos;
 
@@ -49,6 +48,4 @@ public sealed record CreatePrescriptionRequest
 
     [MinLength(1)]
     public List<PrescriptionItemRequest> Items { get; init; } = [];
-
-    public FileUploadDto? File { get; init; }
 }

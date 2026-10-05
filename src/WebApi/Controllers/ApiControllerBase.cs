@@ -72,25 +72,24 @@ public abstract class ApiControllerBase(ISender sender) : ControllerBase
     protected async Task<IActionResult> FileResponse(IRequest<Result<(Stream Content, string ContentType, string FileName)>> request, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(request, cancellationToken);
-        if (result.IsSuccess)
-        {
-            var (content, contentType, fileName) = result.Value;
-            return File(content, contentType, fileName);
-        }
-
-        return FailureResponse(result);
+        return result.IsSuccess
+            ? SendFile(result.Value.Content, result.Value.ContentType, result.Value.FileName)
+            : FailureResponse(result);
     }
 
     protected async Task<IActionResult> ExportFileResponse(IRequest<Result<Application.Features.Exports.Queries.ExportFileResult>> request, CancellationToken cancellationToken)
     {
         var result = await Sender.Send(request, cancellationToken);
-        if (result.IsSuccess)
-        {
-            return File(result.Value.Content, result.Value.ContentType, result.Value.FileName);
-        }
-
-        return FailureResponse(result);
+        return result.IsSuccess
+            ? SendFile(result.Value.Content, result.Value.ContentType, result.Value.FileName)
+            : FailureResponse(result);
     }
+
+    private FileStreamResult SendFile(Stream content, string contentType, string fileName)
+        => File(content, contentType, fileName);
+
+    private FileContentResult SendFile(byte[] content, string contentType, string fileName)
+        => File(content, contentType, fileName);
 
     protected async Task<IActionResult> UploadResponse(IRequest<Result<Application.Features.Files.Dtos.FileAttachmentDto>> request, string actionName, CancellationToken cancellationToken)
     {

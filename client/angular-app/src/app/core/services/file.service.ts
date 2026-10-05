@@ -11,7 +11,6 @@ export interface FileAttachmentDto {
   fileName: string;
   contentType: string;
   sizeBytes: number;
-  blobPath: string;
   createdAt: string;
 }
 
@@ -100,17 +99,5 @@ export class FileService {
     anchor.download = fileName;
     anchor.click();
     URL.revokeObjectURL(url);
-  }
-
-  fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1] ?? '');
-      };
-      reader.onerror = reject;
-    });
   }
 }

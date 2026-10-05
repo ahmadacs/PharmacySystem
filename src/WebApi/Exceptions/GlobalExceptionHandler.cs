@@ -53,6 +53,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 (StatusCodes.Status401Unauthorized, localizer["RefreshTokenInvalid"]),
             ConflictingOperationException =>
                 (StatusCodes.Status409Conflict, exception.Message),
+            FileNotFoundException =>
+                (StatusCodes.Status404NotFound, localizer["BlobNotFound"]),
             InvalidBatchDatesException =>
                 (StatusCodes.Status422UnprocessableEntity, localizer["ExpiryAfterManufacture"]),
             MissingMedicineVariantException e =>
@@ -79,6 +81,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 (StatusCodes.Status409Conflict, localizer["ConcurrencyConflict"]),
             DomainException =>
                 (StatusCodes.Status422UnprocessableEntity, exception.Message),
+            ArgumentException =>
+                (StatusCodes.Status400BadRequest, exception.Message),
             _ =>
                 (StatusCodes.Status500InternalServerError, localizer["UnexpectedError"])
         };

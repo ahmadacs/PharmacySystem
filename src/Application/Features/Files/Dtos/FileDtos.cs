@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Domain.Enums;
 
 namespace Application.Features.Files.Dtos;
@@ -10,19 +9,12 @@ public sealed record FileAttachmentDto(
     string FileName,
     string ContentType,
     long SizeBytes,
-    string BlobPath,
     DateTime CreatedAt
 );
 
-internal sealed record FileAttachmentRow(
-    Guid Id,
-    FileEntityType EntityType,
-    Guid EntityId,
-    string FileName,
-    string BlobPath);
-
 public static class FileAttachmentMapping
-{    public static Domain.Entities.Files.FileAttachment ToEntity(
+{
+    public static Domain.Entities.Files.FileAttachment ToEntity(
         FileEntityType entityType,
         Guid entityId,
         string fileName,
@@ -38,22 +30,6 @@ public static class FileAttachmentMapping
         e.FileName,
         e.ContentType,
         e.SizeBytes,
-        e.BlobPath,
         e.CreatedAt
     );
-}
-
-public sealed record FileUploadDto
-{
-    [Required, StringLength(260)]
-    public string FileName { get; init; } = string.Empty;
-
-    [Required, StringLength(100)]
-    public string ContentType { get; init; } = string.Empty;
-
-    [Range(1, long.MaxValue)]
-    public long SizeBytes { get; init; }
-
-    [Required]
-    public string Base64Content { get; init; } = string.Empty;
 }

@@ -28,14 +28,8 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
         stream.Position = 0;
 
         var command = new UploadFileCommand(entityType, entityId, file.FileName, file.ContentType, file.Length, stream);
-        return await UploadResponse(command, nameof(Get), cancellationToken);
+        return await UploadResponse(command, nameof(Download), cancellationToken);
     }
-
-    [HttpGet("{id:guid}")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
-        => FileResponse(new GetFileQuery(id), cancellationToken);
 
     [HttpGet("{id:guid}/download")]
     [Authorize]

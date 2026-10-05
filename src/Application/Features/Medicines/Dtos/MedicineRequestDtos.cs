@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Application.Common.Attributes;
-using Application.Features.Files.Dtos;
 using Domain.Enums;
 
 namespace Application.Features.Medicines.Dtos;
@@ -52,8 +51,6 @@ public sealed record CreateMedicineRequest
 
     [MinLength(1)]
     public List<MedicineVariantRequest> Variants { get; init; } = [];
-
-    public FileUploadDto? File { get; init; }
 }
 
 public sealed record UpdateMedicineRequest
@@ -101,8 +98,6 @@ public sealed record AddBatchRequest
 
     [EnumDataType(typeof(Domain.Enums.InventoryAdjustmentType))]
     public Domain.Enums.InventoryAdjustmentType AdjustmentType { get; init; } = Domain.Enums.InventoryAdjustmentType.Increase;
-
-    public FileUploadDto? File { get; init; }
 }
 
 public sealed record CreateVariantRequest

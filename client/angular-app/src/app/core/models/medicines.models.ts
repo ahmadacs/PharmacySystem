@@ -1,5 +1,3 @@
-import type { FileUploadDto } from './inventory.models';
-
 export enum MedicineForm {
   Tablet = 1,
   Capsule = 2,
@@ -75,7 +73,6 @@ export interface CreateMedicineRequest {
   category: number;
   isControlled: boolean;
   variants: MedicineVariantRequest[];
-  file?: FileUploadDto;
 }
 
 export interface UpdateMedicineRequest {

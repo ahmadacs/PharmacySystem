@@ -46,7 +46,6 @@ public sealed class ListFilesQueryHandler : IRequestHandler<ListFilesQuery, Resu
             f.FileName,
             f.ContentType,
             f.SizeBytes,
-            f.BlobPath,
             f.CreatedAt);
 
         Expression<Func<FileAttachment, bool>> predicate =

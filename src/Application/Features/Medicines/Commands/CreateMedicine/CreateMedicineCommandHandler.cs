@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
-using Application.Features.Files.Common;
 using Application.Features.Medicines.Dtos;
 using Application.Resources;
 using Domain.Entities.Medicines;
@@ -15,15 +14,13 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
     private readonly IRepository<Medicine> _medicines;
     private readonly IRepository<GenericName> _generics;
     private readonly IUnitOfWork _uow;
-    private readonly IAttachmentUploadService _attachments;
     private readonly IStringLocalizer<SharedResource> _localizer;
 
-    public CreateMedicineCommandHandler(IRepository<Medicine> medicines, IRepository<GenericName> generics, IUnitOfWork uow, IAttachmentUploadService attachments, IStringLocalizer<SharedResource> localizer)
+    public CreateMedicineCommandHandler(IRepository<Medicine> medicines, IRepository<GenericName> generics, IUnitOfWork uow, IStringLocalizer<SharedResource> localizer)
     {
         _medicines = medicines;
         _generics = generics;
         _uow = uow;
-        _attachments = attachments;
         _localizer = localizer;
     }
 
@@ -52,8 +49,6 @@ public sealed class CreateMedicineCommandHandler : IRequestHandler<CreateMedicin
 
         _medicines.Add(medicine);
         await _uow.SaveChangesAsync(cancellationToken);
-
-        await _attachments.UploadAsync("Medicine", medicine.Id, req.File, cancellationToken);
 
         return Result<Guid>.Success(medicine.Id);
     }
