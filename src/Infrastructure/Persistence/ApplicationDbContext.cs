@@ -104,7 +104,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
 
     private List<IDomainEvent> CollectDomainEvents()
     {
-        var entities = ChangeTracker.Entries<IHasDomainEvents>().Select(e => e.Entity).ToList();
+        var entities = ChangeTracker.Entries<AggregateRoot>().Select(e => e.Entity).ToList();
         var domainEvents = entities.SelectMany(e => e.DomainEvents).ToList();
 
         foreach (var entity in entities)
