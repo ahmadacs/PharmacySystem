@@ -50,5 +50,6 @@ internal static class PrescriptionProjections
         p.IssuedDate,
         p.Status,
         p.Items.Count(),
-        p.CreatedAt);
+        p.CreatedAt,
+        p.Items.Any(i => i.IsRefillable && i.RefillsUsed > 0 && i.DispensedQuantity.Value < i.PrescribedQuantity.Value));
 }

@@ -64,6 +64,17 @@ public class PrescriptionItem : Entity
     public Quantity RemainingQuantity => PrescribedQuantity.Subtract(DispensedQuantity);
     public bool IsFullyDispensed => DispensedQuantity.Value >= PrescribedQuantity.Value;
 
+    public int RefillsRemaining => Math.Max(0, RefillsAllowed - RefillsUsed);
+
+    public bool CanRequestRefill => IsRefillable && IsFullyDispensed && RefillsUsed < RefillsAllowed;
+
+    public bool IsAwaitingRefillDispense => IsRefillable && RefillsUsed > 0 && !IsFullyDispensed;
+
+    public DateOnly? NextRefillEligibleDate =>
+        RefillIntervalDays <= 0 || LastDispensedAt is null
+            ? null
+            : LastDispensedAt.Value.AddDays(RefillIntervalDays);
+
     internal void RecordDispensed(int quantity)
     {
         var toAdd = Quantity.Of(quantity);

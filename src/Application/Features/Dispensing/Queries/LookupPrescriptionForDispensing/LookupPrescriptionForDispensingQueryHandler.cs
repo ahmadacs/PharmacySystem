@@ -76,6 +76,11 @@ public sealed class LookupPrescriptionForDispensingQueryHandler
                 i.DosageInstructions,
                 i.MedicineVariant != null
                     ? i.MedicineVariant.Batches.Where(b => b.ExpiryDate > asOf).Sum(b => (int?)b.QuantityAvailable.Value) ?? 0
-                    : 0))
+                    : 0,
+                i.IsRefillable,
+                i.RefillsAllowed,
+                i.RefillsUsed,
+                i.RefillIntervalDays,
+                i.LastDispensedAt))
             .ToList());
 }

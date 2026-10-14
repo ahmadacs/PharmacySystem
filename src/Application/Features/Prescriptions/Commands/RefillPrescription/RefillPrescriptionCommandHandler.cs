@@ -29,7 +29,7 @@ public sealed class RefillPrescriptionCommandHandler : IRequestHandler<RefillPre
         if (prescription is null)
             return Result.Failure(_localizer["ResourceNotFound", nameof(Prescription), request.Id].Value, 404);
 
-        prescription.RegisterItemsRefill(request.ItemIds);
+        prescription.RegisterItemsRefill(request.ItemIds, DateOnly.FromDateTime(DateTime.UtcNow));
 
         await _uow.SaveChangesAsync(cancellationToken);
 

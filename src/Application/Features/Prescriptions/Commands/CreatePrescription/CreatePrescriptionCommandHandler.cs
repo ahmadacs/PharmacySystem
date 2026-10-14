@@ -56,12 +56,7 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
                 return Result<Guid>.Failure(_localizer["PhoneRegistered", NormalizePhone(req.PatientPhoneNumber)].Value, 409);
 
             var prescription = req.ToEntity(doctorId.Value, patient.Id);
-            for (var attempt = 0; attempt < 3; attempt++)
-            {
-                if (!await _prescriptions.ExistsAsync(p => p.ShortCode == prescription.ShortCode, cancellationToken))
-                    break;
-                prescription.RegenerateShortCode();
-            }
+            await EnsureUniqueShortCodeAsync(prescription, cancellationToken);
 
         var variantIds = req.Items.Select(i => i.MedicineVariantId).Distinct().ToList();
         var existingVariantIds = (await _variants.ListReadAsync(v => v.Id, v => variantIds.Contains(v.Id), cancellationToken: cancellationToken)).ToHashSet();
@@ -119,4 +114,20 @@ public sealed class CreatePrescriptionCommandHandler : IRequestHandler<CreatePre
 
     private static string NormalizePhone(string phoneNumber)
         => Domain.Common.PhoneNumbers.NormalizeSaudiPhone(phoneNumber);
+
+    // Creation path: keep the generated code unless it collides, then regenerate.
+    private async Task EnsureUniqueShortCodeAsync(Prescription prescription, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 10;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if (!await _prescriptions.ExistsAsync(
+                    p => p.ShortCode == prescription.ShortCode && p.Id != prescription.Id,
+                    cancellationToken))
+                return;
+
+            prescription.RegenerateShortCode();
+        }
+    }
 }

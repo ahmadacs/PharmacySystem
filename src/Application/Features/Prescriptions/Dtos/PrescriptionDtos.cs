@@ -19,7 +19,11 @@ public sealed record PrescriptionItemDto(
     DateOnly? LastDispensedAt,
     int? Form,
     int? Unit,
-    decimal? Strength);
+    decimal? Strength,
+    int RefillsRemaining,
+    bool CanRequestRefill,
+    bool IsAwaitingRefillDispense,
+    DateOnly? NextRefillEligibleDate);
 
 internal sealed record PrescriptionListRow(
     Guid Id,
@@ -31,7 +35,8 @@ internal sealed record PrescriptionListRow(
     DateOnly IssuedDate,
     PrescriptionStatus Status,
     int ItemCount,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    bool HasAwaitingRefillItems);
 
 public sealed record PrescriptionListItemDto(
     Guid Id,
@@ -44,7 +49,8 @@ public sealed record PrescriptionListItemDto(
     string? PatientPhoneNumber,
     DateOnly IssuedDate,
     string Status,
-    int ItemCount);
+    int ItemCount,
+    bool HasAwaitingRefillItems);
 
 public sealed record PrescriptionDetailsDto(
     Guid Id,
@@ -60,7 +66,8 @@ public sealed record PrescriptionDetailsDto(
     string Status,
     Guid? CreatedBy,
     DateTime CreatedAt,
-    IReadOnlyList<PrescriptionItemDto> Items);
+    IReadOnlyList<PrescriptionItemDto> Items,
+    bool HasAwaitingRefillItems);
 
 internal sealed record PrescriptionDetailsItemRow(
     Guid Id,

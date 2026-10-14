@@ -9,25 +9,29 @@ public sealed class DispensingDomainService
 {
     public DispensingRecord Dispense(
         Prescription prescription,
-        IReadOnlyDictionary<Guid, MedicineVariant> variantsByVariantId,
+        IReadOnlyDictionary<Guid, MedicineVariant> variantsById,
         Guid pharmacistId,
         DateTime dispensedAt)
     {
         ArgumentNullException.ThrowIfNull(prescription);
-        ArgumentNullException.ThrowIfNull(variantsByVariantId);
+        ArgumentNullException.ThrowIfNull(variantsById);
 
         var asOf = DateOnly.FromDateTime(dispensedAt);
 
         prescription.EnsureCanBeDispensed(asOf);
 
-        foreach (var item in prescription.Items.Where(i => !i.IsFullyDispensed))
+        // Snapshot pending items once (non-empty is guaranteed by EnsureCanBeDispensed):
+        // validate everything before mutating any batch.
+        var pending = prescription.Items.Where(i => !i.IsFullyDispensed).ToList();
+
+        foreach (var item in pending)
             item.EnsureRefillIntervalSatisfied(asOf);
 
         var record = new DispensingRecord(prescription.Id, pharmacistId, dispensedAt);
 
-        foreach (var item in prescription.Items.Where(i => !i.IsFullyDispensed))
+        foreach (var item in pending)
         {
-            if (!variantsByVariantId.TryGetValue(item.MedicineVariantId, out var variant))
+            if (!variantsById.TryGetValue(item.MedicineVariantId, out var variant))
                 throw new MissingMedicineVariantException(item.MedicineVariantId, item.Id);
 
             var plan = variant.SelectBatchesForDispensing(item.RemainingQuantity.Value, asOf);

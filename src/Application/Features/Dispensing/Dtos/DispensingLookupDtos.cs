@@ -12,7 +12,12 @@ internal sealed record DispensingLookupItemRow(
     int PrescribedQuantity,
     int DispensedQuantity,
     string? DosageInstructions,
-    int AvailableStock);
+    int AvailableStock,
+    bool IsRefillable,
+    int RefillsAllowed,
+    int RefillsUsed,
+    int RefillIntervalDays,
+    DateOnly? LastDispensedAt);
 
 internal sealed record DispensingLookupRow(
     Guid PrescriptionId,
@@ -37,7 +42,16 @@ internal static class DispensingLookupMapping
             row.PrescribedQuantity,
             row.DispensedQuantity,
             row.PrescribedQuantity - row.DispensedQuantity,
-            row.AvailableStock);
+            row.AvailableStock,
+            row.IsRefillable,
+            row.RefillsAllowed,
+            row.RefillsUsed,
+            Math.Max(0, row.RefillsAllowed - row.RefillsUsed),
+            row.RefillIntervalDays,
+            row.RefillIntervalDays <= 0 || row.LastDispensedAt is null
+                ? null
+                : row.LastDispensedAt.Value.AddDays(row.RefillIntervalDays),
+            row.IsRefillable && row.DispensedQuantity >= row.PrescribedQuantity && row.RefillsUsed < row.RefillsAllowed);
 
     public static DispensingLookupResponse ToResponse(this DispensingLookupRow row, IReadOnlyList<DispensingLookupItemDto> items)
         => new(
@@ -61,7 +75,14 @@ public sealed record DispensingLookupItemDto(
     int PrescribedQuantity,
     int DispensedQuantity,
     int RemainingQuantity,
-    int AvailableQuantity);
+    int AvailableQuantity,
+    bool IsRefillable,
+    int RefillsAllowed,
+    int RefillsUsed,
+    int RefillsRemaining,
+    int RefillIntervalDays,
+    DateOnly? NextRefillEligibleDate,
+    bool CanRequestRefill);
 
 public sealed record DispensingLookupResponse(
     Guid PrescriptionId,

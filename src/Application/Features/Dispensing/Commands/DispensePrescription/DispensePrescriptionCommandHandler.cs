@@ -65,23 +65,26 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
             return Result<DispensePrescriptionResponse>.Failure(
                 _localizer["ResourceNotFound", nameof(Prescription), shortCode].Value, 404);
 
-        var requestedTotal = prescription.Items
-            .Sum(i => Math.Max(0, i.PrescribedQuantity.Value - i.DispensedQuantity.Value));
+        var requestedTotal = prescription.Items.Sum(i => i.RemainingQuantity.Value);
 
         var now = DateTime.UtcNow;
-        var byId = prescription.Items
+        var variantsById = prescription.Items
             .Select(i => i.MedicineVariant)
-            .Where(v => v is not null)
-            .Cast<MedicineVariant>()
+            .OfType<MedicineVariant>()
             .DistinctBy(v => v.Id)
             .ToDictionary(v => v.Id);
 
-        var record = _dispensing.Dispense(prescription, byId, pharmacist.Value.Id, now);
+        var record = _dispensing.Dispense(prescription, variantsById, pharmacist.Value.Id, now);
         record.SetNotes(request.Request.Notes);
+
+        string? nextShortCode = null;
+        if (prescription.NeedsShortCodeRotation())
+            nextShortCode = await RotateShortCodeAsync(prescription, cancellationToken);
+
         _records.Add(record);
 
         var asOf = DateOnly.FromDateTime(now);
-        foreach (var variant in byId.Values)
+        foreach (var variant in variantsById.Values)
         {
             variant.RaiseLowStockEventIfNeeded(asOf, variant.Medicine?.Name);
             foreach (var batch in variant.Batches)
@@ -90,14 +93,36 @@ public sealed class DispensePrescriptionCommandHandler : IRequestHandler<Dispens
 
         await _uow.SaveChangesAsync(cancellationToken);
 
-        var dispensedTotal = record.GetQuantitiesByPrescriptionItem().Values.Sum();
+        var dispensedByItem = record.GetQuantitiesByPrescriptionItem();
+        var dispensedTotal = dispensedByItem.Values.Sum();
         List<string> warnings = dispensedTotal < requestedTotal
             ? [_localizer["PartialShortfall",
                 dispensedTotal.ToString(CultureInfo.InvariantCulture),
                 requestedTotal.ToString(CultureInfo.InvariantCulture)].Value]
             : [];
 
+        var items = DispensingMapping.ToDispensedItems(prescription.Items, variantsById, dispensedByItem);
+
         return Result<DispensePrescriptionResponse>.Success(
-            new(record.Id, requestedTotal, dispensedTotal, warnings));
+            new(record.Id, requestedTotal, dispensedTotal, warnings, items, nextShortCode));
+    }
+
+    private async Task<string> RotateShortCodeAsync(Prescription prescription, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 10;
+
+        prescription.RegenerateShortCode();
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if (!await _prescriptions.ExistsAsync(
+                    p => p.ShortCode == prescription.ShortCode && p.Id != prescription.Id,
+                    cancellationToken))
+                return prescription.ShortCode;
+
+            prescription.RegenerateShortCode();
+        }
+
+        return prescription.ShortCode;
     }
 }

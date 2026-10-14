@@ -36,7 +36,8 @@ public static class PrescriptionMapping
             row.PatientPhoneNumber,
             row.IssuedDate,
             row.Status.ToString(),
-            row.ItemCount);
+            row.ItemCount,
+            row.HasAwaitingRefillItems);
 
     internal static PrescriptionDetailsDto ToDetailsDto(
         this PrescriptionDetailsRow row,
@@ -61,7 +62,13 @@ public static class PrescriptionMapping
                 i.LastDispensedAt,
                 (int?)i.Form,
                 (int?)i.Unit,
-                i.Strength))
+                i.Strength,
+                Math.Max(0, i.RefillsAllowed - i.RefillsUsed),
+                i.IsRefillable && i.DispensedQuantity >= i.PrescribedQuantity && i.RefillsUsed < i.RefillsAllowed,
+                i.IsRefillable && i.RefillsUsed > 0 && i.DispensedQuantity < i.PrescribedQuantity,
+                i.RefillIntervalDays <= 0 || i.LastDispensedAt is null
+                    ? null
+                    : i.LastDispensedAt.Value.AddDays(i.RefillIntervalDays)))
             .OrderBy(i => i.Id)
             .ToList();
 
@@ -79,7 +86,8 @@ public static class PrescriptionMapping
             row.Status.ToString(),
             row.CreatedBy,
             row.CreatedAt,
-            items);
+            items,
+            items.Any(i => i.IsAwaitingRefillDispense));
     }
 
     public static Prescription ToEntity(this CreatePrescriptionRequest request, Guid doctorId, Guid patientId)

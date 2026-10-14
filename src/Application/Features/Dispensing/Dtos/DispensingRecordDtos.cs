@@ -1,5 +1,8 @@
 namespace Application.Features.Dispensing.Dtos;
 
+using Application.Features.Prescriptions.Dtos;
+using Domain.Entities.Medicines;
+using Domain.Entities.Prescriptions;
 using Domain.Enums;
 
 public sealed record DispensingRecordItemDto(
@@ -50,18 +53,31 @@ public sealed record DispensePrescriptionResponse(
     Guid Id,
     int RequestedQuantity,
     int DispensedQuantity,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<DispensedItemDto> Items,
+    string? NextShortCode = null);
+
+public sealed record DispensedItemDto(
+    Guid PrescriptionItemId,
+    string MedicineName,
+    string? MedicineNameAr,
+    string VariantName,
+    int? Form,
+    int? Unit,
+    decimal? Strength,
+    int PrescribedQuantity,
+    int DispensedThisTime,
+    int TotalDispensedQuantity,
+    bool IsRefillable,
+    int RefillsUsed,
+    int RefillsRemaining,
+    DateOnly? NextRefillEligibleDate);
 
 public static class DispensingMapping
 {
 
     internal static DispensingRecordItemDto ToDto(this DispensingRecordItemRow i)
-        => new(i.MedicineBatchId, i.MedicineName, i.MedicineNameAr, BuildVariantName(i.Form, i.Strength, i.Unit), (int?)i.Form, (int?)i.Unit, i.Strength, i.BatchNumber, i.Quantity);
-
-    internal static string BuildVariantName(MedicineForm? form, decimal? strength, MedicineUnit? unit)
-        => form.HasValue && strength.HasValue && unit.HasValue
-            ? $"{form.Value} {strength.Value} {unit.Value}"
-            : string.Empty;
+        => new(i.MedicineBatchId, i.MedicineName, i.MedicineNameAr, PrescriptionMapping.BuildVariantName(i.Form, i.Strength, i.Unit), (int?)i.Form, (int?)i.Unit, i.Strength, i.BatchNumber, i.Quantity);
 
     internal static DispensingRecordDto ToDto(
         this DispensingRecordRow r,
@@ -76,4 +92,35 @@ public static class DispensingMapping
             r.DispensedAt,
             r.Notes,
             items);
+
+    internal static List<DispensedItemDto> ToDispensedItems(
+        IReadOnlyCollection<PrescriptionItem> items,
+        IReadOnlyDictionary<Guid, MedicineVariant> variantsById,
+        IReadOnlyDictionary<Guid, int> dispensedByItem)
+    {
+        var result = new List<DispensedItemDto>(items.Count);
+        foreach (var item in items)
+        {
+            variantsById.TryGetValue(item.MedicineVariantId, out var variant);
+            result.Add(new DispensedItemDto(
+                item.Id,
+                variant?.Medicine?.Name ?? "Unknown",
+                variant?.Medicine?.NameAr,
+                variant is null
+                    ? string.Empty
+                    : PrescriptionMapping.BuildVariantName(variant.Form, variant.Strength, variant.Unit),
+                (int?)variant?.Form,
+                (int?)variant?.Unit,
+                variant?.Strength,
+                item.PrescribedQuantity.Value,
+                dispensedByItem.GetValueOrDefault(item.Id),
+                item.DispensedQuantity.Value,
+                item.IsRefillable,
+                item.RefillsUsed,
+                item.RefillsRemaining,
+                item.NextRefillEligibleDate));
+        }
+
+        return result;
+    }
 }

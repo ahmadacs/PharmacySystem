@@ -30,6 +30,8 @@ public class Prescription : AggregateRoot
     private readonly List<PrescriptionItem> _items = new();
     public IReadOnlyCollection<PrescriptionItem> Items => _items.AsReadOnly();
 
+    public bool HasAwaitingRefillItems => _items.Any(i => i.IsAwaitingRefillDispense);
+
     private Prescription() { }
 
     public static string GenerateShortCode(int length = ShortCodeLength)
@@ -47,6 +49,11 @@ public class Prescription : AggregateRoot
 
     public void RegenerateShortCode()
         => ShortCode = GenerateShortCode();
+
+    public bool NeedsShortCodeRotation()
+        => _items.Count > 0
+            && _items.All(i => i.IsFullyDispensed)
+            && _items.Any(i => i.IsRefillable && i.RefillsRemaining > 0);
 
     public Prescription(Guid doctorId, Guid patientId, DateOnly issuedDate,
         string? diagnosis = null)
@@ -97,6 +104,11 @@ public class Prescription : AggregateRoot
 
         if (Items.Count == 0)
             throw new InvalidPrescriptionStatusException(PrescriptionStatusReason.Empty, Status, Id);
+
+        // Status alone is not trustworthy (stale/seeded data): nothing pending means
+        // dispensing would persist an empty record, so reject it here with 409.
+        if (Items.All(i => i.IsFullyDispensed))
+            throw new InvalidPrescriptionStatusException(PrescriptionStatusReason.NotDispensable, Status, Id);
     }
 
     public void ApplyDispensedQuantities(
@@ -123,7 +135,7 @@ public class Prescription : AggregateRoot
             quantitiesByPrescriptionItemId.Sum(kv => kv.Value)));
     }
 
-    public void RegisterItemsRefill(IReadOnlyCollection<Guid> prescriptionItemIds)
+    public void RegisterItemsRefill(IReadOnlyCollection<Guid> prescriptionItemIds, DateOnly today)
     {
         if (Status is PrescriptionStatus.Cancelled or PrescriptionStatus.Expired)
             throw new InvalidPrescriptionStatusException(PrescriptionStatusReason.RefillProhibited, Status, Id);
@@ -140,6 +152,8 @@ public class Prescription : AggregateRoot
                     PrescriptionStatusReason.ItemNotInPrescription, Status, Id, itemId);
 
             item.EnsureEligibleForRefill();
+
+            item.EnsureRefillIntervalSatisfied(today);
             targets.Add(item);
         }
 
