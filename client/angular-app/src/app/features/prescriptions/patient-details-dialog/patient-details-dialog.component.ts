@@ -5,8 +5,8 @@ import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { FoundPatient } from '../patient-lookup.service';
-import { PatientMedicationItemDto, PatientPrescriptionHistoryDto } from '../../../core/models/api.models';
-import { MedsHistoryListComponent, MedsLookback } from '../meds-history-list/meds-history-list.component';
+import { MedsLookback, PatientMedicationItemDto, PatientPrescriptionHistoryDto } from '../../../core/models/api.models';
+import { MedsHistoryListComponent } from '../meds-history-list/meds-history-list.component';
 
 export interface PatientDetailsDialogData {
   patient: FoundPatient;

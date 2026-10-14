@@ -24,15 +24,14 @@ import { environment } from '../../../../environments/environment';
 import { Permissions } from '../../../core/constants/permissions';
 import { DispensingRecordDto } from '../../../core/models/api.models';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { openForResult, DialogGuardService } from '../../../core/utils/dialog-helpers';
+import { openForResult } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { localizedVariantName, pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
-import { MedicineForm, MedicineUnit } from '../../../core/models/api.models';
 import { DispenseDialogComponent } from '../dispense-dialog/dispense-dialog.component';
 import { DispensePickerDialogComponent } from '../dispense-picker-dialog/dispense-picker-dialog.component';
+import { dispenseMedicineName, dispenseVariantLabel } from '../dispense.models';
 import { DispensePickerResult } from '../dispense.models';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 
@@ -71,7 +70,6 @@ import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 })
 export class DispensingListComponent {
   private readonly dialog = inject(MatDialog);
-  private readonly dialogGuards = inject(DialogGuardService);
   private readonly translate = inject(TranslateService);
 
   protected readonly permissions = Permissions;
@@ -105,11 +103,9 @@ export class DispensingListComponent {
   }
 
   itemsLabel(record: DispensingRecordDto): string {
-    const formEnum = MedicineForm as unknown as Record<number, string>;
-    const unitEnum = MedicineUnit as unknown as Record<number, string>;
     return record.items.map((item) => {
-      const variant = localizedVariantName(item, formEnum, unitEnum, this.translate) || item.variantName;
-      return `${pickLocalizedMedicineName(item, this.translate)} ${variant} (${item.batchNumber}) x${item.quantity}`;
+      const variant = dispenseVariantLabel(item, this.translate);
+      return `${dispenseMedicineName(item, this.translate)} ${variant} (${item.batchNumber}) x${item.quantity}`;
     }).join(', ');
   }
 
@@ -128,7 +124,6 @@ export class DispensingListComponent {
           }
         );
       },
-      this.dialogGuards.guard(Permissions.DispensingCreate)
     );
   }
 }

@@ -8,17 +8,48 @@
         {{ 'dialogs.dispense.partialTitle' | translate }}
       </p>
       <p class="result-counts">{{ 'dialogs.dispense.partialCounts' | translate:{dispensed: r.dispensedQuantity, requested: r.requestedQuantity} }}</p>
-    } @else {
+    } @else if (r.warnings.length > 0) {
       <p class="result-title success">
         <mat-icon>check_circle</mat-icon>
         {{ 'dialogs.dispense.successWithWarnings' | translate }}
       </p>
+    } @else {
+      <p class="result-title success">
+        <mat-icon>check_circle</mat-icon>
+        {{ 'dialogs.dispense.success' | translate }}
+      </p>
     }
-    <ul class="warnings">
-      @for (w of r.warnings; track w) {
-        <li>{{ w }}</li>
+    @if (r.nextShortCode) {
+      <p class="meta">{{ 'dialogs.dispense.nextShortCode' | translate }}: <strong>{{ r.nextShortCode }}</strong></p>
+    }
+    <ul class="items">
+      @for (item of r.items; track item.prescriptionItemId) {        <li>
+          <span class="item-main">
+            <span class="item-name">{{ medName(item) }}</span>
+            <span class="item-variant">{{ variantLabel(item) }}</span>
+          </span>
+          <span class="item-qty">
+            {{ 'dialogs.dispense.dispensed' | translate }} <strong>{{ item.dispensedThisTime }}</strong>
+            · {{ 'dialogs.dispense.totalDispensed' | translate }} <strong>{{ item.totalDispensedQuantity }}</strong>
+          </span>
+          @if (item.isRefillable) {
+            <span class="item-refill">
+              {{ 'dialogs.dispense.refillsRemaining' | translate:{count: item.refillsRemaining} }}
+              @if (item.nextRefillEligibleDate) {
+                · {{ 'dialogs.dispense.nextRefill' | translate:{date: item.nextRefillEligibleDate} }}
+              }
+            </span>
+          }
+        </li>
       }
     </ul>
+    @if (r.warnings.length > 0) {
+      <ul class="warnings">
+        @for (w of r.warnings; track w) {
+          <li>{{ w }}</li>
+        }
+      </ul>
+    }
   </mat-dialog-content>
   <mat-dialog-actions align="end">
     <button mat-flat-button color="primary" [mat-dialog-close]="true">{{ 'dialogs.dispense.close' | translate }}</button>
@@ -62,6 +93,17 @@
                   </span>
                 }
               </span>
+              @if (item.isRefillable) {
+                <span class="item-refill">
+                  {{ 'dialogs.dispense.refillsRemaining' | translate:{count: item.refillsRemaining ?? 0} }}
+                  @if (item.nextRefillEligibleDate) {
+                    · {{ 'dialogs.dispense.nextRefill' | translate:{date: item.nextRefillEligibleDate} }}
+                  }
+                  @if (item.canRequestRefill) {
+                    · {{ 'dialogs.dispense.canRequestRefill' | translate }}
+                  }
+                </span>
+              }
             </li>
           }
         </ul>

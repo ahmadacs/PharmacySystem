@@ -43,7 +43,7 @@
 }
 
 .stat mat-icon {
-  color: var(--mat-sys-primary);
+  color: var(--primary);
 }
 
 .stat-text {
@@ -60,4 +60,10 @@
 
 .stat-text strong {
   font-size: 0.9rem;
+}
+
+// Progress bars in neutral project colors (no blue).
+mat-progress-bar {
+  --mdc-linear-progress-active-indicator-color: var(--primary);
+  --mdc-linear-progress-track-color: var(--primary-soft);
 }

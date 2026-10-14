@@ -5,6 +5,9 @@ export type PrescriptionStatus =
   | 'Cancelled'
   | 'Expired';
 
+/** History lookback window (days). Moved here so dialogs don't import it from a component. */
+export type MedsLookback = 90 | 180 | 365;
+
 export interface PrescriptionItemRequest {
   medicineVariantId: string;
   quantity: number;
@@ -42,6 +45,11 @@ export interface PrescriptionItemDto {
   form: number | null;
   unit: number | null;
   strength: number | null;
+  // Derived refill helpers from the API (optional for backwards compatibility).
+  refillsRemaining?: number;
+  canRequestRefill?: boolean;
+  isAwaitingRefillDispense?: boolean;
+  nextRefillEligibleDate?: string | null;
 }
 
 export interface RefillPrescriptionRequest {
@@ -60,6 +68,7 @@ export interface PrescriptionListItemDto {
   issuedDate: string;
   status: PrescriptionStatus;
   itemCount: number;
+  hasAwaitingRefillItems?: boolean;
 }
 
 export interface PrescriptionDetailsDto {
@@ -77,6 +86,36 @@ export interface PrescriptionDetailsDto {
   createdBy: string | null;
   createdAt: string;
   items: PrescriptionItemDto[];
+  hasAwaitingRefillItems?: boolean;
+}
+
+/** Fallbacks so the UI works even if the API response predates the new fields. */
+export function refillsRemainingOf(item: PrescriptionItemDto): number {
+  if (typeof item.refillsRemaining === 'number') return item.refillsRemaining;
+  return Math.max(0, item.refillsAllowed - item.refillsUsed);
+}
+
+export function canRequestRefillOf(item: PrescriptionItemDto): boolean {
+  if (typeof item.canRequestRefill === 'boolean') return item.canRequestRefill;
+  return (
+    item.isRefillable &&
+    item.dispensedQuantity >= item.prescribedQuantity &&
+    item.refillsUsed < item.refillsAllowed
+  );
+}
+
+export function isAwaitingRefillOf(item: PrescriptionItemDto): boolean {
+  if (typeof item.isAwaitingRefillDispense === 'boolean') return item.isAwaitingRefillDispense;
+  return item.isRefillable && item.refillsUsed > 0 && item.dispensedQuantity < item.prescribedQuantity;
+}
+
+export function hasAwaitingRefillOf(p: PrescriptionListItemDto | PrescriptionDetailsDto): boolean {
+  if (typeof p.hasAwaitingRefillItems === 'boolean') return p.hasAwaitingRefillItems;
+  return (
+    'items' in p &&
+    Array.isArray(p.items) &&
+    p.items.some((item) => isAwaitingRefillOf(item))
+  );
 }
 
 export interface PatientMedicationItemDto {

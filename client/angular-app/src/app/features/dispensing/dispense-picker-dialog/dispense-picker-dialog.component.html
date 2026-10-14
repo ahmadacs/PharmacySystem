@@ -15,7 +15,6 @@
         dir="ltr"
         lang="en"
         class="code-input"
-        style="text-transform: uppercase"
         (input)="onShortCodeInput($event)"
       />
       @if (shortCode.hasError('required') && shortCode.touched) {

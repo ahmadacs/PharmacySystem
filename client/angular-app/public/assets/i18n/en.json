@@ -321,6 +321,9 @@
       "message": "No prescriptions found",
       "hint": "Adjust your search or filters."
     },
+    "badges": {
+      "awaitingRefill": "Awaiting refill dispense"
+    },
     "tooltips": {
       "dispense": "Dispense"
     }
@@ -915,22 +918,23 @@
       "dispensing": "Dispensing...",
       "dispense": "Dispense",
       "cancel": "Cancel",
-      "dueInDays": "Due in {{count}} days",
+      "totalDispensed": "Total",
+      "refillsRemaining": "Refills left: {{count}}",
+      "nextRefill": "Next refill: {{date}}",
+      "canRequestRefill": "Eligible for refill",
       "successWithWarnings": "Dispensed with warnings",
       "partialTitle": "Partially dispensed",
-      "partialCounts": "Dispensed {{dispensed}} of {{requested}}"
+      "partialCounts": "Dispensed {{dispensed}} of {{requested}}",
+      "nextShortCode": "New refill code"
     },
     "prescriptionForm": {
       "title": "New prescription",
       "phoneNumber": "Phone number",
-      "phonePlaceholder": "+9665XXXXXXXX",
       "phoneSuffixPlaceholder": "XXXXXXXX",
       "phoneRequired": "Required Saudi number (+9665 / 05...).",
-      "existingPatient": "Existing patient: {{firstName}} {{lastName}} - {{dateOfBirth}} (read only)",
       "newPatientTitle": "New patient",
       "newPatientHint": "Please enter the patient's full name and date of birth to continue.",
-      "previousPrescriptions": "Previous prescriptions ({{count}}):",
-      "patientHistory": "Patient dispense history ({{count}})",
+      "historyBtn": "History",
       "medsHistory": {
         "title": "Medication history ({{count}})",
         "lookback": "Lookback window",
@@ -939,13 +943,9 @@
         "days365": "1y",
         "empty": "No prescriptions in this window.",
         "current": "Currently taken ({{count}})",
-        "previous": "Previous ({{count}})",
-        "lastDispensed": "Last dispensed",
-        "neverDispensed": "Not dispensed yet",
-        "refillLeft": "Refill {{used}}/{{allowed}}",
-        "dueIn": "Due in {{count}}d",
-        "refillsDone": "Refills done",
-        "noRefill": "No refill",
+        "activeNow": "Currently taken",
+        "pastOne": "Previous",
+        "statusCol": "Status",
         "add": "Add to prescription",
         "added": "Added to prescription.",
         "medNotAvailable": "Medicine not available."
@@ -970,7 +970,6 @@
       "refillIntervalHint": "How long before this item may be dispensed again.",
       "refillIntervalError": "Enter a whole number 0–365.",
       "phoneFirstHint": "Enter the patient's phone number above to continue.",
-      "phoneIncompleteHint": "Number incomplete — keep typing.",
       "phoneInvalidHint": "Invalid Saudi format — use 05xxxxxxxx or +9665xxxxxxxx.",
       "items": "Items",
       "medicine": "Medicine",
@@ -1007,6 +1006,10 @@
       "cancelled": "Prescription cancelled.",
       "itemRefilled": "Item refilled.",
       "eligibleRefilled": "Eligible items refilled.",
+      "awaitingRefillBanner": "A refill was registered and is awaiting dispense — this is not a new prescription.",
+      "awaitingRefillChip": "Awaiting refill dispense",
+      "refillsRemaining": "{{remaining}} refill(s) left",
+      "nextEligible": "Next eligible: {{date}}",
       "patient": "Patient",
       "doctor": "Doctor",
       "issued": "Issued",

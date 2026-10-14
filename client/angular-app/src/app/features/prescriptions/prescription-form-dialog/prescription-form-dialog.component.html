@@ -3,7 +3,7 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <mat-dialog-content class="dialog-body">
-        <div class="row">
+        <div class="row phone-row">
           <mat-form-field appearance="outline" class="grow" dir="ltr" floatLabel="always">
             <mat-label>{{ 'dialogs.prescriptionForm.phoneNumber' | translate }}</mat-label>
             <span matTextPrefix dir="ltr" class="phone-prefix">+9665</span>
@@ -18,6 +18,8 @@
               lang="en"
               class="phone-suffix"
               [placeholder]="'dialogs.prescriptionForm.phoneSuffixPlaceholder' | translate"
+              (input)="onPhoneEdited()"
+              (keydown.enter)="$event.preventDefault(); searchPatient()"
             />
             @if (form.controls.patientPhoneNumber.hasError('required')) {
               <mat-error>{{ 'dialogs.prescriptionForm.phoneRequired' | translate }}</mat-error>
@@ -26,17 +28,22 @@
             }
             @if (phoneSearching()) { <mat-icon matSuffix>hourglass_empty</mat-icon> }
           </mat-form-field>
+          <button
+            mat-flat-button
+            type="button"
+            class="search-btn"
+            (click)="searchPatient()"
+            [disabled]="phoneSearching() || form.controls.patientPhoneNumber.invalid"
+          >
+            <mat-icon>search</mat-icon>
+            {{ 'common.search' | translate }}
+          </button>
         </div>
-        @if (phoneHintKey(); as hintKey) {
-          @if (form.controls.patientPhoneNumber.untouched) {
-            <div class="phone-hint">{{ hintKey | translate }}</div>
-          }
-        }
-        @if (!showRest() && !phoneSearching()) {
+        @if (!showRest()) {
           <div class="phone-hint">{{ 'dialogs.prescriptionForm.phoneFirstHint' | translate }}</div>
         }
         @if (showRest()) {
-          <div #restAnchor class="rest-section">
+          <div class="rest-section">
         @if (patientState().kind === 'new') {
           <div class="new-patient-banner">
             <mat-icon class="banner-icon">person_add</mat-icon>
@@ -47,18 +54,19 @@
           </div>
         }
         @if (foundPatient(); as patient) {
-          <div class="found-patient-bar">
-            <mat-icon class="bar-icon">verified_user</mat-icon>
-            <div class="bar-text">
-              <strong>{{ patient.firstName }} {{ patient.lastName }}</strong>
-              <span dir="ltr">{{ patient.phoneNumber }}</span>
-            </div>
-            <span class="bar-spacer"></span>
-            <button mat-flat-button type="button" class="history-btn" (click)="openPatientDetails()" [disabled]="medsLoading()">
+          <!-- Whole card is one click target opening the patient history. -->
+          <button type="button" class="patient-card-btn" (click)="openPatientDetails()" [disabled]="medsLoading()" [attr.aria-label]="'dialogs.prescriptionForm.historyBtn' | translate">
+            <span class="patient-avatar" aria-hidden="true">{{ patientInitials() }}</span>
+            <span class="patient-id">
+              <strong class="patient-name">{{ patient.firstName }} {{ patient.lastName }}</strong>
+            </span>
+            <span class="history-hint">
               <mat-icon>history</mat-icon>
-              {{ 'dialogs.prescriptionForm.patientHistory' | translate:{count: medsCount()} }}
-            </button>
-          </div>
+              <span>{{ 'dialogs.prescriptionForm.historyBtn' | translate }}</span>
+              <span class="count-pill">{{ medsCount() }}</span>
+            </span>
+            <mat-icon class="go-icon">chevron_forward</mat-icon>
+          </button>
         }
 
         <div class="row">
@@ -158,7 +166,7 @@
                   </mat-form-field>
                   <mat-form-field appearance="outline" class="refill-count">
                     <mat-label>{{ 'dialogs.prescriptionForm.refillIntervalDays' | translate }}</mat-label>
-                    <input matInput formControlName="refillIntervalDays" inputmode="numeric" appEnglishDigits
+                    <input matInput formControlName="refillIntervalDays" inputmode="numeric" appDigitsOnly
                         [matAutocomplete]="intervalAuto"
                         [placeholder]="'dialogs.prescriptionForm.refillIntervalNoLimit' | translate" />
                     <mat-autocomplete #intervalAuto="matAutocomplete">
@@ -228,4 +236,3 @@
         }
       </mat-dialog-actions>
     </form>
-  

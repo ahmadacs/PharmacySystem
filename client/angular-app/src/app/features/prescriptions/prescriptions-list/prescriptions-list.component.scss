@@ -79,3 +79,9 @@ td.mat-mdc-cell {
   background: var(--line);
   color: var(--mat-sys-on-surface-variant);
 }
+
+.badge-awaiting {
+  margin-inline-start: 0.4rem;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}

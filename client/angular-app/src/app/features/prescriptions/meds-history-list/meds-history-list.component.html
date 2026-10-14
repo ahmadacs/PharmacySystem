@@ -1,16 +1,19 @@
 <div class="meds-panel">
   <button mat-button type="button" class="meds-toggle" (click)="expandedChange.emit(!expanded())" [attr.aria-expanded]="expanded()">
     <mat-icon class="meds-toggle-icon">history</mat-icon>
-    <span class="meds-toggle-title">{{ 'dialogs.prescriptionForm.medsHistory.title' | translate:{count: activeMeds().length + pastMeds().length} }}</span>
+    <span class="meds-toggle-title">{{ 'dialogs.prescriptionForm.medsHistory.title' | translate:{count: totalCount()} }}</span>
+    @if (activeCount() > 0) {
+      <span class="active-pill">{{ 'dialogs.prescriptionForm.medsHistory.current' | translate:{count: activeCount()} }}</span>
+    }
     <span class="meds-toggle-spacer"></span>
     <mat-icon>{{ expanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
   </button>
   @if (expanded()) {
-    <div class="meds-header">
+    <div class="meds-toolbar">
       <span class="meds-lookback-label">{{ 'dialogs.prescriptionForm.medsHistory.lookback' | translate }}</span>
-      <div class="lookback-toggle" role="group" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.lookback' | translate">
+      <div class="segmented" role="group" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.lookback' | translate">
         @for (days of lookbackOptions(); track days) {
-          <button mat-button type="button" [class.selected]="lookback() === days" (click)="lookbackChange.emit(days)">
+          <button type="button" [class.selected]="lookback() === days" (click)="lookbackChange.emit(days)">
             {{ days === 90 ? ('dialogs.prescriptionForm.medsHistory.days90' | translate) : days === 180 ? ('dialogs.prescriptionForm.medsHistory.days180' | translate) : ('dialogs.prescriptionForm.medsHistory.days365' | translate) }}
           </button>
         }
@@ -18,70 +21,41 @@
     </div>
     @if (loading()) {
       <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-    } @else if (activeMeds().length === 0 && pastMeds().length === 0) {
+    } @else if (allMeds().length === 0) {
       <div class="meds-empty">{{ 'dialogs.prescriptionForm.medsHistory.empty' | translate }}</div>
     } @else {
-      @if (activeMeds().length > 0) {
-        <div class="meds-section-title">{{ 'dialogs.prescriptionForm.medsHistory.current' | translate:{count: activeMeds().length} }}</div>
-        <div class="meds-list">
-          @for (med of activeMeds(); track med.prescriptionItemId) {
-            <div class="med-row">
-              <ng-container [ngTemplateOutlet]="medInfo" [ngTemplateOutletContext]="{ med: med }" />
-            </div>
-          }
-        </div>
-      }
-      @if (pastMeds().length > 0) {
-        <div class="meds-section-title muted">{{ 'dialogs.prescriptionForm.medsHistory.previous' | translate:{count: pastMeds().length} }}</div>
-        <div class="meds-list muted">
-          @for (med of pastMeds(); track med.prescriptionItemId) {
-            <div class="med-row">
-              <ng-container [ngTemplateOutlet]="medInfo" [ngTemplateOutletContext]="{ med: med }" />
-            </div>
-          }
-        </div>
-      }
+      <!-- Tabular history: one deduplicated row per medicine —
+           name + continuous-or-not badge + add action only. -->
+      <div class="table-wrap">
+        <table class="meds-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'dialogs.prescriptionForm.medicine' | translate }}</th>
+              <th scope="col">{{ 'dialogs.prescriptionForm.medsHistory.statusCol' | translate }}</th>
+              <th scope="col"><span class="sr-only">{{ 'dialogs.prescriptionForm.medsHistory.add' | translate }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (med of allMeds(); track med.prescriptionItemId) {
+              <tr [class.inactive]="!med.isCurrentlyActive">
+                <td class="name-cell">{{ displayName(med) }}</td>
+                <td class="status-cell">
+                  @if (med.isCurrentlyActive) {
+                    <span class="status-badge active">{{ 'dialogs.prescriptionForm.medsHistory.activeNow' | translate }}</span>
+                  } @else {
+                    <span class="status-badge">{{ 'dialogs.prescriptionForm.medsHistory.pastOne' | translate }}</span>
+                  }
+                </td>
+                <td class="action-cell">
+                  <button mat-icon-button type="button" class="med-add" (click)="add.emit(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
+                    <mat-icon>add_circle</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   }
 </div>
-
-<!-- Single row template: every medicine from any section shows the same full
-     info (variant, prescription date + status, dosage, last dispense, refill
-     state) with an add button that copies it into the prescription form. -->
-<ng-template #medInfo let-med="med">
-  <div class="med-info">
-    <span class="med-name">{{ displayName(med) }}</span>
-    <span class="med-meta">
-      @if (med.form) {
-        {{ med.form | enumTranslate:'MedicineForm' }} {{ med.strength }} {{ med.unit | enumTranslate:'MedicineUnit' }}
-      } @else {
-        {{ med.variantName }}
-      }
-      · {{ med.issuedDate }} · {{ med.prescriptionStatus | enumTranslate:'PrescriptionStatus' }}</span>
-    @if (med.dosageInstructions) {
-      <span class="med-dose">{{ med.dosageInstructions }}</span>
-    }
-    <span class="med-dispense">
-      @if (med.lastDispensedAt) {
-        {{ 'dialogs.prescriptionForm.medsHistory.lastDispensed' | translate }}: {{ med.lastDispensedAt }}
-      } @else {
-        {{ 'dialogs.prescriptionForm.medsHistory.neverDispensed' | translate }}
-      }
-    </span>
-    <mat-chip-set>
-      @if (med.isRefillable && med.refillsUsed < med.refillsAllowed) {
-        <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillLeft' | translate:{used: med.refillsUsed, allowed: med.refillsAllowed} }}</mat-chip>
-        @if (dueInDays(med); as due) {
-          <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.dueIn' | translate:{count: due} }}</mat-chip>
-        }
-      } @else if (med.isRefillable) {
-        <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.refillsDone' | translate }}</mat-chip>
-      } @else {
-        <mat-chip>{{ 'dialogs.prescriptionForm.medsHistory.noRefill' | translate }}</mat-chip>
-      }
-    </mat-chip-set>
-  </div>
-  <button mat-icon-button type="button" (click)="add.emit(med)" [attr.aria-label]="'dialogs.prescriptionForm.medsHistory.add' | translate" [title]="'dialogs.prescriptionForm.medsHistory.add' | translate">
-    <mat-icon>add_circle</mat-icon>
-  </button>
-</ng-template>

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import {
@@ -8,10 +8,8 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
 import { MatError, MatFormField, MatHint, MatLabel, MatPrefix, MatSuffix } from '@angular/material/form-field';
@@ -20,7 +18,6 @@ import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { map, startWith } from 'rxjs';
 import {
   MedicineListItemDto,
   MedicineVariantDto,
@@ -29,22 +26,24 @@ import {
 } from '../../../core/models/api.models';
 import { startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
-import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { runFormSubmit, DialogSizes } from '../../../core/utils/dialog-helpers';
+import { clearPickedFile, handlePickedFile } from '../../../core/utils/file-upload.utils';
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
 import { PrescriptionsService } from '../prescriptions.service';
 import { MedicineLookupService } from '../medicine-lookup.service';
 import { FoundPatient } from '../patient-lookup.service';
-import { PatientPhoneSearchService, PatientState } from './patient-phone-search.service';
+import { PatientPhoneSearchService } from './patient-phone-search.service';
 import { SaudiPhoneDigitsDirective } from '../../../shared/directives/saudi-phone-digits.directive';
 import {
   personNameValidator,
   SAUDI_PHONE_SUFFIX_PATTERN,
   toFullSaudiPhone
 } from '../../../shared/validators/phone.validators';
-import { MedsLookback } from '../meds-history-list/meds-history-list.component';
+import { MedsLookback } from '../../../core/models/api.models';
 import { PatientDetailsDialogComponent } from '../patient-details-dialog/patient-details-dialog.component';
-import { refillsAllowedValidator, notInFuture } from './prescription-item.validators';
+import { notInFuture } from './prescription-item.validators';
+import { createPrescriptionItemGroup, resetItemGroup } from './prescription-items-form';
 
 @Component({
   selector: 'app-prescription-form-dialog',
@@ -64,7 +63,6 @@ import { refillsAllowedValidator, notInFuture } from './prescription-item.valida
     MatSelect,
     MatOption,
     MatCheckbox,
-    MatChipsModule,
     MatDatepickerModule,
     MatAutocompleteModule,
     SaudiPhoneDigitsDirective,
@@ -95,32 +93,16 @@ export class PrescriptionFormDialogComponent {
   protected readonly file = signal<File | null>(null);
 
   onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const selected = input.files[0];
-      const error = this.fileService.validateUpload(selected);
-      if (error) {
-        this.toast.show(error, 'error');
-        return;
-      }
-      this.file.set(selected);
-    }
+    handlePickedFile(event, this.file, this.fileService, this.toast);
   }
 
   removeFile(): void {
-    this.file.set(null);
+    clearPickedFile(this.file);
   }
-  protected readonly medicines = this.medicineLookup.medicines;
   protected readonly today = startOfDay(new Date());
 
-  // Single patient lookup state (none / found / new) owned by the service —
-  // found + new can never contradict each other. Aliased here for the template.
   protected readonly patientState = this.phoneSearch.patientState;
   protected readonly phoneSearching = this.phoneSearch.searching;
-  protected readonly phoneHintKey = this.phoneSearch.hintKey;
-  // Medication history for the details button badge. The patient details
-  // dialog reads these same signals via dialog data (shared by reference),
-  // so one fetch serves both views with no extra state object.
   protected readonly medsHistory = signal<PatientPrescriptionHistoryDto[]>([]);
   protected readonly medsLoading = signal(false);
   protected readonly medsLookback = signal<MedsLookback>(90);
@@ -132,24 +114,28 @@ export class PrescriptionFormDialogComponent {
     return state.kind === 'found' ? state.patient : null;
   });
 
-  /** Total prescribed lines in the loaded window — shown on the details button. */
-  protected readonly medsCount = computed(() =>
-    this.medsHistory().reduce((n, p) => n + p.items.length, 0),
+  /** Badge count — unique medicines, matching the list rows. */
+  protected readonly medsCount = computed(
+    () => new Set(this.medsHistory().flatMap((p) => p.items.map((i) => i.medicineId))).size,
   );
 
+  /** Avatar initials for the compact patient card (first letters, max 2). */
+  protected readonly patientInitials = computed(() => {
+    const patient = this.foundPatient();
+    if (!patient) return '?';
+    const initials = `${patient.firstName.charAt(0)}${patient.lastName.charAt(0)}`.trim();
+    return initials || '?';
+  });
+
   /**
-   * Opens the doctor-facing patient snapshot as a dialog (same MatDialog
-   * pattern as every other dialog). History signals are shared by reference,
-   * so a lookback change fetches once in the parent and both views update.
-   * Adding a line inside the dialog copies it into this form via callback.
+   * Opens the doctor-facing patient snapshot as a dialog. History signals are
+   * shared by reference, so a lookback change fetches once and both views update.
    */
   protected openPatientDetails(): void {
     const patient = this.foundPatient();
     if (!patient) return;
     this.dialog.open(PatientDetailsDialogComponent, {
-      width: '920px',
-      maxWidth: '94vw',
-      maxHeight: '90dvh',
+      ...DialogSizes.wide,
       data: {
         patient,
         history: this.medsHistory,
@@ -162,13 +148,9 @@ export class PrescriptionFormDialogComponent {
     });
   }
 
-  // Phone-first flow: the rest of the form appears only after a phone is entered and looked up
-  protected readonly showRest = computed(
-    () => this.phoneSearching() || this.patientState().kind !== 'none'
-  );
-  private readonly restAnchor = viewChild<ElementRef<HTMLElement>>('restAnchor');
-  /** Previous patient kind — exact transition detection over a clean emission stream. */
-  private prevPatientKind: PatientState['kind'] = 'none';
+  // Manual phone lookup: the rest of the form appears only after the user
+  // presses Search and a result (found / new) arrives. No auto-tracking.
+  protected readonly showRest = computed(() => this.patientState().kind !== 'none');
 
   // Preset refill intervals (days) the doctor picks from. 0 = no time limit.
   protected readonly refillIntervalOptions = [0, 7, 14, 15, 30, 60, 90];
@@ -183,63 +165,35 @@ export class PrescriptionFormDialogComponent {
     items: new FormArray<FormGroup>([])
   });
 
-  // Medicine search lives INSIDE each item group (`medicineSearch` control), so
-  // the FormArray is the single source of truth. `searchTexts` derives every
-  // row's filter text as one standard toSignal — no manual version counter.
-  // Declared after `form` (field initializers run in order).
-  private readonly searchTexts = toSignal(
-    this.form.controls.items.valueChanges.pipe(
-      map(() => this.readSearchTexts()),
-      startWith(this.readSearchTexts()),
-    ),
-    { initialValue: [] as string[] },
-  );
-
   constructor() {
     void this.medicineLookup.ensureMedicines();
     this.addItem();
+  }
 
-    // Phone-first lookup machine (pure signal producer); this dialog consumes
-    // its signals with the effect below — no callbacks.
-    this.phoneSearch.track(
-      this.form.controls.patientPhoneNumber.valueChanges.pipe(map(toFullSaudiPhone))
-    );
-
-    // Patient-state consumer: the service emits exactly one notification per
-    // genuine kind transition, so `prevKind` is exact transition detection
-    // (not a guess). Teardown runs on EVERY path that leaves a patient
-    // context — found/new -> anything — never confined to one branch, so
-    // items picked for a previous number can never stick, whatever the
-    // destination (none, new, or a future direct found->found switch).
-    effect(() => {
-      const state = this.patientState();
-      const prevKind = this.prevPatientKind;
-      this.prevPatientKind = state.kind;
-      if (prevKind !== 'none' && state.kind !== prevKind) {
-        this.teardownPatientContext();
-      }
-      if (state.kind === 'none') {
-        return;
-      }
-      if (state.kind === 'new') {
-        this.medsHistory.set([]);
-        this.setPatientReadonly(false);
-        return;
-      }
+  /** Explicit Search button (or Enter in the phone field). */
+  protected async searchPatient(): Promise<void> {
+    const phoneControl = this.form.controls.patientPhoneNumber;
+    phoneControl.markAsTouched();
+    if (phoneControl.invalid || this.phoneSearching()) {
+      return;
+    }
+    this.teardownPatientContext();
+    await this.phoneSearch.search(toFullSaudiPhone(phoneControl.value));
+    const state = this.patientState();
+    if (state.kind === 'new') {
+      this.medsHistory.set([]);
+      this.setPatientReadonly(false);
+    } else if (state.kind === 'found') {
       this.applyFoundPatient(state.patient);
-    });
+    }
+  }
 
-    // Gentle reveal: scroll the least amount needed when the rest appears
-    let restWasShown = false;
-    effect(() => {
-      const shown = this.showRest();
-      if (shown && !restWasShown) {
-        restWasShown = true;
-        this.scrollRestIntoView();
-      } else if (!shown) {
-        restWasShown = false;
-      }
-    });
+  /** Any edit after a result voids it — the user must press Search again. */
+  protected onPhoneEdited(): void {
+    if (this.patientState().kind !== 'none') {
+      this.phoneSearch.reset();
+      this.teardownPatientContext();
+    }
   }
 
   private setPatientReadonly(readonly: boolean): void {
@@ -249,10 +203,7 @@ export class PrescriptionFormDialogComponent {
     if (readonly) { fn.disable(); ln.disable(); dob.disable(); } else { fn.enable(); ln.enable(); dob.enable(); }
   }
 
-  /**
-   * Clears everything bound to the previous patient context. Runs on every
-   * path that leaves found/new — never from a single destination branch.
-   */
+  /** Clears everything bound to the previous patient lookup. */
   private teardownPatientContext(): void {
     this.medsHistory.set([]);
     if (this.form.controls.patientFirstName.disabled) {
@@ -274,12 +225,6 @@ export class PrescriptionFormDialogComponent {
     if (patient.id) {
       void this.loadPatientMeds(patient.id);
     }
-  }
-
-  private scrollRestIntoView(): void {
-    setTimeout(() => {
-      this.restAnchor()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 80);
   }
 
   protected setLookback(days: MedsLookback): void {
@@ -358,51 +303,17 @@ export class PrescriptionFormDialogComponent {
     return this.medicineLookup.variantsFor(medicineId);
   }
 
-  private readSearchTexts(): string[] {
-    return this.items.controls.map((group) => {
-      const raw = group.get('medicineSearch')?.value as string | MedicineListItemDto | undefined;
-      if (!raw) {
-        return '';
-      }
-      return typeof raw === 'string' ? raw : this.displayMedicineName(raw);
-    });
-  }
-
   protected filteredMedicines(index: number): MedicineListItemDto[] {
-    return this.medicineLookup.filterMedicines(this.searchTexts()?.[index] ?? '');
+    const raw = this.items.at(index).get('medicineSearch')?.value as string | MedicineListItemDto | undefined;
+    const text = !raw ? '' : typeof raw === 'string' ? raw : this.displayMedicineName(raw);
+    return this.medicineLookup.filterMedicines(text);
   }
 
   addItem(): void {
-    const group = new FormGroup({
-      medicineSearch: new FormControl<string | MedicineListItemDto>('', { nonNullable: true }),
-      medicineId: new FormControl<string | null>(null, { validators: [Validators.required] }),
-      medicineVariantId: new FormControl<string | null>(null, { validators: [Validators.required] }),
-      quantity: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
-      dosageInstructions: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(300)] }),
-      isRefillable: new FormControl(false, { nonNullable: true }),
-      refillsAllowed: new FormControl(0, { nonNullable: true, validators: [Validators.min(0), Validators.max(99), refillsAllowedValidator] }),
-      refillIntervalDays: new FormControl(0, { nonNullable: true, validators: [Validators.pattern(/^\d+$/), Validators.min(0), Validators.max(365)] })
-    });
-    // Refill UX: the count field is only shown while refillable is on.
-    // Unchecking resets it to 0; checking pre-fills 1 so the user rarely types.
-    // Validation itself lives in refillsAllowedValidator — this handler only
-    // adjusts the value and re-triggers validation, never touches errors.
-    group.get('isRefillable')?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((refillable) => {
-      const allowed = group.get('refillsAllowed');
-      if (!refillable) {
-        if (Number(allowed?.value ?? 0) !== 0) {
-          allowed?.setValue(0);
-        }
-      } else if (Number(allowed?.value ?? 0) < 1) {
-        allowed?.setValue(1);
-      }
-      allowed?.updateValueAndValidity();
-    });
-    this.items.push(group);
+    this.items.push(createPrescriptionItemGroup(this.destroyRef));
   }
 
   removeItem(index: number): void {
-    // Single-structure removal — no parallel arrays, so off-by-one is impossible.
     this.items.removeAt(index);
   }
 
@@ -416,19 +327,10 @@ export class PrescriptionFormDialogComponent {
 
   /** Clears a single row in place (used when it is the only item and cannot be removed). */
   protected clearItem(index: number): void {
-    this.items.at(index).reset({
-      medicineSearch: '',
-      medicineId: null,
-      medicineVariantId: null,
-      quantity: 1,
-      dosageInstructions: '',
-      isRefillable: false,
-      refillsAllowed: 0,
-      refillIntervalDays: 0,
-    });
+    resetItemGroup(this.items.at(index));
   }
 
-  /** Resets the items to a single blank row (used when the patient context changes). */
+  /** Resets the items to a single blank row (used when the patient lookup changes). */
   private resetItemsToBlank(): void {
     this.items.clear();
     this.addItem();
@@ -462,7 +364,6 @@ export class PrescriptionFormDialogComponent {
 
   protected readonly displayMedicineName = (medicineIdOrString: string | MedicineListItemDto): string => {
     if (!medicineIdOrString) return '';
-    // Look up the medicine by ID in the medicines list
     const medicine = typeof medicineIdOrString === 'string'
       ? this.medicineLookup.findMedicine(medicineIdOrString)
       : medicineIdOrString;
@@ -475,9 +376,6 @@ export class PrescriptionFormDialogComponent {
   }
 
   async submit(): Promise<void> {
-    // Refill correctness is enforced by refillsAllowedValidator on each item
-    // group — no duplicated manual check here. markAllAsTouched recurses into
-    // the FormArray, so one call covers every row.
     await runFormSubmit(
       this.form,
       this.submitting,

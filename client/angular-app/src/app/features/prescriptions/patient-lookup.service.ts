@@ -28,22 +28,6 @@ interface PatientPhoneCheckResponse {
   statusCode?: number;
 }
 
-export { SAUDI_PHONE_PATTERN } from '../../shared/validators/phone.validators';
-
-/** Matches the inline hint logic previously buried in the dialog component. */
-export function computePhoneHintKey(phone: string): string | null {
-  if (!phone || SAUDI_PHONE_PATTERN.test(phone)) {
-    return null;
-  }
-  const normalized = phone.replace(/[\s-]/g, '');
-  const digits = normalized.replace(/\D/g, '');
-  const fullLength = normalized.startsWith('+') ? 12 : 10;
-  if (/^\+?\d+$/.test(normalized) && digits.length < fullLength) {
-    return 'dialogs.prescriptionForm.phoneIncompleteHint';
-  }
-  return 'dialogs.prescriptionForm.phoneInvalidHint';
-}
-
 @Injectable({ providedIn: 'root' })
 export class PatientLookupService {
   private readonly http = inject(HttpClient);

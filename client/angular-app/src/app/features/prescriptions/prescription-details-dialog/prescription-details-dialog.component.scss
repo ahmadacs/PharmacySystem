@@ -22,6 +22,18 @@
       background: var(--mat-sys-secondary-container);
       color: var(--mat-sys-on-secondary-container);
     }
+    .badge-awaiting {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+    .awaiting-banner {
+      margin: 0;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
     .refills {
       margin: 0;
       font-size: 0.85rem;

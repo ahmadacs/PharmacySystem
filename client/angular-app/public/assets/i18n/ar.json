@@ -321,6 +321,9 @@
       "message": "لا توجد وصفات",
       "hint": "اضبط البحث أو الفلاتر."
     },
+    "badges": {
+      "awaitingRefill": "بانتظار صرف التجديد"
+    },
     "tooltips": {
       "dispense": "صرف"
     }
@@ -915,22 +918,23 @@
       "dispensing": "جاري الصرف...",
       "dispense": "صرف",
       "cancel": "إلغاء",
-      "dueInDays": "يُستحق بعد {{count}} يوم",
+      "totalDispensed": "الإجمالي",
+      "refillsRemaining": "التعبئة المتبقية: {{count}}",
+      "nextRefill": "التعبئة القادمة: {{date}}",
+      "canRequestRefill": "مؤهل لإعادة التعبئة",
       "successWithWarnings": "تم الصرف مع تنبيهات",
       "partialTitle": "صرف جزئي",
-      "partialCounts": "تم صرف {{dispensed}} من {{requested}}"
+      "partialCounts": "تم صرف {{dispensed}} من {{requested}}",
+      "nextShortCode": "كود التعبئة الجديد"
     },
     "prescriptionForm": {
       "title": "وصفة جديدة",
       "phoneNumber": "رقم الهاتف",
-      "phonePlaceholder": "+9665XXXXXXXX",
       "phoneSuffixPlaceholder": "XXXXXXXX",
       "phoneRequired": "مطلوب رقم سعودي (+9665 / 05...).",
-      "existingPatient": "مريض موجود: {{firstName}} {{lastName}} - {{dateOfBirth}} (للقراءة فقط)",
       "newPatientTitle": "مريض جديد",
       "newPatientHint": "يرجى إدخال اسم المريض الكامل وتاريخ ميلاده للمتابعة.",
-      "previousPrescriptions": "وصفات سابقة ({{count}}):",
-      "patientHistory": "تاريخ صرف المريض ({{count}})",
+      "historyBtn": "السجل",
       "medsHistory": {
         "title": "السجل الدوائي ({{count}})",
         "lookback": "النطاق الزمني",
@@ -938,14 +942,10 @@
         "days180": "180 يوم",
         "days365": "سنة",
         "empty": "لا توجد وصفات في هذه الفترة.",
-        "current": "يأخذها حالياً ({{count}})",
-        "previous": "سابقة ({{count}})",
-        "lastDispensed": "آخر صرف",
-        "neverDispensed": "لم يُصرف بعد",
-        "refillLeft": "تجديد {{used}}/{{allowed}}",
-        "dueIn": "مستحق بعد {{count}} يوم",
-        "refillsDone": "انتهت التجديدات",
-        "noRefill": "بلا تجديد",
+        "current": "مستمرة ({{count}})",
+        "activeNow": "مستمر",
+        "pastOne": "غير مستمر",
+        "statusCol": "الحالة",
         "add": "إضافة للوصفة",
         "added": "تمت الإضافة للوصفة.",
         "medNotAvailable": "الدواء غير متوفر."
@@ -970,7 +970,6 @@
       "refillIntervalHint": "المدة قبل إمكانية صرف هذا الصنف مجدداً.",
       "refillIntervalError": "أدخل عدداً صحيحاً 0–365.",
       "phoneFirstHint": "أدخل رقم هاتف المريض أعلاه للمتابعة.",
-      "phoneIncompleteHint": "الرقم غير مكتمل — أكمل الكتابة.",
       "phoneInvalidHint": "صيغة سعودية غير صالحة — استخدم 05xxxxxxxx أو ‎+9665xxxxxxxx.",
       "items": "العناصر",
       "medicine": "الدواء",
@@ -1007,6 +1006,10 @@
       "cancelled": "تم إلغاء الوصفة.",
       "itemRefilled": "تمت إعادة صرف الصنف.",
       "eligibleRefilled": "تمت إعادة صرف الأصناف المؤهلة.",
+      "awaitingRefillBanner": "تم تسجيل تجديد وهو بانتظار الصرف — هذه ليست وصفة جديدة.",
+      "awaitingRefillChip": "بانتظار صرف التجديد",
+      "refillsRemaining": "المتبقي {{remaining}} من التجديد",
+      "nextEligible": "الاستحقاق التالي: {{date}}",
       "patient": "المريض",
       "doctor": "الطبيب",
       "issued": "الإصدار",

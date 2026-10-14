@@ -134,6 +134,11 @@
       font-size: 0.8rem;
       font-weight: 500;
     }
+    .item-refill {
+      display: block;
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.78rem;
+    }
     .item-stock.empty-stock {
       color: var(--mat-sys-error);
     }

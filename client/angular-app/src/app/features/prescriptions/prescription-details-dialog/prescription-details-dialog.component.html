@@ -12,6 +12,9 @@
           <span><strong>{{ 'dialogs.prescriptionDetails.issued' | translate }}:</strong> {{ p.issuedDate }}</span>
             <span><strong>{{ 'dialogs.prescriptionDetails.status' | translate }}:</strong> <span class="badge">{{ p.status | enumTranslate:'PrescriptionStatus' }}</span></span>
         </div>
+        @if (hasAwaitingRefill(p)) {
+          <p class="awaiting-banner">{{ 'dialogs.prescriptionDetails.awaitingRefillBanner' | translate }}</p>
+        }
         @if (p.diagnosis) {
           <p><strong>{{ 'dialogs.prescriptionDetails.diagnosis' | translate }}:</strong> {{ p.diagnosis }}</p>
         }
@@ -52,6 +55,13 @@
             <td mat-cell *matCellDef="let item">
               @if (item.isRefillable) {
                 <span class="cell-sub">{{ item.refillsUsed }} / {{ item.refillsAllowed }}</span>
+                <span class="cell-sub">{{ 'dialogs.prescriptionDetails.refillsRemaining' | translate:{remaining: refillsRemaining(item)} }}</span>
+                @if (item.nextRefillEligibleDate ?? item.lastDispensedAt; as eligibleDate) {
+                  <span class="cell-sub">{{ 'dialogs.prescriptionDetails.nextEligible' | translate:{date: eligibleDate} }}</span>
+                }
+                @if (isAwaitingRefill(item)) {
+                  <span class="badge badge-awaiting">{{ 'dialogs.prescriptionDetails.awaitingRefillChip' | translate }}</span>
+                }
                 @if (canRefillItem(item)) {
                   <button mat-icon-button color="primary" (click)="refillItem(p.id, item.id)" [matTooltip]="'dialogs.prescriptionDetails.refillItem' | translate">
                     <mat-icon>refresh</mat-icon>

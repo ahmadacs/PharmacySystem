@@ -25,9 +25,9 @@ import { NgClass } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../../environments/environment';
 import { Permissions } from '../../../core/constants/permissions';
-import { PrescriptionListItemDto, PrescriptionStatus } from '../../../core/models/api.models';
+import { PrescriptionListItemDto, PrescriptionStatus, hasAwaitingRefillOf } from '../../../core/models/api.models';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { openForResult, requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
+import { openForResult, DialogSizes } from '../../../core/utils/dialog-helpers';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -77,7 +77,6 @@ export const PRESCRIPTION_STATUSES: PrescriptionStatus[] = [
 })
 export class PrescriptionsListComponent {
   private readonly dialog = inject(MatDialog);
-  private readonly dialogGuards = inject(DialogGuardService);
 
   protected readonly permissions = Permissions;
   protected readonly statuses = PRESCRIPTION_STATUSES;
@@ -111,6 +110,10 @@ export class PrescriptionsListComponent {
     return `badge-${status.toLowerCase()}`;
   }
 
+  hasAwaitingRefill(row: PrescriptionListItemDto): boolean {
+    return hasAwaitingRefillOf(row);
+  }
+
   private refreshPrescriptions(): void {
     refreshPaged(this.table, this.prescriptions);
   }
@@ -120,22 +123,15 @@ export class PrescriptionsListComponent {
       this.dialog,
       PrescriptionFormDialogComponent,
       {
-        width: '980px',
-        maxWidth: '96vw',
-        maxHeight: '90dvh',
-        panelClass: 'sidenav-aware-dialog'
+        ...DialogSizes.formLarge
       },
       () => {
         this.refreshPrescriptions();
       },
-      this.dialogGuards.guard(Permissions.PrescriptionsCreate)
     );
   }
 
   openDetails(prescription: PrescriptionListItemDto): void {
-    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.PrescriptionsManageOwn, Permissions.PrescriptionsManageAll))) {
-      return;
-    }
-    this.dialog.open(PrescriptionDetailsDialogComponent, { width: '720px', maxWidth: '95vw', maxHeight: '90dvh', data: prescription.id });
+    this.dialog.open(PrescriptionDetailsDialogComponent, { ...DialogSizes.details, data: prescription.id });
   }
 }

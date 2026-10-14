@@ -9,6 +9,25 @@ export interface DispensePrescriptionResponse {
   requestedQuantity: number;
   dispensedQuantity: number;
   warnings: string[];
+  items: DispensedItemDto[];
+  nextShortCode: string | null;
+}
+
+export interface DispensedItemDto {
+  prescriptionItemId: string;
+  medicineName: string;
+  medicineNameAr: string | null;
+  variantName: string;
+  form: number | null;
+  unit: number | null;
+  strength: number | null;
+  prescribedQuantity: number;
+  dispensedThisTime: number;
+  totalDispensedQuantity: number;
+  isRefillable: boolean;
+  refillsUsed: number;
+  refillsRemaining: number;
+  nextRefillEligibleDate: string | null;
 }
 
 export interface DispensingLookupItemDto {
@@ -24,6 +43,13 @@ export interface DispensingLookupItemDto {
   dispensedQuantity: number;
   remainingQuantity: number;
   availableQuantity: number;
+  isRefillable: boolean;
+  refillsAllowed: number;
+  refillsUsed: number;
+  refillsRemaining: number;
+  refillIntervalDays: number;
+  nextRefillEligibleDate: string | null;
+  canRequestRefill: boolean;
 }
 
 export interface DispensingLookupResponse {

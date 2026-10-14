@@ -1,14 +1,7 @@
-import { AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
-import { startOfDay } from '../../../core/utils/date-utils';
+import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { notInFuture } from '../../../core/utils/date-utils';
 
-/** Rejects dates after today (used for date of birth / issue date). */
-export function notInFuture(control: FormControl<Date | null>): Record<string, boolean> | null {
-  const value = control.value;
-  if (!value) {
-    return null;
-  }
-  return startOfDay(value) <= startOfDay(new Date()) ? null : { futureDate: true };
-}
+export { notInFuture };
 
 /**
  * Requires `refillsAllowed` to be an integer >= 1, but ONLY while the sibling

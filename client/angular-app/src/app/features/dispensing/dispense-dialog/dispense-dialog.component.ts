@@ -2,19 +2,17 @@ import { Component, inject, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogTitle, MatDialogContent, MatDialogActions, MatDialogClose } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
-import { DispensePrescriptionResponse, MedicineForm, MedicineUnit } from '../../../core/models/api.models';
-import { ToastService } from '../../../core/services/toast.service';
-import { localizedVariantName, pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
+import { DispensePrescriptionResponse, canRequestRefillOf, refillsRemainingOf } from '../../../core/models/api.models';
 import { runSubmit } from '../../../core/utils/dialog-helpers';
 import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../../prescriptions/prescriptions.service';
 import { DispensingService } from '../dispensing.service';
-import { DispenseDialogData, DispensePickerResult, DispenseView, DispenseViewItem } from '../dispense.models';
+import { DispenseDialogData, DispensePickerResult, DispenseView, DispenseViewItem, dispenseMedicineName, dispenseVariantLabel } from '../dispense.models';
 
 function isPicked(data: DispenseDialogData): data is DispensePickerResult {
   return typeof data === 'object' && data !== null && 'lookup' in data;
@@ -30,9 +28,7 @@ function isPicked(data: DispenseDialogData): data is DispensePickerResult {
 export class DispenseDialogComponent {
   private readonly prescriptionsService = inject(PrescriptionsService);
   private readonly dispensingService = inject(DispensingService);
-  private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
-  private readonly dialogRef = inject(MatDialogRef<DispenseDialogComponent>);
 
   private readonly data = inject<DispenseDialogData>(MAT_DIALOG_DATA);
   protected readonly view = signal<DispenseView | null>(
@@ -52,7 +48,11 @@ export class DispenseDialogComponent {
             dosageInstructions: i.dosageInstructions,
             prescribedQuantity: i.prescribedQuantity,
             remainingQuantity: i.remainingQuantity,
-            availableQuantity: i.availableQuantity
+            availableQuantity: i.availableQuantity,
+            isRefillable: i.isRefillable,
+            refillsRemaining: i.refillsRemaining,
+            nextRefillEligibleDate: i.nextRefillEligibleDate,
+            canRequestRefill: i.canRequestRefill
           }))
         }
       : null
@@ -66,18 +66,12 @@ export class DispenseDialogComponent {
     return r.dispensedQuantity < r.requestedQuantity;
   }
 
-  protected medName(item: DispenseViewItem): string {
-    return pickLocalizedMedicineName(item, this.translate);
+  protected medName(item: Pick<DispenseViewItem, 'medicineName' | 'medicineNameAr'>): string {
+    return dispenseMedicineName(item, this.translate);
   }
 
-  protected variantLabel(item: DispenseViewItem): string {
-    const label = localizedVariantName(
-      item,
-      MedicineForm as unknown as Record<number, string>,
-      MedicineUnit as unknown as Record<number, string>,
-      this.translate
-    );
-    return label || item.variantName;
+  protected variantLabel(item: Pick<DispenseViewItem, 'form' | 'unit' | 'strength' | 'variantName'>): string {
+    return dispenseVariantLabel(item, this.translate);
   }
 
   constructor() {
@@ -103,7 +97,11 @@ export class DispenseDialogComponent {
               dosageInstructions: i.dosageInstructions,
               prescribedQuantity: i.prescribedQuantity,
               remainingQuantity: i.remainingQuantity,
-              availableQuantity: null
+              availableQuantity: null,
+              isRefillable: i.isRefillable,
+              refillsRemaining: refillsRemainingOf(i),
+              nextRefillEligibleDate: i.nextRefillEligibleDate ?? null,
+              canRequestRefill: canRequestRefillOf(i)
             }))
           };
           return mapped;
@@ -128,18 +126,22 @@ export class DispenseDialogComponent {
           phoneNumber: p.patientPhoneNumber,
           patientName: p.patientName,
           items: p.items.map((i) => ({
-            id: i.id,
-            medicineName: i.medicineName,
-            medicineNameAr: i.medicineNameAr ?? null,
-            variantName: i.variantName,
-            form: i.form,
-            unit: i.unit,
-            strength: i.strength,
-            dosageInstructions: i.dosageInstructions,
-            prescribedQuantity: i.prescribedQuantity,
-            remainingQuantity: i.remainingQuantity,
-            availableQuantity: null
-          }))
+              id: i.id,
+              medicineName: i.medicineName,
+              medicineNameAr: i.medicineNameAr ?? null,
+              variantName: i.variantName,
+              form: i.form,
+              unit: i.unit,
+              strength: i.strength,
+              dosageInstructions: i.dosageInstructions,
+              prescribedQuantity: i.prescribedQuantity,
+              remainingQuantity: i.remainingQuantity,
+              availableQuantity: null,
+              isRefillable: i.isRefillable,
+              refillsRemaining: refillsRemainingOf(i),
+              nextRefillEligibleDate: i.nextRefillEligibleDate ?? null,
+              canRequestRefill: canRequestRefillOf(i)
+            }))
         };
         return mapped;
       },
@@ -159,12 +161,9 @@ export class DispenseDialogComponent {
           notes: this.notes.value.trim()
         }),
       (result) => {
-        if (result.warnings.length > 0) {
-          this.dispenseResult.set(result);
-        } else {
-          this.toast.show(this.translate.instant('dialogs.dispense.success'), 'success');
-          this.dialogRef.close(true);
-        }
+        // Always show the result view: it now carries the per-item outcome
+        // including refill state, which the pharmacist must hand to the patient.
+        this.dispenseResult.set(result);
       }
     );
   }

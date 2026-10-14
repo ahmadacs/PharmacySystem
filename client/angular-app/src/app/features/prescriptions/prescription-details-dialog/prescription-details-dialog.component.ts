@@ -18,13 +18,13 @@ import {
   MatRow
 } from '@angular/material/table';
 import { Permissions } from '../../../core/constants/permissions';
-import { PrescriptionDetailsDto, PrescriptionItemDto } from '../../../core/models/api.models';
+import { PrescriptionDetailsDto, PrescriptionItemDto, canRequestRefillOf, hasAwaitingRefillOf, isAwaitingRefillOf, refillsRemainingOf } from '../../../core/models/api.models';
 import { pickLocalizedMedicineName } from '../../../core/utils/localized-name.utils';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
-import { confirmAndMutate, DialogGuardService } from '../../../core/utils/dialog-helpers';
+import { confirmAndMutate } from '../../../core/utils/dialog-helpers';
 import { reloadDetails } from '../../../core/utils/entity-helpers';
 import { PrescriptionsService } from '../prescriptions.service';
 import { ExportService } from '../../../core/services/export.service';
@@ -64,7 +64,6 @@ export class PrescriptionDetailsDialogComponent {
   private readonly prescriptionsService = inject(PrescriptionsService);
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(MatDialog);
-  private readonly dialogGuards = inject(DialogGuardService);
   private readonly authStore = inject(AuthStore);
   private readonly dialogRef = inject(MatDialogRef<PrescriptionDetailsDialogComponent>);
   private readonly exportService = inject(ExportService);
@@ -111,12 +110,19 @@ export class PrescriptionDetailsDialogComponent {
   }
 
   protected canRefillItem(item: PrescriptionItemDto): boolean {
-    return (
-      this.canManage() &&
-      item.isRefillable &&
-      item.dispensedQuantity >= item.prescribedQuantity &&
-      item.refillsUsed < item.refillsAllowed
-    );
+    return this.canManage() && canRequestRefillOf(item);
+  }
+
+  protected isAwaitingRefill(item: PrescriptionItemDto): boolean {
+    return isAwaitingRefillOf(item);
+  }
+
+  protected refillsRemaining(item: PrescriptionItemDto): number {
+    return refillsRemainingOf(item);
+  }
+
+  protected hasAwaitingRefill(p: PrescriptionDetailsDto): boolean {
+    return hasAwaitingRefillOf(p);
   }
 
   protected eligibleItems(p: PrescriptionDetailsDto): PrescriptionItemDto[] {
@@ -136,7 +142,6 @@ export class PrescriptionDetailsDialogComponent {
       () => this.prescriptionsService.cancel(id),
       this.translate.instant('dialogs.prescriptionDetails.cancelled'),
       () => this.dialogRef.close(true),
-      this.dialogGuards.guard(Permissions.PrescriptionsManageOwn)
     );
   }
 
