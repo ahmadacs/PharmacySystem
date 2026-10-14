@@ -80,9 +80,7 @@ export class AuditLogDetailsDialogComponent {
     return auditDeltaText(h);
   }
 
-  protected shortId(id: string): string {
-    return shortAuditId(id);
-  }
+  protected readonly shortId = shortAuditId;
 
   /** Shortens raw GUID change-values (FK ids) to #XXXXXXXX; leaves real values untouched. */
   protected displayValue(value: string | null): string {

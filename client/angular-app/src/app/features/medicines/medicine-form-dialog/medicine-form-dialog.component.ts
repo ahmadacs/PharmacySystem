@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import {
   FormArray,
@@ -21,9 +21,9 @@ import { CategoryEnum, MedicineForm, MedicineListItemDto, MedicineUnit } from '.
 import { ToastService } from '../../../core/services/toast.service';
 import { FileService } from '../../../core/services/file.service';
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { clearPickedFile, handlePickedFile } from '../../../core/utils/file-upload.utils';
 import { numericEnumValues } from '../../../core/utils/entity-helpers';
 import { MedicinesService } from '../medicines.service';
-import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-medicine-form-dialog',
@@ -121,20 +121,11 @@ export class MedicineFormDialogComponent {
   }
 
   onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const selected = input.files[0];
-      const error = this.fileService.validateUpload(selected);
-      if (error) {
-        this.toast.show(error, 'error');
-        return;
-      }
-      this.file.set(selected);
-    }
+    handlePickedFile(event, this.file, this.fileService, this.toast);
   }
 
   removeFile(): void {
-    this.file.set(null);
+    clearPickedFile(this.file);
   }
 
   async submit(): Promise<void> {

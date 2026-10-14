@@ -42,7 +42,7 @@
           }
           {{ 'auth.loginButton' | translate }}
         </button>
-        <button mat-button type="button" class="login__lang-inside" style="background: transparent; box-shadow: none; margin-top: 0.5rem;" (click)="localizationService.toggle()">
+        <button mat-button type="button" class="login__lang-inside auth-page__lang" (click)="localizationService.toggle()">
           <mat-icon>language</mat-icon>
           {{ 'common.language' | translate }}
         </button>

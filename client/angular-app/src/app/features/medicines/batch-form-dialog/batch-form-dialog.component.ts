@@ -14,8 +14,9 @@ import { MedicineDetailsDto } from '../../../core/models/api.models';
 import { FileService } from '../../../core/services/file.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { runFormSubmit } from '../../../core/utils/dialog-helpers';
+import { clearPickedFile, handlePickedFile } from '../../../core/utils/file-upload.utils';
 import { reloadDetails } from '../../../core/utils/entity-helpers';
-import { futureOrEqualDate, startOfDay, toDateString } from '../../../core/utils/date-utils';
+import { futureOrEqualDate, expiryBeforeManufacture, startOfDay, toDateString } from '../../../core/utils/date-utils';
 import { MedicinesService } from '../medicines.service';
 
 @Component({
@@ -78,18 +79,7 @@ export class BatchFormDialogComponent {
       supplierName: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(200)] })
     },
     {
-      validators: (control) => {
-        const group = control as FormGroup;
-        const expiryDate = group.controls['expiryDate'].value as Date | null;
-        const manufactureDate = group.controls['manufactureDate'].value as Date | null;
-        return (
-          expiryDate &&
-          manufactureDate &&
-          startOfDay(expiryDate) < startOfDay(manufactureDate)
-        )
-          ? { expiryBeforeManufacture: true }
-          : null;
-      }
+      validators: expiryBeforeManufacture
     }
   );
 
@@ -115,20 +105,11 @@ export class BatchFormDialogComponent {
   });
 
   onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      const error = this.fileService.validateUpload(file);
-      if (error) {
-        this.toast.show(error, 'error');
-        return;
-      }
-      this.file.set(file);
-    }
+    handlePickedFile(event, this.file, this.fileService, this.toast);
   }
 
   removeFile(): void {
-    this.file.set(null);
+    clearPickedFile(this.file);
   }
 
   async submit(): Promise<void> {

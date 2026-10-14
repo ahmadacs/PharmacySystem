@@ -10,9 +10,6 @@
   <mat-icon>notifications</mat-icon>
 </button>
 
-<!-- Suppress NG8113: TranslatePipe is used via translateMessage() method -->
-<span style="display:none">{{ 'notifications.title' | translate }}</span>
-
 <mat-menu #menu="matMenu" xPosition="before" yPosition="below" class="notification-menu" panelClass="notification-menu-panel">
   <div class="notification-dropdown" (click)="$event.stopPropagation()">
     <div class="notification-dropdown__header">

@@ -1,8 +1,9 @@
 import { Directive, HostListener, inject } from '@angular/core';
 import { NgControl } from '@angular/forms';
 
+// appEnglishDigits kept as a deprecated alias for existing templates.
 @Directive({
-  selector: 'input[appSaudiPhoneDigits], input[appEnglishDigits]',
+  selector: 'input[appSaudiPhoneDigits], input[appDigitsOnly], input[appEnglishDigits]',
   standalone: true
 })
 export class SaudiPhoneDigitsDirective {

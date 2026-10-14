@@ -27,7 +27,7 @@ import { Permissions } from '../../../core/constants/permissions';
 import { UserDto, UserRole } from '../../../core/models/api.models';
 import { ToastService } from '../../../core/services/toast.service';
 import { createPagedResource, createPagedTable, buildPagedParams, refreshPaged } from '../../../core/utils/paged-table.utils';
-import { confirmAndMutate, openForResult, DialogGuardService } from '../../../core/utils/dialog-helpers';
+import { confirmAndMutate, openForResult } from '../../../core/utils/dialog-helpers';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -78,7 +78,6 @@ export class UsersListComponent {
   private readonly usersService = inject(UsersService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
-  private readonly dialogGuards = inject(DialogGuardService);
 
   protected readonly permissions = Permissions;
   protected readonly roles = USER_ROLES;
@@ -121,7 +120,7 @@ export class UsersListComponent {
   openCreate(): void {
     openForResult(this.dialog, UserFormDialogComponent, { width: '560px', maxWidth: '95vw', maxHeight: '90dvh' }, () => {
       this.refreshUsers();
-    }, this.dialogGuards.guard(Permissions.UsersManage));
+    });
   }
 
   async toggleActive(user: UserDto): Promise<void> {
@@ -137,7 +136,6 @@ export class UsersListComponent {
       () => this.usersService.setActive(user.id, !user.isActive),
       this.translate.instant(user.isActive ? 'users.deactivated' : 'users.activated'),
       () => this.refreshUsers(),
-      this.dialogGuards.guard(Permissions.UsersManage)
     );
   }
 }

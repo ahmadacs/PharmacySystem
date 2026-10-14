@@ -681,17 +681,16 @@ html[dir="rtl"] {
   }
 }
 
-// Medium screens: a centered 980px dialog touches/slides under the open
-// side-sidenav (230px) on any viewport below ~1440px. Shift it into the
-// content area instead — only while a side-mode sidenav is actually open
-// (Material toggles .mat-drawer-opened on the drawer host). Pure CSS: no
-// TypeScript, no document access, and it reacts live to sidenav toggles.
-@media (min-width: 600px) and (max-width: 1479.98px) {
-  body:has(mat-sidenav.mat-drawer-side.mat-drawer-opened)
-    .mat-mdc-dialog-panel.sidenav-aware-dialog {
-    margin-inline-start: 230px;
-    max-width: calc(100vw - 230px - 32px) !important;
-  }
+// ── Dialogs: always exactly centered ────────────────────────────────────
+// Every dialog panel (present and future) is centered on both axes.
+// Scoped to dialog panes only — menus, selects and snackbars keep theirs.
+.cdk-global-overlay-wrapper:has(> .mat-mdc-dialog-panel) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.mat-mdc-dialog-panel {
+  margin: 0 !important;
 }
 
 // ── Responsive dialog system (all viewports) ──────────────────────────

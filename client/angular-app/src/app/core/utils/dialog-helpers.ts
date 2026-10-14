@@ -1,10 +1,8 @@
 import { ComponentType } from '@angular/cdk/portal';
-import { Injectable, inject, WritableSignal } from '@angular/core';
+import { WritableSignal } from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
-import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { AuthStore } from '../auth/auth.store';
 import { ToastService } from '../services/toast.service';
 import {
   ConfirmDialogComponent,
@@ -12,110 +10,30 @@ import {
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
- * Defense-in-depth for dialogs: trigger buttons are already hidden without
- * the permission (`*appHasPermission`), but `dialog.open` calls must not rely
- * on that alone — a hidden button can still be invoked from the console.
- * Pass to `openForResult`/`confirmAndMutate`, or check directly with
- * `requireDialogPermission` before a raw `dialog.open`.
+ * Standard dialog sizes. Replaces the scattered '640px'/'520px'/'720px'
+ * literals across the list screens.
  */
-export interface DialogPermissionGuard {
-  authStore: AuthStore;
-  toast: ToastService;
-  translate: TranslateService;
-  /** At least one must be held (mirrors route guards accepting alternatives). */
-  permissions: string[];
-}
-
-/**
- * Central factory replacing the 7x repeated
- * `private guard(...permissions)` in list/dialog components.
- *
- * WARNING: `useDialogGuard()` calls `inject()` internally, so it is ONLY
- * safe in an injection context (field initializers / constructors).
- * Calling it inside a click handler / method (e.g.
- * `openForResult(..., useDialogGuard(P))`) throws NG0203 and the dialog
- * never opens. For event handlers, inject `DialogGuardService` once as a
- * field and call `dialogGuards.guard(...)` instead — that performs no
- * `inject()` at call time and is always safe.
- */
-export function useDialogGuard(...permissions: string[]): DialogPermissionGuard {
-  return {
-    authStore: inject(AuthStore),
-    toast: inject(ToastService),
-    translate: inject(TranslateService),
-    permissions,
-  };
-}
-
-/**
- * Root-provided guard factory safe to call from ANY context, including
- * event handlers. Inject it once as a component field (injection context):
- *
- *   private readonly dialogGuards = inject(DialogGuardService);
- *
- * then in handlers:
- *
- *   openForResult(..., this.dialogGuards.guard(Permissions.X))
- *
- * No `inject()` runs at call time — the service captured its deps at
- * construction — so NG0203 can never fire and dialogs always open.
- */
-@Injectable({ providedIn: 'root' })
-export class DialogGuardService {
-  private readonly authStore = inject(AuthStore);
-  private readonly toast = inject(ToastService);
-  private readonly translate = inject(TranslateService);
-
-  guard(...permissions: string[]): DialogPermissionGuard {
-    return {
-      authStore: this.authStore,
-      toast: this.toast,
-      translate: this.translate,
-      permissions,
-    };
-  }
-
-  allows(...permissions: string[]): boolean {
-    return permissions.some((p) => this.authStore.hasPermission(p));
-  }
-}
-
-/** Explicit factory with no `inject()` — safe in event handlers. */
-export function createDialogGuard(
-  authStore: AuthStore,
-  toast: ToastService,
-  translate: TranslateService,
-  ...permissions: string[]
-): DialogPermissionGuard {
-  return { authStore, toast, translate, permissions };
-}
-
-/** Shows an "access denied" toast and returns false when access is denied. */
-export function requireDialogPermission(guard: DialogPermissionGuard): boolean {
-  if (guard.permissions.some((permission) => guard.authStore.hasPermission(permission))) {
-    return true;
-  }
-  guard.toast.show(guard.translate.instant('status.forbiddenTitle'), 'error');
-  return false;
-}
+export const DialogSizes = {
+  form: { width: '640px', maxWidth: '95vw', maxHeight: '90dvh' },
+  formLarge: { width: '980px', maxWidth: '96vw', maxHeight: '90dvh' },
+  narrow: { width: '520px', maxWidth: '95vw', maxHeight: '90dvh' },
+  details: { width: '720px', maxWidth: '95vw', maxHeight: '90dvh' },
+  detailsLarge: { width: '800px', maxWidth: '95vw', maxHeight: '90dvh' },
+  wide: { width: '920px', maxWidth: '94vw', maxHeight: '90dvh' },
+} as const;
 
 /**
  * Opens a dialog and invokes `onResult` only when it closes with a truthy
- * result. Replaces the 8x repeated
- * `dialog.open(...).afterClosed().subscribe((x) => { if (x) refresh(); })`
- * blocks across the list screens. Fire-and-forget opens (details dialogs)
- * keep using `MatDialog.open` directly.
+ * result. Buttons are gated with `*appHasPermission` and the API enforces
+ * authorization server-side, so no client-side guard is needed here.
+ * Fire-and-forget opens (details dialogs) keep using `MatDialog.open` directly.
  */
 export function openForResult<TComponent, TData, TResult>(
   dialog: MatDialog,
   component: ComponentType<TComponent>,
   config: MatDialogConfig<TData>,
   onResult: (result: TResult) => void,
-  guard?: DialogPermissionGuard,
 ): MatDialogRef<TComponent, TResult> | null {
-  if (guard && !requireDialogPermission(guard)) {
-    return null;
-  }
   const ref = dialog.open<TComponent, TData, TResult>(component, config);
   ref.afterClosed().subscribe((result: TResult | undefined) => {
     if (result) {
@@ -138,11 +56,7 @@ export async function confirmAndMutate(
   action: () => Promise<unknown>,
   successMessage: string,
   onSuccess?: () => void,
-  guard?: DialogPermissionGuard,
 ): Promise<void> {
-  if (guard && !requireDialogPermission(guard)) {
-    return;
-  }
   const confirmed = await firstValueFrom(
     dialog
       .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {

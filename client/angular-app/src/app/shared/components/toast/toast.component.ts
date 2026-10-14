@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import type { ToastType } from '../../../core/services/toast.service';
 
-export interface ToastData {
+interface ToastData {
   message: string;
   type: ToastType;
   closeLabel: string;

@@ -110,4 +110,10 @@
       &:hover { text-decoration: underline; }
     }
   }
+
+  &__lang {
+    background: transparent;
+    box-shadow: none;
+    margin-top: 0.5rem;
+  }
 }

@@ -28,7 +28,7 @@ import {
   MedicineInventorySummaryDto
 } from '../../../core/models/api.models';
 import { pickLocalizedGenericName, pickLocalizedMedicineName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
-import { openForResult, requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
+import { openForResult, DialogSizes } from '../../../core/utils/dialog-helpers';
 import type { PagedTable } from '../../../core/utils/paged-table.utils';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -82,7 +82,6 @@ import { BatchExpiryStatus, InventoryFacade, StatusFilter, StockFilter } from '.
 })
 export class InventoryComponent {
   private readonly dialog = inject(MatDialog);
-  private readonly dialogGuards = inject(DialogGuardService);
   protected readonly translate = inject(TranslateService);
   protected readonly facade = inject(InventoryFacade);
 
@@ -117,13 +116,8 @@ export class InventoryComponent {
 
   // ---- Medicine detail dialog (medicine -> variants -> batches) ----
   protected openDetail(row: MedicineInventorySummaryDto): void {
-    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.InventoryView))) {
-      return;
-    }
     this.dialog.open(MedicineDetailDialogComponent, {
-      width: '800px',
-      maxWidth: '95vw',
-      maxHeight: '90dvh',
+      ...DialogSizes.detailsLarge,
       data: { id: row.id, name: row.name }
     });
   }
@@ -137,8 +131,8 @@ export class InventoryComponent {
   }
 
   openAdjust(): void {
-    openForResult(this.dialog, AdjustStockDialogComponent, { width: '520px', maxWidth: '95vw', maxHeight: '90dvh' }, () => {
+    openForResult(this.dialog, AdjustStockDialogComponent, { ...DialogSizes.narrow }, () => {
       this.facade.reloadAfterAdjust();
-    }, this.dialogGuards.guard(Permissions.InventoryAdjust));
+    });
   }
 }

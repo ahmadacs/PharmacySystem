@@ -1,6 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { EnumTranslatePipe } from '../../../shared/pipes/enum-translate.pipe';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from '@angular/material/dialog';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -10,12 +10,8 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { CategoryEnum, MedicineDetailsDto, MedicineForm, MedicineUnit } from '../../../core/models/api.models';
 import { RiyadhDatePipe } from '../../../shared/pipes/riyadh-date.pipe';
 import { MedicinesService } from '../../medicines/medicines.service';
-import { TranslateService } from '@ngx-translate/core';
-import { pickLocalizedGenericName, pickLocalizedName } from '../../../core/utils/localized-name.utils';
-import { AttachmentViewerService } from '../../../core/services/attachment-viewer.service';
-import { FileEntityType } from '../../../core/services/file.service';
-import { AuthStore } from '../../../core/auth/auth.store';
-import { Permissions } from '../../../core/constants/permissions';
+import { reloadDetails } from '../../../core/utils/entity-helpers';
+import { MedicineDetailsBase } from '../../medicines/medicine-details-dialog/medicine-details-base';
 
 export interface MedicineDetailDialogData {
   id: string;
@@ -43,36 +39,14 @@ export interface MedicineDetailDialogData {
   templateUrl: './medicine-detail-dialog.component.html',
   styleUrl: './medicine-detail-dialog.component.scss'
 })
-export class MedicineDetailDialogComponent {
+export class MedicineDetailDialogComponent extends MedicineDetailsBase {
   private readonly medicinesService = inject(MedicinesService);
-  private readonly viewer = inject(AttachmentViewerService);
-  protected readonly translate = inject(TranslateService);
-  protected readonly authStore = inject(AuthStore);
 
   readonly data = inject<MedicineDetailDialogData>(MAT_DIALOG_DATA);
   protected readonly medicine = signal<MedicineDetailsDto | null>(null);
 
   constructor() {
-    void this.medicinesService
-      .get(this.data.id)
-      .then((details) => this.medicine.set(details));
-  }
-
-  displayName(details: MedicineDetailsDto): string { return pickLocalizedName(details, this.translate); }
-  genericDisplay(details: MedicineDetailsDto): string { return pickLocalizedGenericName(details, this.translate); }
-
-  protected canViewMedicineAttachments(): boolean {
-    return this.authStore.hasPermission(Permissions.MedicinesView);
-  }
-
-  protected canViewBatchAttachments(): boolean {
-    return (
-      this.authStore.hasPermission(Permissions.InventoryView) ||
-      this.authStore.hasPermission(Permissions.InventoryAdjust)
-    );
-  }
-
-  protected openImages(entityType: FileEntityType, entityId: string): void {
-    this.viewer.open(entityType, entityId);
+    super();
+    void reloadDetails(this.medicine, () => this.medicinesService.get(this.data.id));
   }
 }

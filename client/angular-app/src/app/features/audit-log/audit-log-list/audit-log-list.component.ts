@@ -20,8 +20,7 @@ import {
   MatRow
 } from '@angular/material/table';
 import { environment } from '../../../../environments/environment';
-import { Permissions } from '../../../core/constants/permissions';
-import { requireDialogPermission, DialogGuardService } from '../../../core/utils/dialog-helpers';
+import { DialogSizes } from '../../../core/utils/dialog-helpers';
 import { AuditAction, AuditEntryDto } from '../../../core/models/api.models';
 import { createPagedResource, createPagedTable, buildPagedParams } from '../../../core/utils/paged-table.utils';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -68,6 +67,8 @@ export const AUDIT_ACTIONS: AuditAction[] = ['Created', 'Updated', 'Deleted'];
   styleUrls: ['./audit-log-list.component.scss']
 })
 export class AuditLogListComponent {
+  private readonly dialog = inject(MatDialog);
+
   protected readonly displayedColumns = ['action', 'entity', 'user', 'changedAt'];
   protected readonly actions = AUDIT_ACTIONS;
 
@@ -79,9 +80,6 @@ export class AuditLogListComponent {
   protected readonly sortDir = this.table.sortDir;
   protected readonly searchControl = this.table.searchControl;
   protected readonly action = signal('');
-
-  private readonly dialog = inject(MatDialog);
-  private readonly dialogGuards = inject(DialogGuardService);
 
   protected readonly audit = createPagedResource<AuditEntryDto>(() => {
     const params = buildPagedParams(this.table, { action: this.action() || null });
@@ -103,13 +101,8 @@ export class AuditLogListComponent {
   }
 
   protected openDetails(row: AuditEntryDto): void {
-    if (!requireDialogPermission(this.dialogGuards.guard(Permissions.AuditLogView))) {
-      return;
-    }
-    this.dialog.open(AuditLogDetailsDialogComponent, { width: '720px', maxWidth: '95vw', maxHeight: '90dvh', data: row });
+    this.dialog.open(AuditLogDetailsDialogComponent, { ...DialogSizes.details, data: row });
   }
 
-  protected shortId(id: string): string {
-    return shortAuditId(id);
-  }
+  protected readonly shortId = shortAuditId;
 }

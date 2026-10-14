@@ -1,5 +1,6 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
+import { translateLookup } from '../../core/utils/translate-lookup';
 import { CategoryEnum, MedicineForm, MedicineUnit } from '../../core/models/api.models';
 
 const PREFIX_MAP: Record<string, string> = {
@@ -34,6 +35,10 @@ function toTranslationKey(enumName: string): string {
   return enumName.charAt(0).toLowerCase() + enumName.slice(1);
 }
 
+function toLookupName(enumName: string): string {
+  return enumName === '%' ? 'percent' : enumName;
+}
+
 @Pipe({
   name: 'enumTranslate',
   standalone: true,
@@ -63,22 +68,15 @@ export class EnumTranslatePipe implements PipeTransform {
     }
 
     const prefix = PREFIX_MAP[enumType] ?? `enums.${enumType}`;
-    const keyPart = toTranslationKey(enumName);
-    const fullKey = `${prefix}.${keyPart}`;
 
-    // Also try lowercased full version as fallback (for units like Mg -> mg)
-    const lowerKey = `${prefix}.${enumName.toLowerCase()}`;
+    // Single source of truth for the 3-step lookup (camelCase -> lower -> original).
+    const translated = translateLookup(this.translate, prefix, toLookupName(enumName));
+    if (translated !== null) return translated;
 
-    let translated = this.translate.instant(fullKey);
-    if (translated !== fullKey) return translated;
-
-    translated = this.translate.instant(lowerKey);
-    if (translated !== lowerKey) return translated;
-
-    // Final fallback: try original case
-    const originalKey = `${prefix}.${enumName}`;
-    translated = this.translate.instant(originalKey);
-    if (translated !== originalKey) return translated;
+    // Legacy fallback for keys stored with an explicit lowercaseFirst transform.
+    const legacyKey = `${prefix}.${toTranslationKey(enumName)}`;
+    const legacy = this.translate.instant(legacyKey);
+    if (legacy !== legacyKey) return legacy;
 
     return enumName;
   }

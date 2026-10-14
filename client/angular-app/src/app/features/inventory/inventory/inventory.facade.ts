@@ -9,7 +9,6 @@ import {
   LowStockDto,
   MedicineBatchDto,
   MedicineInventorySummaryDto,
-  PagedResult,
   StockStatus,
 } from '../../../core/models/api.models';
 import { buildPagedParams, createPagedResource, createPagedTab, createPagedTable } from '../../../core/utils/paged-table.utils';
@@ -113,6 +112,3 @@ export class InventoryFacade {
     void this.warningAlerts.reload();
   }
 }
-
-// Re-exported for components that still import the types from the old location.
-export type { PagedResult };

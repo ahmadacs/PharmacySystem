@@ -16,7 +16,7 @@
         <mat-form-field appearance="outline" class="auth-page__field"><mat-label>{{ 'auth.password' | translate }}</mat-label><input matInput formControlName="password" type="password" autocomplete="new-password" /><mat-error>{{ 'auth.passwordMinLength' | translate }}</mat-error></mat-form-field>
         <mat-form-field appearance="outline" class="auth-page__field"><mat-label>{{ 'auth.confirmPassword' | translate }}</mat-label><input matInput formControlName="confirmPassword" type="password" autocomplete="new-password" /><mat-error>{{ 'auth.confirmRequired' | translate }}</mat-error></mat-form-field>
         <button mat-flat-button color="primary" class="auth-page__submit" type="submit" [disabled]="submitting()">{{ 'auth.createAccountButton' | translate }}</button>
-        <button mat-button type="button" style="background: transparent; box-shadow: none; margin-top: 0.5rem;" (click)="localizationService.toggle()">
+        <button mat-button type="button" class="auth-page__lang" (click)="localizationService.toggle()">
           <mat-icon>language</mat-icon>
           {{ 'common.language' | translate }}
         </button>

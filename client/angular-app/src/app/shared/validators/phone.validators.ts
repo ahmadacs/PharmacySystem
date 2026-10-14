@@ -6,7 +6,7 @@ export const SAUDI_PHONE_SUFFIX_PATTERN = /^\d{8}$/;
 
 export const SAUDI_PHONE_PREFIX = '+9665';
 
-export const PERSON_NAME_PATTERN = /^[\p{L}][\p{L} .'-]*$/u;
+const PERSON_NAME_PATTERN = /^[\p{L}][\p{L} .'-]*$/u;
 
 export function personNameValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {

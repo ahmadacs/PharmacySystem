@@ -1,16 +1,17 @@
 import { TranslateService } from '@ngx-translate/core';
+import { translateLookup } from './translate-lookup';
 
 /**
  * Single place that knows how the current language is exposed by
  * @ngx-translate/core v18 (signal in v18, plain string in older versions).
  * Replaces the `as any` casts scattered across inventory/medicine dialogs.
  */
-export function currentLanguage(translate: TranslateService): string {
+function currentLanguage(translate: TranslateService): string {
   const raw: unknown = (translate as { currentLang: unknown }).currentLang;
   return typeof raw === 'function' ? (raw as () => string)() : String(raw ?? 'en');
 }
 
-export function isArabicLang(translate: TranslateService): boolean {
+function isArabicLang(translate: TranslateService): boolean {
   return currentLanguage(translate) === 'ar';
 }
 
@@ -64,14 +65,8 @@ function lookupEnumLabel(prefix: string, key: string, translate: TranslateServic
   if (!key) {
     return '';
   }
-  const fullKey = `${prefix}.${key}`;
-  const translated = translate.instant(fullKey);
-  if (translated !== fullKey) {
-    return translated;
-  }
-  const lowerKey = `${prefix}.${key.toLowerCase()}`;
-  const lowerTranslated = translate.instant(lowerKey);
-  return lowerTranslated !== lowerKey ? lowerTranslated : key;
+  // Reuse the shared 3-step lookup so pipe and utils can't drift apart.
+  return translateLookup(translate, prefix, key) ?? key;
 }
 
 export function localizedVariantName(
