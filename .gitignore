@@ -34,6 +34,8 @@ out/
 # Logs
 *.log
 logs/
+Logs/
+src/WebApi/Logs/
 
 # Docker
 .docker/
@@ -67,10 +69,6 @@ dist/
 .env
 .env.local
 .env.*.local
-
-# Logs
-*.log
-logs/
 
 # VS Code
 .vscode/*
