@@ -29,7 +29,7 @@ public sealed class MarkAllNotificationsReadCommandHandler : IRequestHandler<Mar
         _localizer = localizer;
     }
 
-        public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(MarkAllNotificationsReadCommand request, CancellationToken cancellationToken)
     {
         var authFailure = AuthGuard.RequireUserId(_currentUser, _localizer, out var userId);
         if (authFailure is not null)

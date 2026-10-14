@@ -13,7 +13,6 @@ using Domain.Entities.Staff;
 using Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence;
 
@@ -52,38 +51,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         ApplySoftDeleteFilters(builder);
-    }
-
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
-        configurationBuilder.Properties<DateTime?>().HaveConversion<UtcDateTimeNullableConverter>();
-    }
-
-    private sealed class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
-    {
-        public UtcDateTimeConverter() : base(
-            v => v.Kind == DateTimeKind.Utc
-                ? v
-                : v.Kind == DateTimeKind.Local
-                    ? v.ToUniversalTime()
-                    : DateTime.SpecifyKind(v, DateTimeKind.Utc),
-            v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
-        { }
-    }
-
-    private sealed class UtcDateTimeNullableConverter : ValueConverter<DateTime?, DateTime?>
-    {
-        public UtcDateTimeNullableConverter() : base(
-            v => v.HasValue
-                ? v.Value.Kind == DateTimeKind.Utc
-                    ? v
-                    : v.Value.Kind == DateTimeKind.Local
-                        ? v.Value.ToUniversalTime()
-                        : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)
-                : v,
-            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v)
-        { }
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

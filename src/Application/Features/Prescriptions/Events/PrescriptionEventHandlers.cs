@@ -9,43 +9,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Prescriptions.Events;
 
-public sealed class PrescriptionCreatedNotificationHandler : IDomainEventHandler<PrescriptionCreatedEvent>
-{
-    private readonly ILogger<PrescriptionCreatedNotificationHandler> _logger;
-    private readonly IRepository<Prescription> _prescriptions;
-    private readonly INotificationService _notifications;
-
-    public PrescriptionCreatedNotificationHandler(
-        ILogger<PrescriptionCreatedNotificationHandler> logger,
-        IRepository<Prescription> prescriptions,
-        INotificationService notifications)
-    {
-        _logger = logger;
-        _prescriptions = prescriptions;
-        _notifications = notifications;
-    }
-
-    public async Task HandleAsync(PrescriptionCreatedEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Prescription {PrescriptionId} created at {OccurredAtUtc}",
-            domainEvent.PrescriptionId, domainEvent.OccurredAtUtc);
-
-        var row = await _prescriptions.GetReadAsync(NotificationRowSpecs.Selector, p => p.Id == domainEvent.PrescriptionId, cancellationToken);
-        if (row is null)
-            return;
-
-        var create = new NotificationCreate(
-            NotificationType.PrescriptionCreated,
-            "New prescription",
-            $"A new prescription for {row.PatientName} ({row.ItemCount} item(s)) has been created.",
-            Data: JsonSerializer.Serialize(new { prescriptionId = row.Id }),
-            LocalizationKey: "notifications.newPrescription",
-            LocalizationParamsJson: JsonSerializer.Serialize(new { patientName = row.PatientName, count = row.ItemCount }));
-
-        await _notifications.SendToRoleAsync(Roles.Pharmacist, create, cancellationToken);
-    }
-}
-
 public sealed class PrescriptionCancelledNotificationHandler : IDomainEventHandler<PrescriptionCancelledEvent>
 {
     private readonly ILogger<PrescriptionCancelledNotificationHandler> _logger;
