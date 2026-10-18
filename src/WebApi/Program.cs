@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Application;
 using Application.Common.Interfaces;
@@ -133,21 +134,35 @@ services.AddAuthentication(options =>
                 if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
                     context.Token = accessToken;
                 return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var subject = context.Principal?
+                    .FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+                if (!Guid.TryParse(subject, out var userId))
+                {
+                    context.Fail("The token subject is missing or invalid.");
+                    return;
+                }
+
+                if (context.Principal?.Identity is not ClaimsIdentity identity)
+                    return;
+
+                var users = context.HttpContext.RequestServices.GetRequiredService<IUserManager>();
+                var account = await users.FindAsync(userId, context.HttpContext.RequestAborted);
+                if (account is null || !account.IsActive)
+                {
+                    context.Fail("The account is no longer active.");
+                    return;
+                }
+
+                foreach (var permission in account.Permissions)
+                    identity.AddClaim(new Claim(JwtClaimTypes.Permission, permission));
             }
         };
     });
 
-services.AddAuthorization(options =>
-    {
-
-        options.AddPolicy("Prescriptions.ViewOrOwn", policy =>
-            policy
-                .RequireAuthenticatedUser()
-                .RequireAssertion(ctx => ctx.User.Claims.Any(c =>
-                    c.Type == CurrentUserService.PermissionClaimType &&
-                    (c.Value == Permissions.Prescriptions.View ||
-                     c.Value == Permissions.Prescriptions.ManageOwn))));
-    });
+services.AddAuthorization();
 services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
 

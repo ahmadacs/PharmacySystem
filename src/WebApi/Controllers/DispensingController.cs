@@ -6,6 +6,7 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApi.Authorization;
 
 namespace WebApi.Controllers;
 
@@ -15,7 +16,7 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
 {
 
     [HttpGet]
-    [Authorize(Policy = Permissions.Dispensing.View)]
+    [HasPermission(Permissions.Dispensing.View)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public Task<IActionResult> List(
@@ -24,7 +25,7 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
         => OkResponse(query, cancellationToken);
 
     [HttpGet("lookup")]
-    [Authorize(Policy = Permissions.Dispensing.Create)]
+    [HasPermission(Permissions.Dispensing.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -34,7 +35,7 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
         => OkResponse(query, cancellationToken);
 
     [HttpPost]
-    [Authorize(Policy = Permissions.Dispensing.Create)]
+    [HasPermission(Permissions.Dispensing.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

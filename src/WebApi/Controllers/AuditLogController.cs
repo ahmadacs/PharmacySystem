@@ -2,12 +2,12 @@ using Application.Common.Security;
 using Application.Features.AuditLog.Queries;
 using Asp.Versioning;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApi.Authorization;
 
 namespace WebApi.Controllers;
 
-[Authorize(Policy = Permissions.AuditLog.View)]
+[HasPermission(Permissions.AuditLog.View)]
 [ApiVersion("1.0")]
 public sealed class AuditLogController(ISender sender) : ApiControllerBase(sender)
 {

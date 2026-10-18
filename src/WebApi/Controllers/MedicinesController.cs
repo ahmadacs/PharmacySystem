@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using WebApi.Authorization;
 using WebApi.Caching;
 
 namespace WebApi.Controllers;
@@ -17,7 +18,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
 {
 
     [HttpGet]
-    [Authorize(Policy = Permissions.Medicines.View)]
+    [HasPermission(Permissions.Medicines.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Medicines)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -27,7 +28,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = Permissions.Medicines.View)]
+    [HasPermission(Permissions.Medicines.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Medicines)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,7 +36,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         => OkResponse(new GetMedicineQuery(id), cancellationToken);
 
     [HttpPost]
-    [Authorize(Policy = Permissions.Medicines.Create)]
+    [HasPermission(Permissions.Medicines.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -43,7 +44,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         => Created(nameof(Get), new { id = Guid.Empty }, new CreateMedicineCommand(request), cancellationToken);
 
     [HttpPatch("{id:guid}")]
-    [Authorize(Policy = Permissions.Medicines.Update)]
+    [HasPermission(Permissions.Medicines.Update)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -56,14 +57,14 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Policy = Permissions.Medicines.Delete)]
+    [HasPermission(Permissions.Medicines.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         => NoContent(new DeleteMedicineCommand(id), cancellationToken);
 
     [HttpPost("{id:guid}/batches")]
-    [Authorize(Policy = Permissions.Medicines.Update)]
+    [HasPermission(Permissions.Medicines.Update)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -71,7 +72,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
         => Created(nameof(Get), new { id }, new AddBatchCommand(request), cancellationToken);
 
     [HttpPost("{id:guid}/variants")]
-    [Authorize(Policy = Permissions.Medicines.Update)]
+    [HasPermission(Permissions.Medicines.Update)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -84,7 +85,7 @@ public sealed class MedicinesController(ISender sender) : ApiControllerBase(send
     }
 
     [HttpDelete("batches/{batchId:guid}")]
-    [Authorize(Policy = Permissions.Medicines.Delete)]
+    [HasPermission(Permissions.Medicines.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<IActionResult> DeleteBatch(Guid batchId, CancellationToken cancellationToken)

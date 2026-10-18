@@ -15,9 +15,6 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
 {
     public const string RefreshCookieName = "RefreshToken";
 
-    private const string AccessTokenStorageNote =
-        "Access tokens are kept in browser memory by the client; refresh tokens travel only in this httpOnly cookie.";
-
     [EnableRateLimiting("auth")]
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]

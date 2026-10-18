@@ -6,6 +6,7 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApi.Authorization;
 
 namespace WebApi.Controllers;
 
@@ -15,7 +16,7 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
 {
 
     [HttpGet]
-    [Authorize(Policy = "Prescriptions.ViewOrOwn")]
+    [HasPermission(Permissions.Prescriptions.View, Permissions.Prescriptions.ManageOwn)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public Task<IActionResult> List(
@@ -24,7 +25,7 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
         => OkResponse(query, cancellationToken);
 
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "Prescriptions.ViewOrOwn")]
+    [HasPermission(Permissions.Prescriptions.View, Permissions.Prescriptions.ManageOwn)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -32,14 +33,14 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
         => OkResponse(new GetPrescriptionQuery(id), cancellationToken);
 
     [HttpPost]
-    [Authorize(Policy = Permissions.Prescriptions.Create)]
+    [HasPermission(Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public Task<IActionResult> Create([FromBody] CreatePrescriptionRequest request, CancellationToken cancellationToken)
         => Created(nameof(Get), new { id = Guid.Empty }, new CreatePrescriptionCommand(request), cancellationToken);
 
     [HttpPost("{id:guid}/cancel")]
-    [Authorize(Policy = Permissions.Prescriptions.ManageOwn)]
+    [HasPermission(Permissions.Prescriptions.ManageOwn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,7 +48,7 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
         => NoContent(new CancelPrescriptionCommand(id), cancellationToken);
 
     [HttpPost("{id:guid}/items/{itemId:guid}/refill")]
-    [Authorize(Policy = Permissions.Prescriptions.ManageOwn)]
+    [HasPermission(Permissions.Prescriptions.ManageOwn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,7 +57,7 @@ public sealed class PrescriptionsController(ISender sender) : ApiControllerBase(
         => NoContent(new RefillPrescriptionCommand(id, [itemId]), cancellationToken);
 
     [HttpPost("{id:guid}/refill")]
-    [Authorize(Policy = Permissions.Prescriptions.ManageOwn)]
+    [HasPermission(Permissions.Prescriptions.ManageOwn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

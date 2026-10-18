@@ -15,8 +15,6 @@ namespace Infrastructure.Services;
 
 public sealed class JwtTokenService : ITokenService
 {
-    private const string PermissionClaimType = "permission";
-
     private readonly JwtOptions _options;
     private readonly IUserManager _users;
     private readonly ApplicationDbContext _db;
@@ -103,12 +101,6 @@ public sealed class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             new(JwtRegisteredClaimNames.Name, account.FullName ?? account.Email)
         };
-
-        foreach (var role in account.Roles)
-            claims.Add(new Claim(ClaimTypes.Role, role));
-
-        foreach (var permission in account.Permissions)
-            claims.Add(new Claim(PermissionClaimType, permission));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);

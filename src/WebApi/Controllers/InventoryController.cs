@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using WebApi.Authorization;
 using WebApi.Caching;
 
 namespace WebApi.Controllers;
@@ -18,7 +19,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
 {
 
     [HttpGet("batches")]
-    [Authorize(Policy = Permissions.Inventory.View)]
+    [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -28,7 +29,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     [HttpGet("summary")]
-    [Authorize(Policy = Permissions.Inventory.View)]
+    [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -38,7 +39,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     [HttpGet("expiry-alerts")]
-    [Authorize(Policy = Permissions.Inventory.View)]
+    [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -48,7 +49,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     [HttpGet("low-stock")]
-    [Authorize(Policy = Permissions.Inventory.View)]
+    [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,7 +59,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     [HttpGet("adjustments")]
-    [Authorize(Policy = Permissions.Inventory.View)]
+    [HasPermission(Permissions.Inventory.View)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public Task<IActionResult> Adjustments(
@@ -67,7 +68,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => OkResponse(query, cancellationToken);
 
     [HttpPost("adjustments")]
-    [Authorize(Policy = Permissions.Inventory.Adjust)]
+    [HasPermission(Permissions.Inventory.Adjust)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -75,7 +76,7 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         => Created(nameof(Adjustments), new { id = Guid.Empty }, new AdjustInventoryCommand(request), cancellationToken);
 
     [HttpPost("receive")]
-    [Authorize(Policy = Permissions.Inventory.Adjust)]
+    [HasPermission(Permissions.Inventory.Adjust)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

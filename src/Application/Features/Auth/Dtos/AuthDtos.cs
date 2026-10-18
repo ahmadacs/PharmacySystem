@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Application.Common.Interfaces;
 
 namespace Application.Features.Auth.Dtos;
@@ -11,7 +12,7 @@ public sealed record CurrentUserDto(
 
 public sealed record AuthResponse(
     string AccessToken,
-    string RefreshToken,
+    [property: JsonIgnore] string RefreshToken,
     DateTime ExpiresAtUtc,
     CurrentUserDto User);
 

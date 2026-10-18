@@ -3,8 +3,8 @@ using Application.Features.Patients.Queries.GetPatientByPhone;
 using Application.Features.Patients.Queries.GetPatientPrescriptions;
 using Asp.Versioning;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApi.Authorization;
 
 namespace WebApi.Controllers;
 
@@ -13,7 +13,7 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
 {
 
     [HttpGet("by-phone/{phone}")]
-    [Authorize(Policy = Application.Common.Security.Permissions.Prescriptions.Create)]
+    [HasPermission(Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByPhone(string phone, CancellationToken cancellationToken)
     {
@@ -27,7 +27,7 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
     }
 
     [HttpGet("{id:guid}/prescriptions")]
-    [Authorize(Policy = Application.Common.Security.Permissions.Prescriptions.Create)]
+    [HasPermission(Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public Task<IActionResult> GetPrescriptions(Guid id, [FromQuery] int lookbackDays = 90, CancellationToken cancellationToken = default)
         => OkResponse(new GetPatientPrescriptionsQuery(id, lookbackDays), cancellationToken);
