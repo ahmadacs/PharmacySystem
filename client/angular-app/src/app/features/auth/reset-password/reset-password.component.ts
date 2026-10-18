@@ -24,7 +24,7 @@ export class ResetPasswordComponent {
     email: new FormControl(this.route.snapshot.queryParamMap.get('email') ?? '', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     token: new FormControl(this.route.snapshot.queryParamMap.get('token') ?? '', { nonNullable: true, validators: [Validators.required] }),
     newPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
-    confirmNewPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] })
+    confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] })
   });
 
   async submit(): Promise<void> {

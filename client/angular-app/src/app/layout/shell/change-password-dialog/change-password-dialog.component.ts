@@ -41,7 +41,7 @@ export class ChangePasswordDialogComponent {
       await this.authService.changePassword({
         currentPassword: this.currentPassword,
         newPassword: this.newPassword,
-        confirmNewPassword: this.confirmPassword
+        confirmPassword: this.confirmPassword
       });
       this.toast.show(this.translate.instant('dialogs.changePassword.changed'), 'success');
       this.dialogRef.close(true);

@@ -27,7 +27,7 @@ export interface RegisterRequest {
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
-  confirmNewPassword: string;
+  confirmPassword: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -38,5 +38,5 @@ export interface ResetPasswordRequest {
   email: string;
   token: string;
   newPassword: string;
-  confirmNewPassword: string;
+  confirmPassword: string;
 }
