@@ -79,7 +79,12 @@ public sealed class UserManagerService : IUserManager
 
         var valid = await _userManager.CheckPasswordAsync(user, password);
         if (valid)
+        {
+            await _userManager.ResetAccessFailedCountAsync(user);
             return PasswordCheckResult.Success;
+        }
+
+        await _userManager.AccessFailedAsync(user);
 
         return await _userManager.IsLockedOutAsync(user)
             ? PasswordCheckResult.LockedOut
@@ -250,14 +255,22 @@ public sealed class UserManagerService : IUserManager
             .ToListAsync(cancellationToken);
 
         var rolesByUser = userRoles
+            .Where(x => x.Name is not null)
             .GroupBy(x => x.UserId)
-            .ToDictionary(g => g.Key, g => (IReadOnlyList<string>)g.Select(x => x.Name).ToList());
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<string>)g.Select(x => x.Name!).ToList());
+
+        var permissionsByRole = await GetPermissionsByRoleAsync(
+            rolesByUser.Values.SelectMany(r => r).Distinct(), cancellationToken);
 
         var accounts = users
             .Select(u =>
             {
                 var roles = rolesByUser.TryGetValue(u.Id, out var found) ? found : [];
-                var permissions = RolePermissions.GetPermissions(roles);
+                var permissions = roles
+                    .SelectMany(r => permissionsByRole.TryGetValue(r, out var p) ? p : [])
+                    .Distinct()
+                    .OrderBy(p => p)
+                    .ToList();
                 return new UserAccount(u.Id, u.Email ?? u.UserName ?? string.Empty, u.FullName, u.IsActive, roles, permissions);
             })
             .ToList();
@@ -268,9 +281,65 @@ public sealed class UserManagerService : IUserManager
     private async Task<UserAccount> ToAccountAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         var roles = (await _userManager.GetRolesAsync(user)).ToList();
-        var permissions = RolePermissions.GetPermissions(roles);
+        var permissions = await GetPermissionsForRolesAsync(roles, cancellationToken);
 
         return new UserAccount(user.Id, user.Email ?? user.UserName ?? string.Empty, user.FullName, user.IsActive, roles, permissions);
+    }
+
+    private async Task<IReadOnlyList<string>> GetPermissionsForRolesAsync(IEnumerable<string> roles, CancellationToken cancellationToken)
+    {
+        var byRole = await GetPermissionsByRoleAsync(roles, cancellationToken);
+        return byRole.Values
+            .SelectMany(p => p)
+            .Distinct()
+            .OrderBy(p => p)
+            .ToList();
+    }
+
+    private async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetPermissionsByRoleAsync(
+        IEnumerable<string> roles,
+        CancellationToken cancellationToken)
+    {
+        var roleNames = roles.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct().ToList();
+        if (roleNames.Count == 0)
+            return new Dictionary<string, IReadOnlyList<string>>();
+
+        var rolesMeta = await _db.Roles
+            .Where(r => r.Name != null && roleNames.Contains(r.Name))
+            .Select(r => new { r.Id, r.Name })
+            .ToListAsync(cancellationToken);
+
+        var roleIdByName = rolesMeta
+            .Where(x => x.Name is not null)
+            .ToDictionary(x => x.Name!, x => x.Id);
+
+        if (roleIdByName.Count == 0)
+            return new Dictionary<string, IReadOnlyList<string>>();
+
+        var ids = roleIdByName.Values.ToList();
+        var nameById = roleIdByName.ToDictionary(kv => kv.Value, kv => kv.Key);
+
+        var claims = await _db.RolePermissions
+            .Where(rp => ids.Contains(rp.RoleId))
+            .Select(rp => new { rp.RoleId, Name = rp.Permission.Name })
+            .ToListAsync(cancellationToken);
+
+        var result = roleNames.ToDictionary(
+            name => name,
+            _ => (IReadOnlyList<string>)[]);
+
+        foreach (var group in claims
+            .Where(c => c.Name is not null && nameById.ContainsKey(c.RoleId))
+            .GroupBy(c => nameById[c.RoleId]))
+        {
+            result[group.Key] = group
+                .Select(c => c.Name)
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
+        }
+
+        return result;
     }
 
     private static OperationResult ToOperationResult(IdentityResult result)

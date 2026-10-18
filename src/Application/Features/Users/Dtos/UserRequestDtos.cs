@@ -40,3 +40,8 @@ public sealed record SetUserActiveRequest
 {
     public bool IsActive { get; init; }
 }
+
+public sealed record UpdateRolePermissionsRequest
+{
+    public List<string> Permissions { get; init; } = [];
+}

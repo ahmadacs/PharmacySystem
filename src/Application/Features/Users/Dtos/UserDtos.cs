@@ -14,3 +14,8 @@ public static class UserMapping
     public static UserDto ToDto(this UserAccount account)
         => new(account.Id, account.Email, account.FullName, account.IsActive, account.Roles);
 }
+
+public sealed record RolePermissionsDto(
+    string Role,
+    IReadOnlyList<string> Permissions,
+    IReadOnlyList<string> AllPermissions);

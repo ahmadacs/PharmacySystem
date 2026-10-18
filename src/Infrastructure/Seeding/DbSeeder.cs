@@ -21,6 +21,32 @@ public static class DbSeeder
     private const string AdminPassword = "Admin@1234";
     private const string PharmacistPassword = "Pharma@1234";
     private const string DoctorPassword = "Doctor@1234";
+
+    private static readonly IReadOnlyDictionary<string, string[]> DefaultRolePermissions =
+        new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            [Roles.Admin] = [.. Permissions.All],
+
+            [Roles.Pharmacist] =
+            [
+                Permissions.Medicines.View,
+                Permissions.Inventory.View,
+                Permissions.Inventory.Adjust,
+                Permissions.Dispensing.View,
+                Permissions.Dispensing.Create
+            ],
+
+            [Roles.Doctor] =
+            [
+                Permissions.Medicines.View,
+                Permissions.Prescriptions.Create,
+                Permissions.Prescriptions.ManageOwn
+            ]
+        };
+
+    private static IReadOnlyList<string> PermissionsFor(string role)
+        => DefaultRolePermissions.TryGetValue(role, out var permissions) ? permissions : [];
+
     public static async Task SeedAsync(IServiceProvider services, CancellationToken cancellationToken = default)
     {
         using var scope = services.CreateScope();
@@ -34,6 +60,9 @@ public static class DbSeeder
                 await roleManager.CreateAsync(new ApplicationRole(role));
         }
 
+        await SyncPermissionsAsync(db, roleManager, cancellationToken);
+        await RemoveLegacyRoleClaimsAsync(roleManager, cancellationToken);
+
         var admin = await EnsureUserAsync(userManager, AdminEmail, AdminPassword, "Pharmacy", "Administrator", Roles.Admin);
         var pharmacist = await EnsureUserAsync(userManager, PharmacistEmail, PharmacistPassword, "Rania", "Khalil", Roles.Pharmacist);
         var doctor = await EnsureUserAsync(userManager, DoctorEmail, DoctorPassword, "Omar", "Haddad", Roles.Doctor);
@@ -45,6 +74,87 @@ public static class DbSeeder
 
         if (!await db.Prescriptions.AnyAsync(cancellationToken))
             await SeedPrescriptionsAsync(db, doctor, pharmacist, cancellationToken);
+    }
+
+    private static async Task SyncPermissionsAsync(
+        ApplicationDbContext db,
+        RoleManager<ApplicationRole> roleManager,
+        CancellationToken cancellationToken)
+    {
+        var existing = await db.Permissions.ToListAsync(cancellationToken);
+        var byName = existing.ToDictionary(p => p.Name, StringComparer.Ordinal);
+
+        foreach (var name in Permissions.All)
+        {
+            var group = GroupOf(name);
+            if (byName.TryGetValue(name, out var permission))
+            {
+                if (permission.Group != group)
+                    permission.Rename(name, group);
+                continue;
+            }
+
+            var created = new Permission(name, group);
+            db.Permissions.Add(created);
+            byName[name] = created;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var roleIds = (await roleManager.Roles.ToListAsync(cancellationToken))
+            .Where(r => r.Name is not null)
+            .ToDictionary(r => r.Name!, r => r.Id, StringComparer.Ordinal);
+
+        var links = await db.RolePermissions.ToListAsync(cancellationToken);
+        var linksByRole = links
+            .GroupBy(rp => rp.RoleId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var roleName in Roles.All)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!roleIds.TryGetValue(roleName, out var roleId))
+                continue;
+
+            var desiredIds = PermissionsFor(roleName)
+                .Where(byName.ContainsKey)
+                .Select(name => byName[name].Id)
+                .ToHashSet();
+
+            var current = linksByRole.TryGetValue(roleId, out var roleLinks) ? roleLinks : [];
+            var currentIds = current.Select(rp => rp.PermissionId).ToHashSet();
+
+            foreach (var stale in current.Where(rp => !desiredIds.Contains(rp.PermissionId)))
+                db.RolePermissions.Remove(stale);
+
+            foreach (var permissionId in desiredIds.Where(id => !currentIds.Contains(id)))
+                db.RolePermissions.Add(new RolePermission(roleId, permissionId));
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task RemoveLegacyRoleClaimsAsync(
+        RoleManager<ApplicationRole> roleManager,
+        CancellationToken cancellationToken)
+    {
+        foreach (var roleName in Roles.All)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var role = await roleManager.FindByNameAsync(roleName);
+            if (role is null)
+                continue;
+
+            var claims = await roleManager.GetClaimsAsync(role);
+            foreach (var claim in claims.Where(c => c.Type == JwtClaimTypes.Permission))
+                await roleManager.RemoveClaimAsync(role, claim);
+        }
+    }
+
+    private static string GroupOf(string permission)
+    {
+        var parts = permission.Split('.');
+        return parts.Length >= 2 ? parts[1] : permission;
     }
 
     private static async Task<ApplicationUser> EnsureUserAsync(UserManager<ApplicationUser> userManager, string email, string password, string firstName, string lastName, string role)
