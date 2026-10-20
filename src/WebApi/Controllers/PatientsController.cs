@@ -12,6 +12,10 @@ namespace WebApi.Controllers;
 public sealed class PatientsController(ISender sender) : ApiControllerBase(sender)
 {
 
+    /// <summary>
+    /// Looks up a patient by phone number to prefill a new prescription.
+    /// </summary>
+    /// <param name="phone">The patient phone number in international format (e.g. +9665XXXXXXXX).</param>
     [HttpGet("by-phone/{phone}")]
     [HasPermission(Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -26,6 +30,11 @@ public sealed class PatientsController(ISender sender) : ApiControllerBase(sende
         return Ok(patient.ToCheckDto());
     }
 
+    /// <summary>
+    /// Lists a patient's prescriptions within the lookback window to support prescription history.
+    /// </summary>
+    /// <param name="id">The patient identifier.</param>
+    /// <param name="lookbackDays">The number of days to look back from today.</param>
     [HttpGet("{id:guid}/prescriptions")]
     [HasPermission(Application.Common.Security.Permissions.Prescriptions.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]

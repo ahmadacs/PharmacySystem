@@ -15,6 +15,10 @@ namespace WebApi.Controllers;
 public sealed class DispensingController(ISender sender) : ApiControllerBase(sender)
 {
 
+    /// <summary>
+    /// Lists dispensing records with pagination, filtering, and search.
+    /// </summary>
+    /// <param name="query">The paging, filtering, and search parameters.</param>
     [HttpGet]
     [HasPermission(Permissions.Dispensing.View)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -24,6 +28,10 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Looks up a prescription by its short code to prepare a dispensing operation.
+    /// </summary>
+    /// <param name="query">The prescription lookup criteria.</param>
     [HttpGet("lookup")]
     [HasPermission(Permissions.Dispensing.Create)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -34,6 +42,10 @@ public sealed class DispensingController(ISender sender) : ApiControllerBase(sen
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Dispenses a prescription atomically, reducing batch stock and recording the transaction.
+    /// </summary>
+    /// <param name="request">The prescription items and batch allocations to dispense.</param>
     [HttpPost]
     [HasPermission(Permissions.Dispensing.Create)]
     [ProducesResponseType(StatusCodes.Status201Created)]

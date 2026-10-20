@@ -13,6 +13,12 @@ namespace WebApi.Controllers;
 public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
 {
 
+    /// <summary>
+    /// Uploads a file attachment (e.g. prescription document or medicine image) and links it to an entity.
+    /// </summary>
+    /// <param name="entityType">The owning entity type.</param>
+    /// <param name="entityId">The owning entity identifier.</param>
+    /// <param name="file">The file to upload. Maximum size is 5 MB.</param>
     [HttpPost("{entityType}/{entityId:guid}")]
     [Authorize]
     [RequestSizeLimit(5 * 1024 * 1024)]
@@ -31,12 +37,21 @@ public sealed class FilesController(ISender sender) : ApiControllerBase(sender)
         return await UploadResponse(command, nameof(Download), cancellationToken);
     }
 
+    /// <summary>
+    /// Downloads a stored file attachment.
+    /// </summary>
+    /// <param name="id">The file attachment identifier.</param>
     [HttpGet("{id:guid}/download")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
         => FileResponse(new GetFileQuery(id), cancellationToken);
 
+    /// <summary>
+    /// Lists the file attachments linked to an entity.
+    /// </summary>
+    /// <param name="entityType">The owning entity type.</param>
+    /// <param name="entityId">The owning entity identifier.</param>
     [HttpGet("{entityType}/{entityId:guid}/list")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

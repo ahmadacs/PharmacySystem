@@ -11,6 +11,9 @@ namespace WebApi.Controllers;
 public sealed class DashboardController(ISender sender) : ApiControllerBase(sender)
 {
 
+    /// <summary>
+    /// Gets the dashboard summary statistics such as stock levels, low-stock counts, and dispensing totals.
+    /// </summary>
     [HttpGet("summary")]
     [ProducesResponseType(typeof(Application.Features.Dashboard.Dtos.DashboardSummaryDto), StatusCodes.Status200OK)]
     public Task<IActionResult> Summary(CancellationToken cancellationToken)

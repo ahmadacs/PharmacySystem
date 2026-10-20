@@ -10,6 +10,12 @@ namespace WebApi.Controllers;
 public sealed class ExportsController(ISender sender) : ApiControllerBase(sender)
 {
 
+    /// <summary>
+    /// Exports a report as an Excel or PDF file.
+    /// </summary>
+    /// <param name="entityType">The report entity type (e.g. inventory, medicines, dispensing, prescriptions).</param>
+    /// <param name="format">The output format: excel or pdf.</param>
+    /// <param name="id">An optional entity identifier to export a single record.</param>
     [HttpGet("{entityType}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]

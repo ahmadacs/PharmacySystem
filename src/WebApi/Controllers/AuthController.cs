@@ -15,6 +15,10 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
 {
     public const string RefreshCookieName = "RefreshToken";
 
+    /// <summary>
+    /// Authenticates a user and issues a JWT access token plus a refresh token cookie.
+    /// </summary>
+    /// <param name="request">The user credentials.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -23,6 +27,10 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         => AuthResponse(new LoginCommand(request), SetRefreshCookie, cancellationToken);
 
+    /// <summary>
+    /// Registers a new user account and issues authentication tokens.
+    /// </summary>
+    /// <param name="request">The new account details.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -31,6 +39,9 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
         => AuthResponse(new RegisterCommand(request), SetRefreshCookie, cancellationToken);
 
+    /// <summary>
+    /// Rotates the refresh token cookie and issues a new access token.
+    /// </summary>
     [EnableRateLimiting("auth")]
     [HttpPost("refresh")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -41,6 +52,9 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
         return AuthResponse(new RefreshTokenCommand(refreshToken), SetRefreshCookie, cancellationToken);
     }
 
+    /// <summary>
+    /// Revokes the current refresh token and clears the refresh cookie.
+    /// </summary>
     [EnableRateLimiting("auth")]
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -52,6 +66,9 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
         return NoContent();
     }
 
+    /// <summary>
+    /// Gets the profile, roles, and permissions of the authenticated user.
+    /// </summary>
     [Authorize]
     [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -59,6 +76,10 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> Me(CancellationToken cancellationToken)
         => OkResponse(new GetCurrentUserQuery(), cancellationToken);
 
+    /// <summary>
+    /// Changes the password of the authenticated user.
+    /// </summary>
+    /// <param name="request">The current and new password.</param>
     [Authorize]
     [EnableRateLimiting("auth")]
     [HttpPost("change-password")]
@@ -67,12 +88,20 @@ public sealed class AuthController(ISender sender, IWebHostEnvironment environme
     public Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
         => NoContent(new ChangePasswordCommand(request), cancellationToken);
 
+    /// <summary>
+    /// Sends a password reset token to the user's email address. Always returns no content to avoid account enumeration.
+    /// </summary>
+    /// <param name="request">The email address of the account.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("forgot-password")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
         => NoContent(new ForgotPasswordCommand(request), cancellationToken);
 
+    /// <summary>
+    /// Resets a password using a valid reset token.
+    /// </summary>
+    /// <param name="request">The reset token and the new password.</param>
     [EnableRateLimiting("auth")]
     [HttpPost("reset-password")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

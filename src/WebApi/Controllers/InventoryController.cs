@@ -18,6 +18,10 @@ namespace WebApi.Controllers;
 public sealed class InventoryController(ISender sender) : ApiControllerBase(sender)
 {
 
+    /// <summary>
+    /// Lists medicine batches with pagination, filtering, sorting, and search.
+    /// </summary>
+    /// <param name="query">The paging, filtering, sorting, and search parameters.</param>
     [HttpGet("batches")]
     [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
@@ -28,6 +32,10 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Lists the aggregated inventory summary for each medicine variant.
+    /// </summary>
+    /// <param name="query">The paging and filtering parameters.</param>
     [HttpGet("summary")]
     [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
@@ -38,6 +46,10 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Lists batches that are expired or expiring within the alert window.
+    /// </summary>
+    /// <param name="query">The paging and filtering parameters.</param>
     [HttpGet("expiry-alerts")]
     [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
@@ -48,6 +60,10 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Lists medicine variants whose available stock is at or below the reorder level.
+    /// </summary>
+    /// <param name="query">The paging and filtering parameters.</param>
     [HttpGet("low-stock")]
     [HasPermission(Permissions.Inventory.View)]
     [OutputCache(PolicyName = OutputCachePolicies.Inventory)]
@@ -58,6 +74,10 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         CancellationToken cancellationToken)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Lists inventory adjustments with pagination and filtering.
+    /// </summary>
+    /// <param name="query">The paging and filtering parameters.</param>
     [HttpGet("adjustments")]
     [HasPermission(Permissions.Inventory.View)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -67,6 +87,10 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
         CancellationToken cancellationToken = default)
         => OkResponse(query, cancellationToken);
 
+    /// <summary>
+    /// Records a manual inventory adjustment against a batch.
+    /// </summary>
+    /// <param name="request">The adjustment details and reason.</param>
     [HttpPost("adjustments")]
     [HasPermission(Permissions.Inventory.Adjust)]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -75,6 +99,10 @@ public sealed class InventoryController(ISender sender) : ApiControllerBase(send
     public Task<IActionResult> Adjust([FromBody] AdjustInventoryRequest request, CancellationToken cancellationToken)
         => Created(nameof(Adjustments), new { id = Guid.Empty }, new AdjustInventoryCommand(request), cancellationToken);
 
+    /// <summary>
+    /// Receives new stock and creates a medicine batch.
+    /// </summary>
+    /// <param name="request">The received stock details.</param>
     [HttpPost("receive")]
     [HasPermission(Permissions.Inventory.Adjust)]
     [ProducesResponseType(StatusCodes.Status201Created)]
